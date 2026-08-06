@@ -5,6 +5,7 @@ from __future__ import annotations
 from ..syntax.registry import Registry
 from .correlations import Correlations
 from .crosstabs import Crosstabs
+from .data_ops import Filter, SelectIf, SortCases, SplitFile, UseCommand, Weight
 from .descriptives import Descriptives
 from .frequencies import Frequencies
 from .graph import Graph
@@ -42,4 +43,10 @@ def build_registry() -> Registry:
     reg.register("COUNT")(Count)
     reg.register("EXECUTE")(Execute)
     reg.register("GRAPH")(Graph)
+    reg.register("SORT")(SortCases)
+    reg.register("SELECT")(SelectIf)
+    reg.register("FILTER")(Filter)
+    reg.register("WEIGHT")(Weight)
+    reg.register("SPLIT")(SplitFile)
+    reg.register("USE")(UseCommand)
     return reg

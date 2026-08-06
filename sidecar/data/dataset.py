@@ -22,6 +22,10 @@ class Dataset:
         self.variables = variables
         self.name = name
         self.source_path = source_path
+        # Data-menu state (SORT/SELECT/WEIGHT/SPLIT).
+        self.weight_var: Optional[str] = None
+        self.filter_var: Optional[str] = None
+        self.split_vars: list[str] = []
         self._sync_columns()
 
     # ---- internal -----------------------------------------------------

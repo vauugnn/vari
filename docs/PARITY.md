@@ -29,6 +29,13 @@ a fixture's SPSS output is on hand.
 | CROSSTABS | Fisher's Exact | 2-sided p only (`scipy.stats.fisher_exact`) | SPSS also shows 1-sided; not yet emitted. |
 | CORRELATIONS/CROSSTABS | Leading zero | Suppressed on r and p (.847, .000) per HLD 9 | Matches SPSS. Modern SPSS shows `<.001`; we show `.000`. |
 
+## Known gaps (data ops)
+
+| Item | Status |
+|---|---|
+| WEIGHT BY | Sets dataset state and shows in the status bar, but procedures do **not** yet replicate counts/means by the weight. SPLIT FILE, FILTER, SELECT IF, SORT CASES are fully applied through the `DataProcedure` base. |
+| SPLIT FILE | Runs each procedure once per split group with a heading. LAYERED vs SEPARATE both render as separate table sets (SPSS's layered single-table pivot not yet built). |
+
 ## Resolved
 
 _Nothing yet._

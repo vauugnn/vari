@@ -69,6 +69,9 @@ def _dataset_summary(ds: Dataset) -> dict[str, Any]:
         "nVars": ds.n_vars,
         "sourcePath": ds.source_path,
         "variables": [_meta_to_json(v) for v in ds.variables],
+        "weight": getattr(ds, "weight_var", None),
+        "filter": getattr(ds, "filter_var", None),
+        "split": getattr(ds, "split_vars", None) or [],
     }
 
 

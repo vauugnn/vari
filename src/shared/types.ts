@@ -68,6 +68,9 @@ export interface DatasetSummary {
   nVars: number
   sourcePath: string | null
   variables: VariableMetaJson[]
+  weight?: string | null
+  filter?: string | null
+  split?: string[]
 }
 
 export interface RowWindow {

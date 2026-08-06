@@ -234,16 +234,16 @@ export function buildMenu(actions: MenuActions): Menu {
       proc('Define Dates…'),
       proc('Define Multiple Response Sets…'),
       { type: 'separator' },
-      proc('Sort Cases…'),
+      dialogItem('Sort Cases…', 'sort', actions.openDialog),
       proc('Sort Variables…'),
       proc('Transpose…'),
       proc('Merge Files'),
       proc('Restructure…'),
       proc('Aggregate…'),
       { type: 'separator' },
-      proc('Split File…'),
-      proc('Select Cases…'),
-      proc('Weight Cases…')
+      dialogItem('Split File…', 'splitfile', actions.openDialog),
+      dialogItem('Select Cases…', 'selectcases', actions.openDialog),
+      dialogItem('Weight Cases…', 'weight', actions.openDialog)
     ]
   })
 

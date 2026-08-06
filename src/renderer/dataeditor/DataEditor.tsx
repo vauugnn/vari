@@ -40,6 +40,7 @@ import { LinearRegressionDialog } from '../dialogs/analysis/RegressionDialog'
 import { MeansDialog } from '../dialogs/analysis/MeansDialog'
 import { ComputeDialog } from '../dialogs/analysis/ComputeDialog'
 import { HistogramDialog, BarChartDialog, PieChartDialog, ScatterDialog } from '../dialogs/analysis/GraphDialogs'
+import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
 import './dataeditor.css'
 
 function TB({
@@ -215,9 +216,9 @@ export function DataEditor(): JSX.Element {
         {summary && <span className="sb-seg">{summary.name}</span>}
         {summary && <span className="sb-seg">{summary.nVars} variables</span>}
         {summary && <span className="sb-seg">{summary.nRows} cases</span>}
-        <span className="sb-seg">Weight Off</span>
-        <span className="sb-seg">Split Off</span>
-        <span className="sb-seg">Filter Off</span>
+        <span className="sb-seg">{summary?.weight ? `Weight On (${summary.weight})` : 'Weight Off'}</span>
+        <span className="sb-seg">{summary?.split && summary.split.length ? `Split On (${summary.split.join(', ')})` : 'Split Off'}</span>
+        <span className="sb-seg">{summary?.filter ? `Filter On (${summary.filter})` : 'Filter Off'}</span>
       </div>
 
       {(() => {
@@ -256,6 +257,14 @@ export function DataEditor(): JSX.Element {
             return <PieChartDialog {...p} />
           case 'graph-scatter':
             return <ScatterDialog {...p} />
+          case 'selectcases':
+            return <SelectCasesDialog {...p} />
+          case 'weight':
+            return <WeightCasesDialog {...p} />
+          case 'splitfile':
+            return <SplitFileDialog {...p} />
+          case 'sort':
+            return <SortCasesDialog {...p} />
           default:
             return null
         }
