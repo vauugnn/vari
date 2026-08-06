@@ -1,0 +1,43 @@
+.de-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.de-toolbar {
+  height: 30px;
+  border-bottom: 1px solid #a0a0a0;
+  background: #f0f0f0;
+}
+
+.de-body {
+  flex: 1;
+  background: #ffffff;
+  border-bottom: 1px solid #a0a0a0;
+  overflow: auto;
+}
+
+/* Tabs at bottom left, SPSS style: attached folder tabs, active one raised. */
+.de-tabs {
+  display: flex;
+  gap: 0;
+  background: #f0f0f0;
+  padding: 0 4px;
+  height: 24px;
+}
+
+.de-tab {
+  min-width: 0;
+  padding: 3px 12px;
+  border: 1px solid #a0a0a0;
+  border-bottom: none;
+  background: #dcdcdc;
+  color: #000;
+  margin-top: 2px;
+}
+
+.de-tab--active {
+  background: #f0f0f0;
+  margin-top: 0;
+  font-weight: bold;
+}

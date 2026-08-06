@@ -1,0 +1,36 @@
+.vw-root {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  height: 100%;
+}
+
+.vw-outline {
+  border-right: 1px solid #a0a0a0;
+  background: #f7f7f7;
+  overflow: auto;
+}
+
+.vw-outline-head {
+  padding: 3px 8px;
+  background: #e1e1e1;
+  border-bottom: 1px solid #a0a0a0;
+  font-weight: bold;
+}
+
+.vw-outline-item {
+  padding: 2px 8px 2px 20px;
+  cursor: default;
+}
+
+.vw-outline-item:hover {
+  background: #dce8f5;
+}
+
+.vw-content {
+  background: #ffffff;
+  overflow: auto;
+}
+
+.vw-empty {
+  height: 100%;
+}

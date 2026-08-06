@@ -1,0 +1,35 @@
+.sx-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.sx-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 30px;
+  padding: 0 6px;
+  border-bottom: 1px solid #a0a0a0;
+  background: #f0f0f0;
+}
+
+.sx-status {
+  font-size: 11px;
+  color: #333;
+}
+
+.sx-editor {
+  flex: 1;
+  border: none;
+  outline: none;
+  margin: 0;
+  padding: 6px 8px;
+  resize: none;
+  font-family: 'Consolas', 'Menlo', 'DejaVu Sans Mono', monospace;
+  font-size: 13px;
+  color: #000;
+  background: #ffffff;
+  -webkit-user-select: text;
+  user-select: text;
+}

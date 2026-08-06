@@ -1,0 +1,53 @@
+/* Base look: Java Swing / SPSS on desktop. Do not modernize (see CLAUDE.md).
+   No rounded corners, no shadows, no animation, no dark theme. */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: Tahoma, 'Segoe UI', 'DejaVu Sans', Geneva, sans-serif;
+  font-size: 12px;
+  color: #000;
+  background: #f0f0f0;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+button {
+  font-family: inherit;
+  font-size: 12px;
+  padding: 2px 12px;
+  min-width: 75px;
+  border: 1px solid #7f9db9;
+  background: #e1e1e1;
+  color: #000;
+}
+
+button:active {
+  background: #cfcfcf;
+}
+
+button:disabled {
+  color: #808080;
+  border-color: #b5b5b5;
+  background: #ececec;
+}
+
+.statusbar {
+  height: 22px;
+  border-top: 1px solid #a0a0a0;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 11px;
+  color: #333;
+}

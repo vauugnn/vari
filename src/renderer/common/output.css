@@ -1,0 +1,22 @@
+.out-list {
+  padding: 10px 14px;
+}
+
+.out-title {
+  font-weight: bold;
+  font-size: 13px;
+  color: #000;
+  margin: 6px 0 4px;
+}
+
+.out-error {
+  color: #a00000;
+  margin: 4px 0;
+  white-space: pre-wrap;
+}
+
+.out-unknown {
+  color: #555;
+  font-style: italic;
+  margin: 4px 0;
+}
