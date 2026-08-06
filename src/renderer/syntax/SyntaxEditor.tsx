@@ -14,6 +14,13 @@ export function SyntaxEditor(): JSX.Element {
     return window.spss.onSidecarStatus(setStatus)
   }, [])
 
+  // Paste from a dialog appends the generated syntax.
+  useEffect(() => {
+    return window.spss.onAppendSyntax((appended) => {
+      setText((prev) => (prev.trim() ? prev.replace(/\n*$/, '') + '\n\n' + appended : appended))
+    })
+  }, [])
+
   const ready = status.state === 'ready'
 
   async function run(): Promise<void> {

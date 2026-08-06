@@ -213,6 +213,23 @@ function wireIpc(): void {
   })
 
   ipcMain.on(IPC.windowShow, (_evt, name: WindowName) => showWindow(name))
+
+  // Paste from a dialog: append the generated syntax to the Syntax Editor.
+  ipcMain.on(IPC.syntaxPaste, (_evt, text: string) => {
+    const syntax = windows.syntax
+    if (syntax && !syntax.isDestroyed()) {
+      syntax.webContents.send(IPC.syntaxAppend, text)
+      showWindow('syntax')
+    }
+  })
+}
+
+function openDialog(id: string): void {
+  const de = windows.dataeditor
+  if (de && !de.isDestroyed()) {
+    de.webContents.send(IPC.dialogOpen, id)
+    showWindow('dataeditor')
+  }
 }
 
 app.whenReady().then(() => {
@@ -226,7 +243,8 @@ app.whenReady().then(() => {
           .request('dataset.save', {})
           .catch(() => saveViaDialog())
       },
-      fileSaveAs: () => void saveViaDialog()
+      fileSaveAs: () => void saveViaDialog(),
+      openDialog: (id: string) => openDialog(id)
     })
   )
   wireIpc()
@@ -321,7 +339,7 @@ async function runSelfTestPhase1(sav: string, done: (m: string) => void): Promis
   await ev(`window.spss.ds.open(${JSON.stringify(sav)})`)
   await until2(async () => (await ev(`document.querySelectorAll('.row').length`)) > 0, 8000)
 
-  const heads: string[] = await ev(`Array.from(document.querySelectorAll('.col-head')).map(e=>e.textContent)`)
+  const heads: string[] = await ev(`Array.from(document.querySelectorAll('.col-head-name')).map(e=>e.textContent)`)
   check('varnames', heads.slice(0, 5).join(',') === 'id,gender,income,agree,sname', heads)
 
   await until2(async () => {
@@ -373,6 +391,20 @@ async function runSelfTestPhase1(sav: string, done: (m: string) => void): Promis
   const vtxt: string = await vev(`document.body.innerText`)
   check('freq_tables', (await vev(`document.querySelectorAll('.pt-table').length`)) >= 2, 'tables')
   check('freq_labels', vtxt.includes('Male') && vtxt.includes('No answer') && vtxt.includes('Statistics'), vtxt.slice(0, 80))
+
+  // Dialog flow: Analyze ▸ Frequencies, move a variable, click OK.
+  const tablesBefore: number = await vev(`document.querySelectorAll('.pt-table').length`)
+  de.webContents.send(IPC.dialogOpen, 'frequencies')
+  await until2(async () => (await ev(`!!document.querySelector('.af')`)) === true, 4000)
+  await ev(
+    `(()=>{const it=[...document.querySelectorAll('.vm-item')].find(e=>e.textContent.includes('Gender'));
+       if(it){it.dispatchEvent(new MouseEvent('dblclick',{bubbles:true}));} return !!it;})()`
+  )
+  await until2(async () => (await ev(`document.querySelectorAll('.vm-col')[1].querySelectorAll('.vm-item').length`)) > 0, 3000)
+  await ev(`[...document.querySelectorAll('.af-footer button')].find(b=>b.textContent==='OK').click()`)
+  await until2(async () => (await vev(`document.querySelectorAll('.pt-table').length`)) >= tablesBefore + 2, 6000)
+  const tablesAfter: number = await vev(`document.querySelectorAll('.pt-table').length`)
+  check('dialog_flow', tablesAfter >= tablesBefore + 2, { tablesBefore, tablesAfter })
 
   const pass = results.every((r) => r.includes('PASS'))
   done(`${pass ? 'PASS' : 'FAIL'} :: ${results.join('  ')}`)

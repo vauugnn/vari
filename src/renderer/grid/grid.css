@@ -47,6 +47,23 @@
   background: #b9d0ea;
 }
 
+.col-head-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.col-head-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.measure-icon {
+  flex: none;
+  vertical-align: middle;
+}
+
 .col-head--empty {
   color: #b0b0b0;
 }

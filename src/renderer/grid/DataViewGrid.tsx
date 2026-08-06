@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type { DatasetSummary } from '../../shared/types'
 import { useStore } from '../state/store'
+import { MeasureIcon } from '../common/icons'
 import './grid.css'
 
 const ROW_H = 20
@@ -255,7 +256,10 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
               title={v.label || v.name}
               onMouseDown={() => setSel({ r0: 0, c0: c, r1: displayRows - 1, c1: c })}
             >
-              {v.name}
+              <span className="col-head-inner">
+                <MeasureIcon measure={v.measure} isString={v.isString} isDate={v.type === 'Date'} size={14} />
+                <span className="col-head-name">{v.name}</span>
+              </span>
             </div>
           ))}
           {Array.from({ length: fillCols }, (_, k) => (

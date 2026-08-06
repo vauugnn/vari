@@ -3,6 +3,9 @@ import type { SidecarStatus } from '../../shared/types'
 import { useStore } from '../state/store'
 import { DataViewGrid } from '../grid/DataViewGrid'
 import { VariableViewGrid } from '../grid/VariableViewGrid'
+import { OpenIcon, SaveIcon } from '../common/icons'
+import { FrequenciesDialog } from '../dialogs/analysis/FrequenciesDialog'
+import { DescriptivesDialog } from '../dialogs/analysis/DescriptivesDialog'
 import './dataeditor.css'
 
 export function DataEditor(): JSX.Element {
@@ -16,9 +19,11 @@ export function DataEditor(): JSX.Element {
   const setError = useStore((s) => s.setError)
 
   const [status, setStatus] = useState<SidecarStatus>({ state: 'starting' })
+  const [dialogId, setDialogId] = useState<string | null>(null)
   const initedRef = useRef(false)
 
   useEffect(() => window.spss.ds.onChanged(setSummary), [setSummary])
+  useEffect(() => window.spss.onOpenDialog(setDialogId), [])
   useEffect(() => {
     void window.spss.getSidecarStatus().then(setStatus)
     return window.spss.onSidecarStatus(setStatus)
@@ -48,9 +53,11 @@ export function DataEditor(): JSX.Element {
   return (
     <div className="de-root">
       <div className="de-toolbar">
-        <button onClick={open}>Open</button>
-        <button onClick={save} disabled={!summary}>
-          Save
+        <button className="icon-btn" onClick={open} title="Open data">
+          <OpenIcon />
+        </button>
+        <button className="icon-btn" onClick={save} disabled={!summary} title="Save data">
+          <SaveIcon />
         </button>
         <span className="de-sep" />
         <button
@@ -97,6 +104,13 @@ export function DataEditor(): JSX.Element {
           : 'IBM SPSS Statistics Processor is ' +
             (status.state === 'ready' ? 'ready' : status.state === 'down' ? 'unavailable' : 'starting')}
       </div>
+
+      {dialogId && summary && dialogId === 'frequencies' && (
+        <FrequenciesDialog variables={summary.variables} onClose={() => setDialogId(null)} />
+      )}
+      {dialogId && summary && dialogId === 'descriptives' && (
+        <DescriptivesDialog variables={summary.variables} onClose={() => setDialogId(null)} />
+      )}
     </div>
   )
 }

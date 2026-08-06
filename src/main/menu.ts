@@ -14,6 +14,7 @@ export interface MenuActions {
   fileOpen: () => void
   fileSave: () => void
   fileSaveAs: () => void
+  openDialog: (id: string) => void
 }
 
 function stub(label: string): () => void {
@@ -25,7 +26,11 @@ function proc(label: string): MenuItemConstructorOptions {
   return { label, enabled: false, click: stub(label) }
 }
 
-function analyzeSubmenu(): MenuItemConstructorOptions {
+function dialogItem(label: string, id: string, open: (id: string) => void): MenuItemConstructorOptions {
+  return { label, click: () => open(id) }
+}
+
+function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions {
   return {
     label: 'Analyze',
     submenu: [
@@ -33,8 +38,8 @@ function analyzeSubmenu(): MenuItemConstructorOptions {
       {
         label: 'Descriptive Statistics',
         submenu: [
-          proc('Frequencies…'),
-          proc('Descriptives…'),
+          dialogItem('Frequencies…', 'frequencies', open),
+          dialogItem('Descriptives…', 'descriptives', open),
           proc('Explore…'),
           proc('Crosstabs…'),
           proc('TURF Analysis'),
@@ -259,7 +264,7 @@ export function buildMenu(actions: MenuActions): Menu {
     ]
   })
 
-  template.push(analyzeSubmenu())
+  template.push(analyzeSubmenu(actions.openDialog))
 
   template.push({
     label: 'Graphs',

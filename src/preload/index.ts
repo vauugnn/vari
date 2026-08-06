@@ -60,6 +60,17 @@ const api: SpssApi = {
   showWindow: (name: WindowName) => ipcRenderer.send(IPC.windowShow, name),
   exportHtml: (html: string) =>
     ipcRenderer.invoke(IPC.outputExportHtml, html) as Promise<{ ok: boolean; path: string } | null>,
+  onOpenDialog: (cb) => {
+    const listener = (_e: unknown, id: string) => cb(id)
+    ipcRenderer.on(IPC.dialogOpen, listener)
+    return () => ipcRenderer.removeListener(IPC.dialogOpen, listener)
+  },
+  paste: (syntax: string) => ipcRenderer.send(IPC.syntaxPaste, syntax),
+  onAppendSyntax: (cb) => {
+    const listener = (_e: unknown, text: string) => cb(text)
+    ipcRenderer.on(IPC.syntaxAppend, listener)
+    return () => ipcRenderer.removeListener(IPC.syntaxAppend, listener)
+  },
   ds
 }
 

@@ -1,0 +1,114 @@
+.af {
+  background: #f0f0f0;
+  border: 1px solid #808080;
+  min-width: 480px;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.af-title {
+  background: #dfe6ef;
+  border-bottom: 1px solid #b0b0b0;
+  padding: 4px 8px;
+  font-weight: bold;
+}
+
+.af-main {
+  display: flex;
+  padding: 10px 12px;
+  gap: 10px;
+}
+
+.af-body {
+  flex: 1;
+}
+
+.af-subs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.af-subs button {
+  min-width: 90px;
+}
+
+.af-footer {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  padding: 8px 12px;
+  border-top: 1px solid #cccccc;
+}
+
+.af-footer button {
+  min-width: 72px;
+}
+
+/* Variable mover */
+.vm {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.vm-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.vm-label {
+  padding: 2px 0;
+}
+
+.vm-list {
+  flex: 1;
+  min-height: 160px;
+  height: 160px;
+  overflow: auto;
+  background: #ffffff;
+  border: 1px solid #7f9db9;
+}
+
+.vm-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 5px;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.vm-item--sel {
+  background: #cbdcf0;
+}
+
+.vm-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vm-arrows {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.vm-arrow {
+  min-width: 34px;
+  padding: 4px 6px;
+}
+
+.opts {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 18px;
+}
