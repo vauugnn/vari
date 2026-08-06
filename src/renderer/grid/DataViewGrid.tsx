@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
-import type { DatasetSummary } from '../../shared/types'
+import type { DatasetSummary, VariableMetaJson } from '../../shared/types'
 import { useStore } from '../state/store'
 import { MeasureIcon } from '../common/icons'
+import { ContextMenu, type MenuItem } from './ContextMenu'
 import './grid.css'
 
 const ROW_H = 20
@@ -31,10 +32,13 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
 
   const EMPTY_COL_W = colWidthPx(8)
 
-  const colWidths = useMemo(
+  const baseWidths = useMemo(
     () => summary.variables.map((v) => colWidthPx(v.columns || v.width || 8)),
     [summary]
   )
+  const [wOverride, setWOverride] = useState<Record<number, number>>({})
+  useEffect(() => setWOverride({}), [summary])
+  const colWidths = baseWidths.map((w, i) => wOverride[i] ?? w)
   const realWidth = colWidths.reduce((a, b) => a + b, 0)
   const gutterW = Math.max(40, String(Math.max(nRows + 1, 1)).length * 9 + 20)
 
@@ -168,8 +172,166 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
     return () => window.removeEventListener('mouseup', up)
   }, [])
 
+  // ---- context menu, column resize, clipboard ----------------------
+  const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null)
+  const resizeRef = useRef<{ c: number; startX: number; startW: number; w: number } | null>(null)
+
+  const existingNames = (): Set<string> => new Set(summary.variables.map((v) => v.name.toUpperCase()))
+
+  const insertVarAt = async (index: number): Promise<void> => {
+    const s = await window.spss.ds.insertVariable(index, defaultVarMeta(existingNames()))
+    useStore.getState().setSummary(s)
+  }
+  const deleteVarAt = async (index: number): Promise<void> => {
+    if (index >= nVars) return
+    useStore.getState().setSummary(await window.spss.ds.deleteVariable(index))
+  }
+  const insertCaseAt = async (index: number): Promise<void> => {
+    const res = await window.spss.ds.insertCase(index)
+    setNRows(res.nRows)
+    bumpData()
+  }
+  const deleteCaseAt = async (index: number): Promise<void> => {
+    if (index >= nRows) return
+    const res = await window.spss.ds.deleteCase(index)
+    setNRows(res.nRows)
+    bumpData()
+  }
+  const runDescriptives = (c: number): void => {
+    if (c < nVars) void window.spss.execute(`DESCRIPTIVES VARIABLES=${summary.variables[c].name}.`)
+  }
+
+  const copySelection = async (): Promise<void> => {
+    if (!sel) return
+    const [r0, r1] = [Math.min(sel.r0, sel.r1), Math.max(sel.r0, sel.r1)]
+    const [c0, c1] = [Math.min(sel.c0, sel.c1), Math.max(sel.c0, sel.c1)]
+    const lines: string[] = []
+    for (let r = r0; r <= r1; r++) {
+      const cols: string[] = []
+      for (let c = c0; c <= c1; c++) cols.push(cellText(r, c))
+      lines.push(cols.join('\t'))
+    }
+    try {
+      await navigator.clipboard.writeText(lines.join('\n'))
+    } catch {
+      /* clipboard unavailable */
+    }
+  }
+  const pasteSelection = async (): Promise<void> => {
+    if (!sel) return
+    let text = ''
+    try {
+      text = await navigator.clipboard.readText()
+    } catch {
+      return
+    }
+    if (!text) return
+    const r0 = Math.min(sel.r0, sel.r1)
+    const c0 = Math.min(sel.c0, sel.c1)
+    const grid = text.replace(/\r/g, '').replace(/\n$/, '').split('\n').map((l) => l.split('\t'))
+    const need = c0 + Math.max(...grid.map((g) => g.length))
+    let cur = nVars
+    while (cur < need) {
+      const s = await window.spss.ds.insertVariable(null, null)
+      useStore.getState().setSummary(s)
+      cur = s.nVars
+    }
+    for (let i = 0; i < grid.length; i++)
+      for (let j = 0; j < grid[i].length; j++) {
+        if (grid[i][j] === '') continue
+        try {
+          await window.spss.ds.setCell(r0 + i, c0 + j, grid[i][j])
+        } catch {
+          /* skip bad cell */
+        }
+      }
+    setNRows(Math.max(nRows, r0 + grid.length))
+    bumpData()
+  }
+
+  const startResize = (c: number, e: React.MouseEvent): void => {
+    e.stopPropagation()
+    e.preventDefault()
+    resizeRef.current = { c, startX: e.clientX, startW: colWidths[c], w: colWidths[c] }
+  }
+  useEffect(() => {
+    const mm = (e: MouseEvent): void => {
+      const r = resizeRef.current
+      if (!r) return
+      r.w = Math.max(MIN_COL, r.startW + (e.clientX - r.startX))
+      setWOverride((o) => ({ ...o, [r.c]: r.w }))
+    }
+    const mu = async (): Promise<void> => {
+      const r = resizeRef.current
+      if (!r) return
+      resizeRef.current = null
+      const chars = Math.max(1, Math.round((r.w - 18) / 7))
+      const v = summary.variables[r.c]
+      if (v) {
+        try {
+          useStore.getState().setSummary(await window.spss.ds.setVariableMeta(r.c, { ...v, columns: chars }))
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    window.addEventListener('mousemove', mm)
+    window.addEventListener('mouseup', mu)
+    return () => {
+      window.removeEventListener('mousemove', mm)
+      window.removeEventListener('mouseup', mu)
+    }
+  }, [summary])
+
+  const headerMenu = (c: number, e: React.MouseEvent): void => {
+    e.preventDefault()
+    setSel({ r0: 0, c0: c, r1: displayRows - 1, c1: c })
+    setMenu({
+      x: e.clientX,
+      y: e.clientY,
+      items: [
+        { label: 'Insert Variable', onClick: () => void insertVarAt(c) },
+        { label: 'Clear', disabled: c >= nVars, onClick: () => void deleteVarAt(c) },
+        { separator: true },
+        { label: 'Descriptive Statistics', disabled: c >= nVars, onClick: () => runDescriptives(c) }
+      ]
+    })
+  }
+  const gutterMenu = (r: number, e: React.MouseEvent): void => {
+    e.preventDefault()
+    setSel({ r0: r, c0: 0, r1: r, c1: displayCols - 1 })
+    setMenu({
+      x: e.clientX,
+      y: e.clientY,
+      items: [
+        { label: 'Insert Case', onClick: () => void insertCaseAt(r) },
+        { label: 'Clear', disabled: r >= nRows, onClick: () => void deleteCaseAt(r) }
+      ]
+    })
+  }
+  const cellMenu = (r: number, c: number, e: React.MouseEvent): void => {
+    e.preventDefault()
+    if (!inSel(r, c)) setSel({ r0: r, c0: c, r1: r, c1: c })
+    setMenu({
+      x: e.clientX,
+      y: e.clientY,
+      items: [
+        { label: 'Copy', onClick: () => void copySelection() },
+        { label: 'Paste', onClick: () => void pasteSelection() }
+      ]
+    })
+  }
+
   const onGridKeyDown = (e: React.KeyboardEvent) => {
     if (edit) return
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'c' || e.key === 'C')) {
+      void copySelection()
+      return
+    }
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'v' || e.key === 'V')) {
+      void pasteSelection()
+      return
+    }
     if (!sel) return
     const { r1, c1 } = sel
     if (e.key === 'Enter' || e.key === 'F2') {
@@ -201,6 +363,7 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
           onMouseDown={(e) => onCellMouseDown(r, c, e)}
           onMouseEnter={() => onCellMouseEnter(r, c)}
           onDoubleClick={() => startEdit(r, c)}
+          onContextMenu={(e) => cellMenu(r, c, e)}
         >
           {isEditing ? (
             <input
@@ -229,6 +392,7 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
           className={'gutter-cell' + (sel && r >= Math.min(sel.r0, sel.r1) && r <= Math.max(sel.r0, sel.r1) ? ' gutter-cell--sel' : '')}
           style={{ width: gutterW }}
           onMouseDown={() => setSel({ r0: r, c0: 0, r1: r, c1: displayCols - 1 })}
+          onContextMenu={(e) => gutterMenu(r, e)}
         >
           {r + 1}
         </div>
@@ -255,11 +419,13 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
               style={{ width: colWidths[c] }}
               title={v.label || v.name}
               onMouseDown={() => setSel({ r0: 0, c0: c, r1: displayRows - 1, c1: c })}
+              onContextMenu={(e) => headerMenu(c, e)}
             >
               <span className="col-head-inner">
                 <MeasureIcon measure={v.measure} isString={v.isString} isDate={v.type === 'Date'} size={14} />
                 <span className="col-head-name">{v.name}</span>
               </span>
+              <div className="col-resize" onMouseDown={(e) => startResize(c, e)} />
             </div>
           ))}
           {Array.from({ length: fillCols }, (_, k) => (
@@ -270,6 +436,31 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
         {rows}
         <div style={{ height: Math.max(0, (displayRows - end) * ROW_H) }} />
       </div>
+      {menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
     </div>
   )
+}
+
+function defaultVarMeta(existing: Set<string>): VariableMetaJson {
+  let n = existing.size + 1
+  let name = 'VAR' + String(n).padStart(5, '0')
+  while (existing.has(name.toUpperCase())) {
+    n++
+    name = 'VAR' + String(n).padStart(5, '0')
+  }
+  return {
+    name,
+    type: 'Numeric',
+    format: 'F8.2',
+    width: 8,
+    decimals: 2,
+    label: '',
+    valueLabels: [],
+    missing: { kind: 'none', values: [], lo: null, hi: null },
+    columns: 8,
+    align: 'right',
+    measure: 'scale',
+    role: 'input',
+    isString: false
+  }
 }

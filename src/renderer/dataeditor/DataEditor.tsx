@@ -1,12 +1,57 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { SidecarStatus } from '../../shared/types'
 import { useStore } from '../state/store'
 import { DataViewGrid } from '../grid/DataViewGrid'
 import { VariableViewGrid } from '../grid/VariableViewGrid'
-import { OpenIcon, SaveIcon } from '../common/icons'
+import {
+  FindIcon,
+  GotoCaseIcon,
+  GotoVarIcon,
+  InsertCaseIcon,
+  InsertVarIcon,
+  NewIcon,
+  OpenIcon,
+  PrintIcon,
+  RecallIcon,
+  RedoIcon,
+  SaveIcon,
+  SelectCasesIcon,
+  ShowAllVarsIcon,
+  SplitFileIcon,
+  UndoIcon,
+  ValueLabelsIcon,
+  VariablesIcon,
+  VarSetsIcon,
+  WeightIcon
+} from '../common/icons'
 import { FrequenciesDialog } from '../dialogs/analysis/FrequenciesDialog'
 import { DescriptivesDialog } from '../dialogs/analysis/DescriptivesDialog'
 import './dataeditor.css'
+
+function TB({
+  title,
+  onClick,
+  active,
+  disabled,
+  children
+}: {
+  title: string
+  onClick?: () => void
+  active?: boolean
+  disabled?: boolean
+  children: ReactNode
+}): JSX.Element {
+  return (
+    <button
+      className={'icon-btn' + (active ? ' icon-btn--on' : '')}
+      title={title}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  )
+}
 
 export function DataEditor(): JSX.Element {
   const summary = useStore((s) => s.summary)
@@ -15,6 +60,7 @@ export function DataEditor(): JSX.Element {
   const showValueLabels = useStore((s) => s.showValueLabels)
   const toggleValueLabels = useStore((s) => s.toggleValueLabels)
   const setSummary = useStore((s) => s.setSummary)
+  const bumpRevision = useStore((s) => s.bumpRevision)
   const lastError = useStore((s) => s.lastError)
   const setError = useStore((s) => s.setError)
 
@@ -29,8 +75,6 @@ export function DataEditor(): JSX.Element {
     return window.spss.onSidecarStatus(setStatus)
   }, [])
 
-  // Open an empty dataset on first ready, so the grid shows immediately like
-  // SPSS (an empty spreadsheet) rather than a placeholder.
   useEffect(() => {
     if (status.state === 'ready' && !summary && !initedRef.current) {
       initedRef.current = true
@@ -38,6 +82,7 @@ export function DataEditor(): JSX.Element {
     }
   }, [status, summary, setSummary])
 
+  const newDs = async (): Promise<void> => setSummary(await window.spss.ds.newDataset())
   const open = async (): Promise<void> => {
     const s = await window.spss.ds.openDialog()
     if (s) setSummary(s)
@@ -49,25 +94,80 @@ export function DataEditor(): JSX.Element {
       if (alt && 'error' in (alt as object)) setError((alt as unknown as { error: string }).error)
     }
   }
+  const insertVar = async (): Promise<void> => setSummary(await window.spss.ds.insertVariable(null, null))
+  const insertCase = async (): Promise<void> => {
+    if (!summary) return
+    const res = await window.spss.ds.insertCase(null)
+    setSummary({ ...summary, nRows: res.nRows })
+    bumpRevision()
+  }
+  const has = !!summary
 
   return (
     <div className="de-root">
       <div className="de-toolbar">
-        <button className="icon-btn" onClick={open} title="Open data">
+        <TB title="New" onClick={newDs}>
+          <NewIcon />
+        </TB>
+        <TB title="Open" onClick={open}>
           <OpenIcon />
-        </button>
-        <button className="icon-btn" onClick={save} disabled={!summary} title="Save data">
+        </TB>
+        <TB title="Save" onClick={save} disabled={!has}>
           <SaveIcon />
-        </button>
+        </TB>
+        <TB title="Print" disabled={!has}>
+          <PrintIcon />
+        </TB>
         <span className="de-sep" />
-        <button
-          className={showValueLabels ? 'toggle toggle--on' : 'toggle'}
-          onClick={toggleValueLabels}
-          disabled={!summary}
-          title="Display value labels"
-        >
-          Value Labels
-        </button>
+        <TB title="Recall recently used dialogs">
+          <RecallIcon />
+        </TB>
+        <TB title="Undo" disabled>
+          <UndoIcon />
+        </TB>
+        <TB title="Redo" disabled>
+          <RedoIcon />
+        </TB>
+        <span className="de-sep" />
+        <TB title="Go to case" disabled={!has}>
+          <GotoCaseIcon />
+        </TB>
+        <TB title="Go to variable" disabled={!has}>
+          <GotoVarIcon />
+        </TB>
+        <TB title="Variables" disabled={!has}>
+          <VariablesIcon />
+        </TB>
+        <TB title="Find" disabled={!has}>
+          <FindIcon />
+        </TB>
+        <span className="de-sep" />
+        <TB title="Insert Cases" onClick={insertCase} disabled={!has}>
+          <InsertCaseIcon />
+        </TB>
+        <TB title="Insert Variable" onClick={insertVar} disabled={!has}>
+          <InsertVarIcon />
+        </TB>
+        <span className="de-sep" />
+        <TB title="Split File" onClick={() => setDialogId('splitfile')} disabled={!has}>
+          <SplitFileIcon />
+        </TB>
+        <TB title="Weight Cases" onClick={() => setDialogId('weight')} disabled={!has}>
+          <WeightIcon />
+        </TB>
+        <TB title="Select Cases" onClick={() => setDialogId('selectcases')} disabled={!has}>
+          <SelectCasesIcon />
+        </TB>
+        <span className="de-sep" />
+        <TB title="Value Labels" onClick={toggleValueLabels} active={showValueLabels} disabled={!has}>
+          <ValueLabelsIcon />
+        </TB>
+        <TB title="Use Variable Sets" disabled={!has}>
+          <VarSetsIcon />
+        </TB>
+        <TB title="Show All Variables" disabled={!has}>
+          <ShowAllVarsIcon />
+        </TB>
       </div>
 
       {lastError && (
@@ -99,10 +199,15 @@ export function DataEditor(): JSX.Element {
       </div>
 
       <div className="statusbar">
-        {summary
-          ? `${summary.name}  •  ${summary.nVars} variables  •  ${summary.nRows} cases`
-          : 'IBM SPSS Statistics Processor is ' +
-            (status.state === 'ready' ? 'ready' : status.state === 'down' ? 'unavailable' : 'starting')}
+        <span className="sb-seg">
+          IBM SPSS Statistics Processor is {status.state === 'ready' ? 'ready' : status.state === 'down' ? 'unavailable' : 'starting'}
+        </span>
+        {summary && <span className="sb-seg">{summary.name}</span>}
+        {summary && <span className="sb-seg">{summary.nVars} variables</span>}
+        {summary && <span className="sb-seg">{summary.nRows} cases</span>}
+        <span className="sb-seg">Weight Off</span>
+        <span className="sb-seg">Split Off</span>
+        <span className="sb-seg">Filter Off</span>
       </div>
 
       {dialogId && summary && dialogId === 'frequencies' && (

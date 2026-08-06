@@ -7,11 +7,12 @@
 .de-toolbar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 6px;
+  gap: 2px;
+  min-height: 32px;
+  padding: 2px 6px;
   border-bottom: 1px solid #a0a0a0;
-  background: #f0f0f0;
+  background: linear-gradient(#f7f7f7, #ececec);
+  flex-wrap: wrap;
 }
 
 .de-toolbar button {
@@ -23,10 +24,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 5px !important;
+  padding: 3px 4px !important;
   min-width: 0;
   background: transparent;
   border: 1px solid transparent;
+  border-radius: 2px;
 }
 
 .icon-btn:hover:not(:disabled) {
@@ -34,8 +36,13 @@
   background: #e8eef6;
 }
 
+.icon-btn--on {
+  border-color: #5b9bd5;
+  background: #cfe0f2;
+}
+
 .icon-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
 }
 
 .de-sep {

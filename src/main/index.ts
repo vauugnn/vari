@@ -43,6 +43,9 @@ function createWindow(entry: WindowName, opts: Electron.BrowserWindowConstructor
   win.webContents.on('did-fail-load', (_e, code, desc, url) =>
     console.error(`[win] ${entry} did-fail-load ${code} ${desc} ${url}`)
   )
+  win.webContents.on('console-message', (_e, level, message) => {
+    if (level >= 2) console.error(`[win:${entry}] ${message}`)
+  })
   return win
 }
 
@@ -352,7 +355,7 @@ async function runSelfTestPhase1(sav: string, done: (m: string) => void): Promis
   check('rawvalues', row0[0] === '1' && row0[1] === '1' && row0[2] === '50000' && row0[4] === 'al', row0)
 
   // Toggle value labels and re-read.
-  await ev(`document.querySelector('.toggle').click()`)
+  await ev(`[...document.querySelectorAll('.de-toolbar .icon-btn')].find(b=>b.getAttribute('title')==='Value Labels')?.click()`)
   await until2(async () => {
     const c: string[] = await ev(`Array.from(document.querySelectorAll('.row')[0].querySelectorAll('.cell')).map(c=>c.textContent)`)
     return c[1] === 'Male'
@@ -405,6 +408,19 @@ async function runSelfTestPhase1(sav: string, done: (m: string) => void): Promis
   await until2(async () => (await vev(`document.querySelectorAll('.pt-table').length`)) >= tablesBefore + 2, 6000)
   const tablesAfter: number = await vev(`document.querySelectorAll('.pt-table').length`)
   check('dialog_flow', tablesAfter >= tablesBefore + 2, { tablesBefore, tablesAfter })
+
+  // Stage 1 chrome: full toolbar + insert-variable from the toolbar.
+  const toolbarBtns: number = await ev(`document.querySelectorAll('.de-toolbar .icon-btn').length`)
+  check('toolbar', toolbarBtns >= 16, toolbarBtns)
+  await ev(`[...document.querySelectorAll('.de-tab')].find(b=>b.textContent==='Data View')?.click()`)
+  await until2(async () => (await ev(`document.querySelectorAll('.col-head-name').length`)) > 0, 4000)
+  const colsBefore: number = await ev(`document.querySelectorAll('.col-head-name').length`)
+  const titles: string[] = await ev(`[...document.querySelectorAll('.de-toolbar .icon-btn')].map(b=>b.getAttribute('title'))`)
+  check('has_insertvar_btn', titles.includes('Insert Variable'), titles)
+  await ev(`(()=>{const b=[...document.querySelectorAll('.de-toolbar .icon-btn')].find(b=>b.getAttribute('title')==='Insert Variable'); if(b) b.click();})()`)
+  await until2(async () => (await ev(`document.querySelectorAll('.col-head-name').length`)) > colsBefore, 4000)
+  const colsAfter: number = await ev(`document.querySelectorAll('.col-head-name').length`)
+  check('insert_var', colsAfter > colsBefore, { colsBefore, colsAfter })
 
   const pass = results.every((r) => r.includes('PASS'))
   done(`${pass ? 'PASS' : 'FAIL'} :: ${results.join('  ')}`)

@@ -29,6 +29,7 @@
 }
 
 .col-head {
+  position: relative;
   flex: none;
   box-sizing: border-box;
   background: #e4e4e4;
@@ -41,6 +42,16 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.col-resize {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 5;
 }
 
 .col-head--sel {
