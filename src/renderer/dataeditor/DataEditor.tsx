@@ -42,6 +42,7 @@ import { ComputeDialog } from '../dialogs/analysis/ComputeDialog'
 import { HistogramDialog, BarChartDialog, PieChartDialog, ScatterDialog } from '../dialogs/analysis/GraphDialogs'
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
 import { ExploreDialog, PartialCorrDialog } from '../dialogs/analysis/ExploreDialog'
+import { ImportWizard } from '../dialogs/ImportWizard'
 import './dataeditor.css'
 
 function TB({
@@ -87,7 +88,10 @@ export function DataEditor(): JSX.Element {
   const [status, setStatus] = useState<SidecarStatus>({ state: 'starting' })
   const [dialogId, setDialogId] = useState<string | null>(null)
   const [customize, setCustomize] = useState(false)
+  const [importPath, setImportPath] = useState<string | null>(null)
   const initedRef = useRef(false)
+
+  useEffect(() => window.spss.onImportText(setImportPath), [])
 
   useEffect(() => window.spss.ds.onChanged(setSummary), [setSummary])
   useEffect(
@@ -274,6 +278,10 @@ export function DataEditor(): JSX.Element {
             return null
         }
       })()}
+
+      {importPath && (
+        <ImportWizard path={importPath} onClose={() => setImportPath(null)} onDone={setSummary} />
+      )}
 
       {customize && (
         <Modal title="Customize Toolbar" onOk={() => setCustomize(false)} onCancel={() => setCustomize(false)}>

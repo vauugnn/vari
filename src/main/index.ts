@@ -119,10 +119,31 @@ async function openViaDialog(): Promise<DatasetSummary | null> {
     ]
   })
   if (res.canceled || res.filePaths.length === 0) return null
-  const summary = (await sidecar.request('dataset.open', { path: res.filePaths[0] })) as DatasetSummary
+  const path = res.filePaths[0]
+  // Text/CSV files go through the Import wizard for delimiter/type options.
+  if (/\.(csv|txt|tsv)$/i.test(path)) {
+    const de = windows.dataeditor
+    if (de && !de.isDestroyed()) de.webContents.send(IPC.importText, path)
+    showWindow('dataeditor')
+    return null
+  }
+  const summary = (await sidecar.request('dataset.open', { path })) as DatasetSummary
   broadcastDataset(summary)
   showWindow('dataeditor')
   return summary
+}
+
+async function printViewer(): Promise<void> {
+  const viewer = windows.viewer
+  if (!viewer || viewer.isDestroyed()) return
+  const res = await dialog.showSaveDialog(viewer, {
+    title: 'Print Output to PDF',
+    defaultPath: 'output.pdf',
+    filters: [{ name: 'PDF (*.pdf)', extensions: ['pdf'] }]
+  })
+  if (res.canceled || !res.filePath) return
+  const data = await viewer.webContents.printToPDF({ printBackground: true })
+  await writeFile(res.filePath, data)
 }
 
 async function saveViaDialog(): Promise<{ ok: boolean; path: string } | null> {
@@ -170,6 +191,11 @@ function wireDatasetIpc(): void {
   ipcMain.handle(IPC.ds.deleteVariable, (_e, p) => sidecar.request('dataset.deleteVariable', p))
   ipcMain.handle(IPC.ds.insertCase, (_e, p) => sidecar.request('dataset.insertCase', p))
   ipcMain.handle(IPC.ds.deleteCase, (_e, p) => sidecar.request('dataset.deleteCase', p))
+  ipcMain.handle(IPC.ds.importText, async (_e, p) => {
+    const summary = (await sidecar.request('dataset.importText', p)) as DatasetSummary
+    broadcastDataset(summary)
+    return summary
+  })
 }
 
 function wireIpc(): void {
@@ -247,6 +273,7 @@ app.whenReady().then(() => {
           .catch(() => saveViaDialog())
       },
       fileSaveAs: () => void saveViaDialog(),
+      filePrint: () => void printViewer(),
       openDialog: (id: string) => openDialog(id)
     })
   )

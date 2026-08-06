@@ -19,7 +19,7 @@ from .data.dataset import Dataset, DatasetRegistry
 from .data.format import Format
 from .data.missing import MissingSpec
 from .data.variable import VariableMeta
-from .io.files import open_file, save_file
+from .io.files import import_text, open_file, save_file
 from .procedures.registry import build_registry
 from .syntax.registry import Context, execute_syntax
 
@@ -115,6 +115,12 @@ def m_dataset_open(p: dict[str, Any]) -> dict[str, Any]:
     return _dataset_summary(ds)
 
 
+def m_dataset_import_text(p: dict[str, Any]) -> dict[str, Any]:
+    ds = import_text(p["path"], p.get("options", {}), name=REGISTRY.next_name())
+    REGISTRY.add(ds, activate=True)
+    return _dataset_summary(ds)
+
+
 def m_dataset_save(p: dict[str, Any]) -> dict[str, Any]:
     ds = _active()
     path = p.get("path") or ds.source_path
@@ -185,6 +191,7 @@ METHODS = {
     "syntax.execute": m_syntax_execute,
     "dataset.new": m_dataset_new,
     "dataset.open": m_dataset_open,
+    "dataset.importText": m_dataset_import_text,
     "dataset.save": m_dataset_save,
     "dataset.getRows": m_dataset_get_rows,
     "dataset.setCell": m_dataset_set_cell,

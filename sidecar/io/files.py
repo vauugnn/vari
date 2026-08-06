@@ -180,6 +180,20 @@ def _open_csv(path: str, name: str) -> Dataset:
     return Dataset(df, _variables_from_dataframe(df), name=name, source_path=path)
 
 
+def import_text(path: str, opts: dict, name: str = "DataSet1") -> Dataset:
+    """Text/CSV import with user-chosen options (the Import wizard)."""
+    sep = opts.get("delimiter") or ","
+    sep = {"tab": "\t", "\\t": "\t", "space": r"\s+", "semicolon": ";", "comma": ",", "pipe": "|"}.get(sep, sep)
+    header = 0 if opts.get("firstRowNames", True) else None
+    decimal = opts.get("decimal", ".")
+    df = pd.read_csv(path, sep=sep, header=header, decimal=decimal, engine="python")
+    if header is None:
+        df.columns = [f"V{i + 1}" for i in range(df.shape[1])]
+    else:
+        df.columns = [str(c) for c in df.columns]
+    return Dataset(df, _variables_from_dataframe(df), name=name, source_path=path)
+
+
 def _open_excel(path: str, name: str) -> Dataset:
     df = pd.read_excel(path)
     return Dataset(df, _variables_from_dataframe(df), name=name, source_path=path)

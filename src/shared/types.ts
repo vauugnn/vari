@@ -89,6 +89,7 @@ export const IPC = {
   dialogOpen: 'dialog.open',
   syntaxPaste: 'syntax.paste',
   syntaxAppend: 'syntax.append',
+  importText: 'import.text',
   windowShow: 'window.show',
   datasetChanged: 'dataset.changed',
   ds: {
@@ -103,9 +104,16 @@ export const IPC = {
     insertVariable: 'ds.insertVariable',
     deleteVariable: 'ds.deleteVariable',
     insertCase: 'ds.insertCase',
-    deleteCase: 'ds.deleteCase'
+    deleteCase: 'ds.deleteCase',
+    importText: 'ds.importText'
   }
 } as const
+
+export interface ImportOptions {
+  delimiter: string
+  firstRowNames: boolean
+  decimal: string
+}
 
 export type WindowName = 'dataeditor' | 'viewer' | 'syntax'
 
@@ -122,6 +130,7 @@ export interface DatasetApi {
   deleteVariable: (index: number) => Promise<DatasetSummary>
   insertCase: (index: number | null) => Promise<{ nRows: number }>
   deleteCase: (index: number) => Promise<{ nRows: number }>
+  importText: (path: string, options: ImportOptions) => Promise<DatasetSummary>
   onChanged: (cb: (summary: DatasetSummary) => void) => () => void
 }
 
@@ -137,5 +146,6 @@ export interface SpssApi {
   onOpenDialog: (cb: (dialogId: string) => void) => () => void
   paste: (syntax: string) => void
   onAppendSyntax: (cb: (syntax: string) => void) => () => void
+  onImportText: (cb: (path: string) => void) => () => void
   ds: DatasetApi
 }

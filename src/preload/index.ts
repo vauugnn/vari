@@ -36,6 +36,8 @@ const ds: DatasetApi = {
   deleteVariable: (index) => ipcRenderer.invoke(IPC.ds.deleteVariable, { index }) as Promise<DatasetSummary>,
   insertCase: (index) => ipcRenderer.invoke(IPC.ds.insertCase, { index }) as Promise<{ nRows: number }>,
   deleteCase: (index) => ipcRenderer.invoke(IPC.ds.deleteCase, { index }) as Promise<{ nRows: number }>,
+  importText: (path, options) =>
+    ipcRenderer.invoke(IPC.ds.importText, { path, options }) as Promise<DatasetSummary>,
   onChanged: (cb) => {
     const listener = (_e: unknown, summary: DatasetSummary) => cb(summary)
     ipcRenderer.on(IPC.datasetChanged, listener)
@@ -70,6 +72,11 @@ const api: SpssApi = {
     const listener = (_e: unknown, text: string) => cb(text)
     ipcRenderer.on(IPC.syntaxAppend, listener)
     return () => ipcRenderer.removeListener(IPC.syntaxAppend, listener)
+  },
+  onImportText: (cb) => {
+    const listener = (_e: unknown, path: string) => cb(path)
+    ipcRenderer.on(IPC.importText, listener)
+    return () => ipcRenderer.removeListener(IPC.importText, listener)
   },
   ds
 }

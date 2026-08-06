@@ -14,6 +14,7 @@ export interface MenuActions {
   fileOpen: () => void
   fileSave: () => void
   fileSaveAs: () => void
+  filePrint: () => void
   openDialog: (id: string) => void
 }
 
@@ -187,7 +188,7 @@ export function buildMenu(actions: MenuActions): Menu {
       { label: 'Save As…', accelerator: 'CmdOrCtrl+Shift+S', click: actions.fileSaveAs },
       proc('Export'),
       { type: 'separator' },
-      proc('Print…'),
+      { label: 'Print…', accelerator: 'CmdOrCtrl+P', click: actions.filePrint },
       { type: 'separator' },
       isMac ? { role: 'close' } : { role: 'quit', label: 'Exit' }
     ]
