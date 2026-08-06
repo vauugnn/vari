@@ -19,36 +19,54 @@ function leafTuples(dims: { categories: string[] }[]): number[][] {
 
 function pivotHtml(t: PivotTableJson): string {
   const rowHeaderCols = Math.max(1, t.rowDims.length)
-  const headerRows: { label: boolean; k: number }[] = []
-  t.colDims.forEach((d, k) => {
-    if (d.label) headerRows.push({ label: true, k })
-    headerRows.push({ label: false, k })
-  })
-  if (t.colDims.length === 0) headerRows.push({ label: false, k: -1 })
-  const totalHeaderRows = headerRows.length
+  const grouped = t.colLeaves != null
+  const cornerCell = (rs: number): string =>
+    `<th class="pt-corner" rowspan="${rs}" colspan="${rowHeaderCols}">${esc(t.corner || '')}</th>`
 
   const cellMap = new Map<string, string>()
   for (const c of t.cells) cellMap.set(`${c.r.join(',')}|${c.c.join(',')}`, c.v)
 
-  const leafCols = leafTuples(t.colDims)
+  const leafCols: number[][] = grouped ? t.colLeaves!.map((_, i) => [i]) : leafTuples(t.colDims)
   const leafRows = leafTuples(t.rowDims)
 
   let html = `<div class="pt-title">${esc(t.title)}</div><table class="pt-table"><thead>`
-  headerRows.forEach((hr, ri) => {
+  if (grouped) {
+    const spanners = t.colSpanners ?? []
+    const totalHeaderRows = spanners.length + 1
+    spanners.forEach((row, ri) => {
+      html += '<tr>'
+      if (ri === 0) html += cornerCell(totalHeaderRows)
+      for (const g of row) html += `<th class="pt-colhead pt-dimlabel" colspan="${g.span}">${esc(g.label)}</th>`
+      html += '</tr>'
+    })
     html += '<tr>'
-    if (ri === 0) html += `<th class="pt-corner" rowspan="${totalHeaderRows}" colspan="${rowHeaderCols}">${esc(t.corner || '')}</th>`
-    if (hr.k >= 0) {
-      const d = t.colDims[hr.k]
-      const spanCat = prod(sizes(t.colDims).slice(hr.k + 1))
-      const span = hr.label ? d.categories.length * spanCat : spanCat
-      const groups = prod(sizes(t.colDims).slice(0, hr.k))
-      for (let g = 0; g < groups; g++) {
-        if (hr.label) html += `<th class="pt-colhead pt-dimlabel" colspan="${span}">${esc(d.label)}</th>`
-        else for (const cat of d.categories) html += `<th class="pt-colhead" colspan="${span}">${esc(cat)}</th>`
-      }
-    }
+    if (spanners.length === 0) html += cornerCell(1)
+    for (const lab of t.colLeaves!) html += `<th class="pt-colhead">${esc(lab)}</th>`
     html += '</tr>'
-  })
+  } else {
+    const headerRows: { label: boolean; k: number }[] = []
+    t.colDims.forEach((d, k) => {
+      if (d.label) headerRows.push({ label: true, k })
+      headerRows.push({ label: false, k })
+    })
+    if (t.colDims.length === 0) headerRows.push({ label: false, k: -1 })
+    const totalHeaderRows = headerRows.length
+    headerRows.forEach((hr, ri) => {
+      html += '<tr>'
+      if (ri === 0) html += cornerCell(totalHeaderRows)
+      if (hr.k >= 0) {
+        const d = t.colDims[hr.k]
+        const spanCat = prod(sizes(t.colDims).slice(hr.k + 1))
+        const span = hr.label ? d.categories.length * spanCat : spanCat
+        const groups = prod(sizes(t.colDims).slice(0, hr.k))
+        for (let g = 0; g < groups; g++) {
+          if (hr.label) html += `<th class="pt-colhead pt-dimlabel" colspan="${span}">${esc(d.label)}</th>`
+          else for (const cat of d.categories) html += `<th class="pt-colhead" colspan="${span}">${esc(cat)}</th>`
+        }
+      }
+      html += '</tr>'
+    })
+  }
   html += '</thead><tbody>'
   leafRows.forEach((rTuple, rIdx) => {
     html += '<tr>'

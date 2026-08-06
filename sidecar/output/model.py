@@ -27,12 +27,23 @@ class PivotTable:
     cells: dict[tuple, tuple] = field(default_factory=dict)
     caption: Optional[str] = None
     corner: str = ""
+    footnotes: list[str] = field(default_factory=list)
+    # Ragged columns: when col_leaves is set, columns are a flat list of leaf
+    # labels with optional spanner rows (top-to-bottom), instead of a strict
+    # nested cross-product. This lets sibling groups have different widths
+    # (SPSS "Levene's Test" | "t-test for Equality of Means" | "95% CI").
+    col_leaves: Optional[list[str]] = None
+    col_spanners: list[list[tuple[str, int]]] = field(default_factory=list)
 
     def set(self, rkey: list[int], ckey: list[int], value: str, kind: str = "num") -> None:
         self.cells[(tuple(rkey), tuple(ckey))] = (value, kind)
 
+    def set_columns(self, leaves: list[str], spanners: Optional[list[list[tuple[str, int]]]] = None) -> None:
+        self.col_leaves = leaves
+        self.col_spanners = spanners or []
+
     def to_json(self) -> dict[str, Any]:
-        return {
+        out: dict[str, Any] = {
             "type": "PivotTable",
             "title": self.title,
             "caption": self.caption,
@@ -44,6 +55,12 @@ class PivotTable:
                 for (r, c), (v, k) in self.cells.items()
             ],
         }
+        if self.footnotes:
+            out["footnotes"] = self.footnotes
+        if self.col_leaves is not None:
+            out["colLeaves"] = self.col_leaves
+            out["colSpanners"] = [[{"label": lbl, "span": sp} for lbl, sp in row] for row in self.col_spanners]
+        return out
 
 
 def title(text: str) -> dict[str, Any]:

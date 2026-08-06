@@ -18,6 +18,8 @@ export interface PivotTableJson {
   rowDims: DimJson[]
   colDims: DimJson[]
   cells: CellJson[]
+  colLeaves?: string[]
+  colSpanners?: { label: string; span: number }[][]
 }
 
 const sizes = (dims: DimJson[]): number[] => dims.map((d) => d.categories.length)
@@ -43,63 +45,85 @@ function repeatOfDim(dims: DimJson[], k: number): number {
 export function PivotTableView({ table }: { table: PivotTableJson }): JSX.Element {
   const { rowDims, colDims, corner } = table
   const rowHeaderCols = Math.max(1, rowDims.length)
-
-  // How many header rows: each column dimension contributes a label row (only
-  // if it has a label) plus a category row.
-  const headerRows: { label: boolean; k: number }[] = []
-  colDims.forEach((d, k) => {
-    if (d.label) headerRows.push({ label: true, k })
-    headerRows.push({ label: false, k })
-  })
-  if (colDims.length === 0) headerRows.push({ label: false, k: -1 })
-  const totalHeaderRows = headerRows.length
+  const grouped = table.colLeaves != null
 
   const cellMap = new Map<string, CellJson>()
   for (const cell of table.cells) cellMap.set(`${cell.r.join(',')}|${cell.c.join(',')}`, cell)
 
-  const leafCols = leafTuples(colDims)
+  const leafCols: number[][] = grouped ? table.colLeaves!.map((_, i) => [i]) : leafTuples(colDims)
   const leafRows = leafTuples(rowDims)
 
-  // ---- column header rows ----
   const headerTr: JSX.Element[] = []
-  headerRows.forEach((hr, ri) => {
-    const ths: JSX.Element[] = []
-    if (ri === 0) {
-      ths.push(
-        <th
-          key="corner"
-          className="pt-corner"
-          rowSpan={totalHeaderRows}
-          colSpan={rowHeaderCols}
-        >
-          {corner || ''}
+  const cornerTh = (rowSpan: number): JSX.Element => (
+    <th key="corner" className="pt-corner" rowSpan={rowSpan} colSpan={rowHeaderCols}>
+      {corner || ''}
+    </th>
+  )
+
+  if (grouped) {
+    // Ragged columns: spanner rows (top-to-bottom) then a leaf-label row.
+    const spanners = table.colSpanners ?? []
+    const totalHeaderRows = spanners.length + 1
+    spanners.forEach((row, ri) => {
+      const ths: JSX.Element[] = []
+      if (ri === 0) ths.push(cornerTh(totalHeaderRows))
+      row.forEach((g, gi) => {
+        const cls = g.label ? 'pt-colhead pt-dimlabel' : 'pt-colhead pt-blankspan'
+        ths.push(
+          <th key={`s${ri}-${gi}`} className={cls} colSpan={g.span}>
+            {g.label}
+          </th>
+        )
+      })
+      headerTr.push(<tr key={`h${ri}`}>{ths}</tr>)
+    })
+    const leafThs: JSX.Element[] = []
+    if (spanners.length === 0) leafThs.push(cornerTh(1))
+    table.colLeaves!.forEach((lab, i) => (
+      leafThs.push(
+        <th key={`lf${i}`} className="pt-colhead">
+          {lab}
         </th>
       )
-    }
-    if (hr.k >= 0) {
-      const d = colDims[hr.k]
-      const span = hr.label ? d.categories.length * spanOfCategory(colDims, hr.k) : spanOfCategory(colDims, hr.k)
-      const groups = repeatOfDim(colDims, hr.k)
-      for (let g = 0; g < groups; g++) {
-        if (hr.label) {
-          ths.push(
-            <th key={`l${g}`} className="pt-colhead pt-dimlabel" colSpan={span}>
-              {d.label}
-            </th>
-          )
-        } else {
-          d.categories.forEach((cat, ci) => {
+    ))
+    headerTr.push(<tr key="hleaf">{leafThs}</tr>)
+  } else {
+    // Nested cross-product columns: a label row (if labelled) + category row per dim.
+    const headerRows: { label: boolean; k: number }[] = []
+    colDims.forEach((d, k) => {
+      if (d.label) headerRows.push({ label: true, k })
+      headerRows.push({ label: false, k })
+    })
+    if (colDims.length === 0) headerRows.push({ label: false, k: -1 })
+    const totalHeaderRows = headerRows.length
+    headerRows.forEach((hr, ri) => {
+      const ths: JSX.Element[] = []
+      if (ri === 0) ths.push(cornerTh(totalHeaderRows))
+      if (hr.k >= 0) {
+        const d = colDims[hr.k]
+        const span = hr.label ? d.categories.length * spanOfCategory(colDims, hr.k) : spanOfCategory(colDims, hr.k)
+        const groups = repeatOfDim(colDims, hr.k)
+        for (let g = 0; g < groups; g++) {
+          if (hr.label) {
             ths.push(
-              <th key={`c${g}-${ci}`} className="pt-colhead" colSpan={span}>
-                {cat}
+              <th key={`l${g}`} className="pt-colhead pt-dimlabel" colSpan={span}>
+                {d.label}
               </th>
             )
-          })
+          } else {
+            d.categories.forEach((cat, ci) => {
+              ths.push(
+                <th key={`c${g}-${ci}`} className="pt-colhead" colSpan={span}>
+                  {cat}
+                </th>
+              )
+            })
+          }
         }
       }
-    }
-    headerTr.push(<tr key={`h${ri}`}>{ths}</tr>)
-  })
+      headerTr.push(<tr key={`h${ri}`}>{ths}</tr>)
+    })
+  }
 
   // ---- body rows with row-header nesting ----
   const bodyTr: JSX.Element[] = []

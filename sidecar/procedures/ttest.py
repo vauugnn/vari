@@ -104,7 +104,15 @@ class TTest(Procedure):
         test = PivotTable(
             "Independent Samples Test",
             [Dimension("", names), Dimension("", ["Equal variances assumed", "Equal variances not assumed"])],
-            [Dimension("", ["Levene F", "Levene Sig.", "t", "df", "Sig. (2-tailed)", "Mean Difference", "Std. Error Difference"])],
+            [],
+        )
+        leaves = ["F", "Sig.", "t", "df", "Sig. (2-tailed)", "Mean Difference", "Std. Error Difference", "Lower", "Upper"]
+        test.set_columns(
+            leaves,
+            [
+                [("Levene's Test for Equality of Variances", 2), ("t-test for Equality of Means", 7)],
+                [("", 2), ("", 5), ("95% Confidence Interval of the Difference", 2)],
+            ],
         )
         gidx = ds._index_of(gvar)
         gmeta = ds.variables[gidx]
@@ -129,23 +137,28 @@ class TTest(Procedure):
                 diff = float(a.mean() - b.mean())
                 se_eq = _pooled_se(a, b)
                 se_we = math.sqrt(a.var(ddof=1) / a.size + b.var(ddof=1) / b.size)
+                df_eq = a.size + b.size - 2
                 df_we = _welch_df(a, b)
+                ci_eq = float(sps.t.ppf(0.975, df_eq))
+                ci_we = float(sps.t.ppf(0.975, df_we))
                 # equal variances assumed
                 test.set([i, 0], [0], _F3.render(float(lev.statistic)), "num")
                 test.set([i, 0], [1], _F3.render(float(lev.pvalue)), "num")
                 test.set([i, 0], [2], _F3.render(float(teq.statistic)), "num")
-                test.set([i, 0], [3], _F0.render(a.size + b.size - 2), "num")
+                test.set([i, 0], [3], _F0.render(df_eq), "num")
                 test.set([i, 0], [4], _F3.render(float(teq.pvalue)), "num")
                 test.set([i, 0], [5], _F2.render(diff), "num")
                 test.set([i, 0], [6], _F3.render(se_eq), "num")
+                test.set([i, 0], [7], _F2.render(diff - ci_eq * se_eq), "num")
+                test.set([i, 0], [8], _F2.render(diff + ci_eq * se_eq), "num")
                 # equal variances not assumed (Welch)
-                test.set([i, 1], [0], "", "num")
-                test.set([i, 1], [1], "", "num")
                 test.set([i, 1], [2], _F3.render(float(twe.statistic)), "num")
                 test.set([i, 1], [3], _F3.render(df_we), "num")
                 test.set([i, 1], [4], _F3.render(float(twe.pvalue)), "num")
                 test.set([i, 1], [5], _F2.render(diff), "num")
                 test.set([i, 1], [6], _F3.render(se_we), "num")
+                test.set([i, 1], [7], _F2.render(diff - ci_we * se_we), "num")
+                test.set([i, 1], [8], _F2.render(diff + ci_we * se_we), "num")
         return [{"type": "Title", "text": "T-Test"}, gstat.to_json(), test.to_json()]
 
     # ---- paired samples ----------------------------------------------

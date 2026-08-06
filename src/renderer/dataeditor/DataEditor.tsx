@@ -4,6 +4,7 @@ import { useStore } from '../state/store'
 import { DataViewGrid } from '../grid/DataViewGrid'
 import { VariableViewGrid } from '../grid/VariableViewGrid'
 import {
+  DescMuIcon,
   FindIcon,
   GotoCaseIcon,
   GotoVarIcon,
@@ -141,6 +142,9 @@ export function DataEditor(): JSX.Element {
         </TB>
         <TB title="Variables" disabled={!has}>
           <VariablesIcon />
+        </TB>
+        <TB title="Run Descriptive Statistics" onClick={() => setDialogId('descriptives')} disabled={!has}>
+          <DescMuIcon />
         </TB>
         <TB title="Find" disabled={!has}>
           <FindIcon />

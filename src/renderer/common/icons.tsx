@@ -106,11 +106,27 @@ export function SaveIcon(): JSX.Element {
 
 function Ico({ children }: { children: JSX.Element }): JSX.Element {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>
+    <svg width="24" height="24" viewBox="0 0 18 18" aria-hidden>
       {children}
     </svg>
   )
 }
+
+export const DescMuIcon = (): JSX.Element => (
+  <Ico>
+    <g>
+      <rect x="2" y="3" width="14" height="12" fill="#eaf1fb" stroke="#3f6fb0" />
+      <rect x="2" y="3" width="14" height="3" fill="#4e79c4" stroke="#3f6fb0" />
+      <g stroke="#b7cbe6" strokeWidth="0.6">
+        <line x1="2" y1="9" x2="16" y2="9" />
+        <line x1="2" y1="12" x2="16" y2="12" />
+      </g>
+      <text x="9" y="14" fontSize="9" fontStyle="italic" fill="#7a2f8f" textAnchor="middle" fontFamily="Georgia,serif">
+        μ
+      </text>
+    </g>
+  </Ico>
+)
 
 // A small SPSS-style data table: light-blue cells, a darker blue header row,
 // hairline grid. Reused as the base of several toolbar glyphs.

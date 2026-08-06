@@ -39,6 +39,12 @@
   border-bottom: 1px solid #d9d9d9;
 }
 
+.pt-blankspan {
+  border-bottom: none;
+  border-left: none;
+  background: transparent;
+}
+
 /* Corner and row headers: left aligned, separated from data by a vertical rule. */
 .pt-corner {
   text-align: left;
