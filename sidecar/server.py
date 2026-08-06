@@ -179,6 +179,13 @@ def m_dataset_delete_case(p: dict[str, Any]) -> dict[str, Any]:
     return {"ok": True, "nRows": ds.n_rows}
 
 
+def m_output_export_excel(p: dict[str, Any]) -> dict[str, Any]:
+    from .output.excel import export_xlsx
+
+    export_xlsx(p.get("items", []), p["path"])
+    return {"ok": True, "path": p["path"]}
+
+
 def m_variables_list(_p: Any) -> list[dict[str, Any]]:
     ds = REGISTRY.active
     if ds is None:
@@ -201,6 +208,7 @@ METHODS = {
     "dataset.insertCase": m_dataset_insert_case,
     "dataset.deleteCase": m_dataset_delete_case,
     "variables.list": m_variables_list,
+    "output.exportExcel": m_output_export_excel,
 }
 
 

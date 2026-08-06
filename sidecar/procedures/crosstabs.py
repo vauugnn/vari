@@ -5,8 +5,9 @@ correction and Fisher's exact only for 2x2 tables.
 """
 from __future__ import annotations
 
+import math
 import re
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -27,13 +28,18 @@ class Crosstabs(DataProcedure):
     def run(self, ds: Any, subs: list[tuple[str, str]]) -> list[dict[str, Any]]:
         tables_body = ""
         want_chisq = False
+        measures: set[str] = set()
         cells = ["COUNT"]
         for name, body in subs:
             if name in ("", "TABLES"):
                 tables_body += " " + re.sub(r"^\s*TABLES\s*=?\s*", "", body, flags=re.IGNORECASE)
             elif name == "STATISTICS":
-                if "CHISQ" in body.upper() or "ALL" in body.upper():
+                up = body.upper()
+                if "CHISQ" in up or "ALL" in up:
                     want_chisq = True
+                for kw in ("PHI", "CC", "GAMMA", "BTAU", "CTAU", "LAMBDA"):
+                    if kw in up or "ALL" in up:
+                        measures.add(kw)
             elif name == "CELLS":
                 up = body.upper().split()
                 cells = ["COUNT"] + [c for c in ["EXPECTED", "ROW", "COLUMN", "TOTAL"] if c in up]
@@ -46,10 +52,11 @@ class Crosstabs(DataProcedure):
         out: list[dict[str, Any]] = [{"type": "Title", "text": "Crosstabs"}]
         for rv in rows:
             for cv in colv:
-                out.extend(self._one(ds, rv, cv, cells, want_chisq))
+                out.extend(self._one(ds, rv, cv, cells, want_chisq, measures))
         return out
 
-    def _one(self, ds: Any, rv: str, cv: str, cells: list[str], want_chisq: bool) -> list[dict[str, Any]]:
+    def _one(self, ds: Any, rv: str, cv: str, cells: list[str], want_chisq: bool,
+             measures: set[str] = frozenset()) -> list[dict[str, Any]]:
         rmeta, cmeta = ds.variables[ds._index_of(rv)], ds.variables[ds._index_of(cv)]
         valid = ~(missing_mask(ds.df[rv], rmeta).to_numpy() | missing_mask(ds.df[cv], cmeta).to_numpy())
         r = ds.df[rv].to_numpy()[valid]
@@ -88,7 +95,40 @@ class Crosstabs(DataProcedure):
         result = [t.to_json()]
         if want_chisq:
             result.append(self._chisq(obs, n))
+        if measures:
+            result.append(self._measures(obs, n, measures))
         return result
+
+    def _measures(self, obs: np.ndarray, n: float, want: set[str]) -> dict[str, Any]:
+        rws, cls = obs.shape
+        chi2, _, dof, _ = sps.chi2_contingency(obs, correction=False)
+        p_chi = float(sps.chi2.sf(chi2, dof))
+        entries: list[tuple[str, str, float, Optional[float]]] = []  # (group, name, value, sig)
+        if "PHI" in want:
+            phi = math.sqrt(chi2 / n)
+            v = math.sqrt(chi2 / (n * (min(rws, cls) - 1))) if min(rws, cls) > 1 else float("nan")
+            entries.append(("Nominal by Nominal", "Phi", phi, p_chi))
+            entries.append(("Nominal by Nominal", "Cramer's V", v, p_chi))
+        if "CC" in want:
+            cc = math.sqrt(chi2 / (chi2 + n))
+            entries.append(("Nominal by Nominal", "Contingency Coefficient", cc, p_chi))
+        if want & {"GAMMA", "BTAU", "CTAU"}:
+            g, tb, tc = _ordinal_measures(obs, n)
+            if "GAMMA" in want:
+                entries.append(("Ordinal by Ordinal", "Gamma", g, None))
+            if "BTAU" in want:
+                entries.append(("Ordinal by Ordinal", "Kendall's tau-b", tb, None))
+            if "CTAU" in want:
+                entries.append(("Ordinal by Ordinal", "Kendall's tau-c", tc, None))
+
+        rowlabels = [f"{grp}|{nm}" for grp, nm, _, _ in entries] + ["N of Valid Cases"]
+        t = PivotTable("Symmetric Measures", [Dimension("", rowlabels)],
+                       [Dimension("", ["Value", "Approx. Sig."])])
+        for i, (_, _, val, sig) in enumerate(entries):
+            t.set([i], [0], _F3.render(val) if val == val else ".")
+            t.set([i], [1], strip_leading_zero(_F3.render(sig)) if sig is not None else "")
+        t.set([len(entries)], [0], _F0.render(int(n)))
+        return t.to_json()
 
     def _chisq(self, obs: np.ndarray, n: float) -> dict[str, Any]:
         is2x2 = obs.shape == (2, 2)
@@ -188,3 +228,28 @@ def _names(ds: Any, body: str) -> list[str]:
     from ..syntax.lexer import expand_varlist
 
     return expand_varlist(body, [v.name for v in ds.variables])
+
+
+def _ordinal_measures(obs: np.ndarray, n: float) -> tuple[float, float, float]:
+    """Gamma, Kendall's tau-b, tau-c from an ordered contingency table."""
+    r, c = obs.shape
+    C = D = 0.0
+    for i in range(r):
+        for j in range(c):
+            conc = obs[i + 1 :, j + 1 :].sum() + obs[:i, :j].sum()
+            disc = obs[i + 1 :, :j].sum() + obs[:i, j + 1 :].sum()
+            C += obs[i, j] * conc
+            D += obs[i, j] * disc
+    C /= 2.0
+    D /= 2.0
+    gamma = (C - D) / (C + D) if (C + D) else float("nan")
+    row_tot = obs.sum(1)
+    col_tot = obs.sum(0)
+    n0 = n * (n - 1) / 2.0
+    n1 = sum(t * (t - 1) / 2.0 for t in row_tot)
+    n2 = sum(t * (t - 1) / 2.0 for t in col_tot)
+    denom = math.sqrt((n0 - n1) * (n0 - n2))
+    tau_b = (C - D) / denom if denom else float("nan")
+    m = min(r, c)
+    tau_c = (2 * m * (C - D)) / (n * n * (m - 1)) if m > 1 else float("nan")
+    return float(gamma), float(tau_b), float(tau_c)

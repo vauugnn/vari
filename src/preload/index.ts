@@ -62,6 +62,8 @@ const api: SpssApi = {
   showWindow: (name: WindowName) => ipcRenderer.send(IPC.windowShow, name),
   exportHtml: (html: string) =>
     ipcRenderer.invoke(IPC.outputExportHtml, html) as Promise<{ ok: boolean; path: string } | null>,
+  exportExcel: (items: OutputObject[]) =>
+    ipcRenderer.invoke(IPC.outputExportExcel, items) as Promise<{ ok: boolean; path: string } | null>,
   onOpenDialog: (cb) => {
     const listener = (_e: unknown, id: string) => cb(id)
     ipcRenderer.on(IPC.dialogOpen, listener)

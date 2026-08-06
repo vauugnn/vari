@@ -241,6 +241,19 @@ function wireIpc(): void {
     return { ok: true, path: res.filePath }
   })
 
+  ipcMain.handle(IPC.outputExportExcel, async (_e, items: OutputObject[]) => {
+    const res = await dialog.showSaveDialog(windows.viewer as BrowserWindow, {
+      title: 'Export Output as Excel',
+      defaultPath: 'output.xlsx',
+      filters: [{ name: 'Excel (*.xlsx)', extensions: ['xlsx'] }]
+    })
+    if (res.canceled || !res.filePath) return null
+    return (await sidecar.request('output.exportExcel', { items, path: res.filePath })) as {
+      ok: boolean
+      path: string
+    }
+  })
+
   ipcMain.on(IPC.windowShow, (_evt, name: WindowName) => showWindow(name))
 
   // Paste from a dialog: append the generated syntax to the Syntax Editor.

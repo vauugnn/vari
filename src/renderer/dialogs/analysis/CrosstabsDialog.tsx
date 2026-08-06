@@ -14,12 +14,14 @@ export function CrosstabsDialog({
   const [rows, setRows] = useState<string[]>([])
   const [cols, setCols] = useState<string[]>([])
   const [chisq, setChisq] = useState(false)
+  const [measures, setMeasures] = useState<Set<string>>(new Set())
   const [cells, setCells] = useState<Set<string>>(new Set(['COUNT']))
   const [dlg, setDlg] = useState<'stats' | 'cells' | null>(null)
 
   const toSyntax = (): string => {
     let s = `CROSSTABS\n  /TABLES=${rows.join(' ')} BY ${cols.join(' ')}`
-    if (chisq) s += `\n  /STATISTICS=CHISQ`
+    const stats = [chisq && 'CHISQ', ...['PHI', 'CC', 'GAMMA', 'BTAU', 'CTAU'].filter((k) => measures.has(k))].filter(Boolean)
+    if (stats.length) s += `\n  /STATISTICS=${stats.join(' ')}`
     const c = ['COUNT', 'EXPECTED', 'ROW', 'COLUMN', 'TOTAL'].filter((k) => cells.has(k))
     s += `\n  /CELLS=${c.join(' ')}`
     return s + '.'
@@ -61,6 +63,29 @@ export function CrosstabsDialog({
           <label>
             <input type="checkbox" checked={chisq} onChange={(e) => setChisq(e.target.checked)} /> Chi-square
           </label>
+          <div className="stat-grid" style={{ marginTop: 6 }}>
+            {[
+              ['PHI', 'Phi and Cramér’s V'],
+              ['CC', 'Contingency coefficient'],
+              ['GAMMA', 'Gamma'],
+              ['BTAU', 'Kendall’s tau-b'],
+              ['CTAU', 'Kendall’s tau-c']
+            ].map(([k, lab]) => (
+              <label key={k}>
+                <input
+                  type="checkbox"
+                  checked={measures.has(k)}
+                  onChange={(e) => {
+                    const n = new Set(measures)
+                    if (e.target.checked) n.add(k)
+                    else n.delete(k)
+                    setMeasures(n)
+                  }}
+                />
+                {lab}
+              </label>
+            ))}
+          </div>
         </Modal>
       )}
       {dlg === 'cells' && (
