@@ -68,7 +68,7 @@ def split_subcommands(rest: str) -> list[tuple[str, str]]:
         part = part.strip()
         if part == "" and i == 0:
             continue
-        m = re.match(r"([A-Za-z][A-Za-z0-9]*)\s*=?\s*(.*)$", part, re.DOTALL)
+        m = re.match(r"([A-Za-z][A-Za-z0-9-]*)\s*=?\s*(.*)$", part, re.DOTALL)
         if m and (i > 0 or _looks_like_subcommand(m.group(1))):
             out.append((m.group(1).upper(), m.group(2).strip()))
         else:

@@ -7,8 +7,12 @@ from .correlations import Correlations
 from .crosstabs import Crosstabs
 from .descriptives import Descriptives
 from .frequencies import Frequencies
+from .means import Means
+from .nonparcorr import NonparCorr
 from .nonproc import Get, PivotDemo, Save, Title
+from .npar import NparTests
 from .oneway import Oneway
+from .regression import Regression
 from .reliability import Reliability
 from .ttest import TTest
 
@@ -26,4 +30,8 @@ def build_registry() -> Registry:
     reg.register("TTEST")(TTest)
     reg.register("ONEWAY")(Oneway)
     reg.register("RELIABILITY")(Reliability)
+    reg.register("REGRESSION")(Regression)
+    reg.register("MEANS")(Means)
+    reg.register("NONPAR")(NonparCorr)
+    reg.register("NPAR")(NparTests)
     return reg

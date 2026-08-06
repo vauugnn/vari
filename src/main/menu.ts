@@ -53,7 +53,7 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
       {
         label: 'Compare Means',
         submenu: [
-          proc('Means…'),
+          dialogItem('Means…', 'means', open),
           dialogItem('One-Sample T Test…', 'ttest-one', open),
           dialogItem('Independent-Samples T Test…', 'ttest-ind', open),
           proc('Summary Independent-Samples T Test…'),
@@ -80,7 +80,7 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
         label: 'Regression',
         submenu: [
           proc('Automatic Linear Modeling…'),
-          proc('Linear…'),
+          dialogItem('Linear…', 'regression', open),
           proc('Curve Estimation…'),
           proc('Partial Least Squares…'),
           proc('Binary Logistic…'),

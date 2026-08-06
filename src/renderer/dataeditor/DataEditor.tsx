@@ -36,6 +36,8 @@ import { OneSampleTTestDialog, IndependentTTestDialog, PairedTTestDialog } from 
 import { BivariateCorrelationsDialog } from '../dialogs/analysis/CorrelateDialog'
 import { OneWayAnovaDialog } from '../dialogs/analysis/OneWayAnovaDialog'
 import { ReliabilityDialog } from '../dialogs/analysis/ReliabilityDialog'
+import { LinearRegressionDialog } from '../dialogs/analysis/RegressionDialog'
+import { MeansDialog } from '../dialogs/analysis/MeansDialog'
 import './dataeditor.css'
 
 function TB({
@@ -238,6 +240,10 @@ export function DataEditor(): JSX.Element {
             return <OneWayAnovaDialog {...p} />
           case 'reliability':
             return <ReliabilityDialog {...p} />
+          case 'regression':
+            return <LinearRegressionDialog {...p} />
+          case 'means':
+            return <MeansDialog {...p} />
           default:
             return null
         }
