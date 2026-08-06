@@ -8,6 +8,8 @@ from .crosstabs import Crosstabs
 from .descriptives import Descriptives
 from .frequencies import Frequencies
 from .nonproc import Get, PivotDemo, Save, Title
+from .oneway import Oneway
+from .reliability import Reliability
 from .ttest import TTest
 
 
@@ -22,4 +24,6 @@ def build_registry() -> Registry:
     reg.register("CORRELATIONS")(Correlations)
     reg.register("CROSSTABS")(Crosstabs)
     reg.register("TTEST")(TTest)
+    reg.register("ONEWAY")(Oneway)
+    reg.register("RELIABILITY")(Reliability)
     return reg

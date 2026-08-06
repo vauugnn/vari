@@ -58,7 +58,7 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
           dialogItem('Independent-Samples T Test…', 'ttest-ind', open),
           proc('Summary Independent-Samples T Test…'),
           dialogItem('Paired-Samples T Test…', 'ttest-paired', open),
-          proc('One-Way ANOVA…')
+          dialogItem('One-Way ANOVA…', 'oneway', open)
         ]
       },
       {
@@ -102,7 +102,7 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
       },
       {
         label: 'Scale',
-        submenu: [proc('Reliability Analysis…'), proc('Weighted Kappa…'), proc('Multidimensional Unfolding (PREFSCAL)…'), proc('Multidimensional Scaling (PROXSCAL)…'), proc('Multidimensional Scaling (ALSCAL)…')]
+        submenu: [dialogItem('Reliability Analysis…', 'reliability', open), proc('Weighted Kappa…'), proc('Multidimensional Unfolding (PREFSCAL)…'), proc('Multidimensional Scaling (PROXSCAL)…'), proc('Multidimensional Scaling (ALSCAL)…')]
       },
       {
         label: 'Nonparametric Tests',

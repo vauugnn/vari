@@ -34,6 +34,8 @@ import { DescriptivesDialog } from '../dialogs/analysis/DescriptivesDialog'
 import { CrosstabsDialog } from '../dialogs/analysis/CrosstabsDialog'
 import { OneSampleTTestDialog, IndependentTTestDialog, PairedTTestDialog } from '../dialogs/analysis/TTestDialogs'
 import { BivariateCorrelationsDialog } from '../dialogs/analysis/CorrelateDialog'
+import { OneWayAnovaDialog } from '../dialogs/analysis/OneWayAnovaDialog'
+import { ReliabilityDialog } from '../dialogs/analysis/ReliabilityDialog'
 import './dataeditor.css'
 
 function TB({
@@ -232,6 +234,10 @@ export function DataEditor(): JSX.Element {
             return <PairedTTestDialog {...p} />
           case 'correlate':
             return <BivariateCorrelationsDialog {...p} />
+          case 'oneway':
+            return <OneWayAnovaDialog {...p} />
+          case 'reliability':
+            return <ReliabilityDialog {...p} />
           default:
             return null
         }
