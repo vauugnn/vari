@@ -213,7 +213,10 @@ export function buildMenu(actions: MenuActions): Menu {
     label: 'View',
     submenu: [
       proc('Status Bar'),
-      proc('Toolbars'),
+      {
+        label: 'Toolbars',
+        submenu: [{ label: 'Customize…', click: () => actions.openDialog('customize-toolbar') }]
+      },
       proc('Fonts…'),
       proc('Grid Lines'),
       proc('Value Labels'),

@@ -339,3 +339,36 @@ export const ShowAllVarsIcon = (): JSX.Element => (
     </g>
   </Ico>
 )
+
+export const SyntaxWinIcon = (): JSX.Element => (
+  <Ico>
+    <g>
+      <rect x="2" y="2" width="14" height="14" rx="1" fill="#ffffff" stroke="#5a6673" />
+      <rect x="2" y="2" width="14" height="3" fill="#c9a94e" stroke="#5a6673" />
+      <g stroke="#2f8f2f" strokeWidth="1.3" fill="none">
+        <path d="M4 8l2 2-2 2" />
+      </g>
+      <line x1="8" y1="12" x2="13" y2="12" stroke="#4e79c4" strokeWidth="1.3" />
+    </g>
+  </Ico>
+)
+
+export const ViewerWinIcon = (): JSX.Element => (
+  <Ico>
+    <g>
+      <rect x="2" y="2" width="14" height="14" rx="1" fill="#ffffff" stroke="#5a6673" />
+      <rect x="2" y="2" width="14" height="3" fill="#4e79c4" stroke="#5a6673" />
+      <rect x="4" y="7" width="4" height="7" fill="#7ab648" />
+      <rect x="9" y="9" width="4" height="5" fill="#e08a2f" />
+    </g>
+  </Ico>
+)
+
+export const GearIcon = (): JSX.Element => (
+  <Ico>
+    <g fill="#8a939c" stroke="#5a6673">
+      <circle cx="9" cy="9" r="3.4" fill="#dfe8f5" />
+      <path d="M9 1.5v2M9 14.5v2M1.5 9h2M14.5 9h2M3.7 3.7l1.4 1.4M12.9 12.9l1.4 1.4M14.3 3.7l-1.4 1.4M5.1 12.9l-1.4 1.4" strokeWidth="1.4" />
+    </g>
+  </Ico>
+)

@@ -23,8 +23,12 @@ import {
   ValueLabelsIcon,
   VariablesIcon,
   VarSetsIcon,
-  WeightIcon
+  WeightIcon,
+  SyntaxWinIcon,
+  ViewerWinIcon,
+  GearIcon
 } from '../common/icons'
+import { Modal } from '../dialogs/Modal'
 import { FrequenciesDialog } from '../dialogs/analysis/FrequenciesDialog'
 import { DescriptivesDialog } from '../dialogs/analysis/DescriptivesDialog'
 import { CrosstabsDialog } from '../dialogs/analysis/CrosstabsDialog'
@@ -69,12 +73,23 @@ export function DataEditor(): JSX.Element {
   const lastError = useStore((s) => s.lastError)
   const setError = useStore((s) => s.setError)
 
+  const hiddenTools = useStore((s) => s.hiddenTools)
+  const toggleTool = useStore((s) => s.toggleTool)
+
   const [status, setStatus] = useState<SidecarStatus>({ state: 'starting' })
   const [dialogId, setDialogId] = useState<string | null>(null)
+  const [customize, setCustomize] = useState(false)
   const initedRef = useRef(false)
 
   useEffect(() => window.spss.ds.onChanged(setSummary), [setSummary])
-  useEffect(() => window.spss.onOpenDialog(setDialogId), [])
+  useEffect(
+    () =>
+      window.spss.onOpenDialog((id) => {
+        if (id === 'customize-toolbar') setCustomize(true)
+        else setDialogId(id)
+      }),
+    []
+  )
   useEffect(() => {
     void window.spss.getSidecarStatus().then(setStatus)
     return window.spss.onSidecarStatus(setStatus)
@@ -108,73 +123,54 @@ export function DataEditor(): JSX.Element {
   }
   const has = !!summary
 
+  type Tool = { id: string; tip: string; icon: ReactNode; onClick?: () => void; disabled?: boolean; active?: boolean }
+  const tools: (Tool | 'sep')[] = [
+    { id: 'new', tip: 'New', icon: <NewIcon />, onClick: newDs },
+    { id: 'open', tip: 'Open', icon: <OpenIcon />, onClick: open },
+    { id: 'save', tip: 'Save', icon: <SaveIcon />, onClick: save, disabled: !has },
+    { id: 'print', tip: 'Print', icon: <PrintIcon />, disabled: !has },
+    'sep',
+    { id: 'recall', tip: 'Recall recently used dialogs', icon: <RecallIcon /> },
+    { id: 'undo', tip: 'Undo', icon: <UndoIcon />, disabled: true },
+    { id: 'redo', tip: 'Redo', icon: <RedoIcon />, disabled: true },
+    'sep',
+    { id: 'gotocase', tip: 'Go to case', icon: <GotoCaseIcon />, disabled: !has },
+    { id: 'gotovar', tip: 'Go to variable', icon: <GotoVarIcon />, disabled: !has },
+    { id: 'variables', tip: 'Variables', icon: <VariablesIcon />, disabled: !has },
+    { id: 'descmu', tip: 'Run Descriptive Statistics', icon: <DescMuIcon />, onClick: () => setDialogId('descriptives'), disabled: !has },
+    { id: 'find', tip: 'Find', icon: <FindIcon />, disabled: !has },
+    'sep',
+    { id: 'insertcase', tip: 'Insert Cases', icon: <InsertCaseIcon />, onClick: insertCase, disabled: !has },
+    { id: 'insertvar', tip: 'Insert Variable', icon: <InsertVarIcon />, onClick: insertVar, disabled: !has },
+    'sep',
+    { id: 'split', tip: 'Split File', icon: <SplitFileIcon />, onClick: () => setDialogId('splitfile'), disabled: !has },
+    { id: 'weight', tip: 'Weight Cases', icon: <WeightIcon />, onClick: () => setDialogId('weight'), disabled: !has },
+    { id: 'select', tip: 'Select Cases', icon: <SelectCasesIcon />, onClick: () => setDialogId('selectcases'), disabled: !has },
+    'sep',
+    { id: 'valuelabels', tip: 'Value Labels', icon: <ValueLabelsIcon />, onClick: toggleValueLabels, active: showValueLabels, disabled: !has },
+    { id: 'varsets', tip: 'Use Variable Sets', icon: <VarSetsIcon />, disabled: !has },
+    { id: 'showall', tip: 'Show All Variables', icon: <ShowAllVarsIcon />, disabled: !has },
+    'sep',
+    { id: 'syntax', tip: 'Go to Syntax Editor', icon: <SyntaxWinIcon />, onClick: () => window.spss.showWindow('syntax') },
+    { id: 'viewer', tip: 'Go to Output Viewer', icon: <ViewerWinIcon />, onClick: () => window.spss.showWindow('viewer') }
+  ]
+  const hid = (id: string): boolean => hiddenTools.includes(id)
+
   return (
     <div className="de-root">
       <div className="de-toolbar">
-        <TB title="New" onClick={newDs}>
-          <NewIcon />
-        </TB>
-        <TB title="Open" onClick={open}>
-          <OpenIcon />
-        </TB>
-        <TB title="Save" onClick={save} disabled={!has}>
-          <SaveIcon />
-        </TB>
-        <TB title="Print" disabled={!has}>
-          <PrintIcon />
-        </TB>
+        {tools.map((t, i) =>
+          t === 'sep' ? (
+            <span key={'s' + i} className="de-sep" />
+          ) : hid(t.id) ? null : (
+            <TB key={t.id} title={t.tip} onClick={t.onClick} active={t.active} disabled={t.disabled}>
+              {t.icon}
+            </TB>
+          )
+        )}
         <span className="de-sep" />
-        <TB title="Recall recently used dialogs">
-          <RecallIcon />
-        </TB>
-        <TB title="Undo" disabled>
-          <UndoIcon />
-        </TB>
-        <TB title="Redo" disabled>
-          <RedoIcon />
-        </TB>
-        <span className="de-sep" />
-        <TB title="Go to case" disabled={!has}>
-          <GotoCaseIcon />
-        </TB>
-        <TB title="Go to variable" disabled={!has}>
-          <GotoVarIcon />
-        </TB>
-        <TB title="Variables" disabled={!has}>
-          <VariablesIcon />
-        </TB>
-        <TB title="Run Descriptive Statistics" onClick={() => setDialogId('descriptives')} disabled={!has}>
-          <DescMuIcon />
-        </TB>
-        <TB title="Find" disabled={!has}>
-          <FindIcon />
-        </TB>
-        <span className="de-sep" />
-        <TB title="Insert Cases" onClick={insertCase} disabled={!has}>
-          <InsertCaseIcon />
-        </TB>
-        <TB title="Insert Variable" onClick={insertVar} disabled={!has}>
-          <InsertVarIcon />
-        </TB>
-        <span className="de-sep" />
-        <TB title="Split File" onClick={() => setDialogId('splitfile')} disabled={!has}>
-          <SplitFileIcon />
-        </TB>
-        <TB title="Weight Cases" onClick={() => setDialogId('weight')} disabled={!has}>
-          <WeightIcon />
-        </TB>
-        <TB title="Select Cases" onClick={() => setDialogId('selectcases')} disabled={!has}>
-          <SelectCasesIcon />
-        </TB>
-        <span className="de-sep" />
-        <TB title="Value Labels" onClick={toggleValueLabels} active={showValueLabels} disabled={!has}>
-          <ValueLabelsIcon />
-        </TB>
-        <TB title="Use Variable Sets" disabled={!has}>
-          <VarSetsIcon />
-        </TB>
-        <TB title="Show All Variables" disabled={!has}>
-          <ShowAllVarsIcon />
+        <TB title="Customize toolbar" onClick={() => setCustomize(true)}>
+          <GearIcon />
         </TB>
       </div>
 
@@ -240,6 +236,22 @@ export function DataEditor(): JSX.Element {
             return null
         }
       })()}
+
+      {customize && (
+        <Modal title="Customize Toolbar" onOk={() => setCustomize(false)} onCancel={() => setCustomize(false)}>
+          <div style={{ maxHeight: 260, overflow: 'auto' }}>
+            <div style={{ marginBottom: 6, color: '#555' }}>Show these toolbar buttons:</div>
+            {tools
+              .filter((t): t is Tool => t !== 'sep')
+              .map((t) => (
+                <label key={t.id} style={{ display: 'flex', gap: 6, padding: '1px 0' }}>
+                  <input type="checkbox" checked={!hid(t.id)} onChange={() => toggleTool(t.id)} />
+                  {t.tip}
+                </label>
+              ))}
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

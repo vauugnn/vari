@@ -15,6 +15,10 @@ interface DataState {
   setActiveTab: (t: 'data' | 'variable') => void
   setError: (msg: string | null) => void
   updateVariable: (index: number, meta: VariableMetaJson) => void
+
+  /** Toolbar buttons hidden via Customize (by id). */
+  hiddenTools: string[]
+  toggleTool: (id: string) => void
 }
 
 export const useStore = create<DataState>((set) => ({
@@ -35,5 +39,13 @@ export const useStore = create<DataState>((set) => ({
       const variables = st.summary.variables.slice()
       variables[index] = meta
       return { summary: { ...st.summary, variables }, revision: st.revision + 1 }
-    })
+    }),
+
+  hiddenTools: [],
+  toggleTool: (id) =>
+    set((st) => ({
+      hiddenTools: st.hiddenTools.includes(id)
+        ? st.hiddenTools.filter((x) => x !== id)
+        : [...st.hiddenTools, id]
+    }))
 }))
