@@ -279,7 +279,19 @@ export function buildMenu(actions: MenuActions): Menu {
       proc('Regression Variable Plots'),
       {
         label: 'Legacy Dialogs',
-        submenu: [proc('Bar…'), proc('3-D Bar…'), proc('Line…'), proc('Area…'), proc('Pie…'), proc('High-Low…'), proc('Boxplot…'), proc('Error Bar…'), proc('Population Pyramid…'), proc('Scatter/Dot…'), proc('Histogram…')]
+        submenu: [
+          dialogItem('Bar…', 'graph-bar', actions.openDialog),
+          proc('3-D Bar…'),
+          proc('Line…'),
+          proc('Area…'),
+          dialogItem('Pie…', 'graph-pie', actions.openDialog),
+          proc('High-Low…'),
+          proc('Boxplot…'),
+          proc('Error Bar…'),
+          proc('Population Pyramid…'),
+          dialogItem('Scatter/Dot…', 'graph-scatter', actions.openDialog),
+          dialogItem('Histogram…', 'graph-histogram', actions.openDialog)
+        ]
       }
     ]
   })

@@ -39,6 +39,7 @@ import { ReliabilityDialog } from '../dialogs/analysis/ReliabilityDialog'
 import { LinearRegressionDialog } from '../dialogs/analysis/RegressionDialog'
 import { MeansDialog } from '../dialogs/analysis/MeansDialog'
 import { ComputeDialog } from '../dialogs/analysis/ComputeDialog'
+import { HistogramDialog, BarChartDialog, PieChartDialog, ScatterDialog } from '../dialogs/analysis/GraphDialogs'
 import './dataeditor.css'
 
 function TB({
@@ -247,6 +248,14 @@ export function DataEditor(): JSX.Element {
             return <MeansDialog {...p} />
           case 'compute':
             return <ComputeDialog {...p} />
+          case 'graph-histogram':
+            return <HistogramDialog {...p} />
+          case 'graph-bar':
+            return <BarChartDialog {...p} />
+          case 'graph-pie':
+            return <PieChartDialog {...p} />
+          case 'graph-scatter':
+            return <ScatterDialog {...p} />
           default:
             return null
         }

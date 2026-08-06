@@ -26,6 +26,15 @@
   white-space: pre-wrap;
 }
 
+.out-chart {
+  margin: 10px 14px;
+  display: inline-block;
+}
+
+.out-chart svg {
+  max-width: 100%;
+}
+
 .out-unknown {
   color: #555;
   font-style: italic;

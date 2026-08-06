@@ -7,6 +7,7 @@ from .correlations import Correlations
 from .crosstabs import Crosstabs
 from .descriptives import Descriptives
 from .frequencies import Frequencies
+from .graph import Graph
 from .means import Means
 from .nonparcorr import NonparCorr
 from .nonproc import Get, PivotDemo, Save, Title
@@ -40,4 +41,5 @@ def build_registry() -> Registry:
     reg.register("RECODE")(Recode)
     reg.register("COUNT")(Count)
     reg.register("EXECUTE")(Execute)
+    reg.register("GRAPH")(Graph)
     return reg

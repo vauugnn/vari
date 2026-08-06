@@ -99,6 +99,8 @@ function itemHtml(o: OutputObject): string {
       return `<div class="out-error">${esc((o as { text: string }).text)}</div>`
     case 'PivotTable':
       return pivotHtml(o as unknown as PivotTableJson)
+    case 'Chart':
+      return `<div class="out-chart">${(o as unknown as { svg: string }).svg}</div>`
     default:
       return `<div>${esc(JSON.stringify(o))}</div>`
   }

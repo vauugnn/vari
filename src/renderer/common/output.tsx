@@ -18,6 +18,13 @@ export function OutputItem({ obj }: { obj: OutputObject }): JSX.Element {
       return <div className="out-error">{(obj as { text: string }).text}</div>
     case 'PivotTable':
       return <PivotTableView table={obj as unknown as PivotTableJson} />
+    case 'Chart':
+      return (
+        <div
+          className="out-chart"
+          dangerouslySetInnerHTML={{ __html: (obj as unknown as { svg: string }).svg }}
+        />
+      )
     default:
       return (
         <div className="out-unknown">

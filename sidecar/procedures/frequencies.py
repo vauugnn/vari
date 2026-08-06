@@ -42,9 +42,12 @@ class Frequencies(DataProcedure):
         varbody = ""
         stat_keys: list[str] = []
         show_table = True
+        charts: list[str] = []
         for name, body in subs:
             if name in ("", "VARIABLES"):
                 varbody += " " + re.sub(r"^\s*VARIABLES\s*=?\s*", "", body, flags=re.IGNORECASE)
+            elif name in ("HISTOGRAM", "BARCHART", "PIECHART"):
+                charts.append(name)
             elif name == "STATISTICS":
                 for kw in body.upper().split():
                     if kw == "ALL":
@@ -66,7 +69,29 @@ class Frequencies(DataProcedure):
         if show_table:
             for nm in names:
                 out.append(self._frequency_table(ds, nm))
+        for nm in names:
+            for ch in charts:
+                out.append(self._chart(ds, nm, ch))
         return out
+
+    def _chart(self, ds: Any, name: str, kind: str) -> dict[str, Any]:
+        from ..output import charts as ch
+
+        meta = ds.variables[ds._index_of(name)]
+        title = meta.label or name
+        if kind == "HISTOGRAM":
+            x = numeric_valid(ds, name)
+            return ch.histogram(x, title=f"Histogram: {title}", xlabel=title,
+                                mean=stats.mean(x), sd=stats.std(x), n=stats.n_valid(x))
+        # bar / pie use valid value counts with labels
+        series = ds.df[name]
+        valid = series[~missing_mask(series, meta).to_numpy()]
+        pairs = _counts(valid.dropna())
+        labels = [value_label(ds, name, v) for v, _ in pairs]
+        counts = [c for _, c in pairs]
+        if kind == "BARCHART":
+            return ch.bar_chart(labels, counts, title=f"Bar Chart: {title}", xlabel=title)
+        return ch.pie_chart(labels, counts, title=title)
 
     def _statistics_table(self, ds: Any, names: list[str], stat_keys: list[str]) -> dict[str, Any]:
         rows = ["Valid", "Missing"] + [_STAT_ROWS[k][0] for k in stat_keys]

@@ -395,6 +395,13 @@ async function runSelfTestPhase1(sav: string, done: (m: string) => void): Promis
   check('freq_tables', (await vev(`document.querySelectorAll('.pt-table').length`)) >= 2, 'tables')
   check('freq_labels', vtxt.includes('Male') && vtxt.includes('No answer') && vtxt.includes('Statistics'), vtxt.slice(0, 80))
 
+  // Charts: a histogram renders as inline SVG in the Viewer.
+  await windows.syntax!.webContents.executeJavaScript(
+    `window.spss.execute("FREQUENCIES VARIABLES=income /FORMAT=NOTABLE /HISTOGRAM.")`
+  )
+  await until2(async () => (await vev(`document.querySelectorAll('.out-chart svg').length`)) > 0, 6000)
+  check('chart_svg', (await vev(`document.querySelectorAll('.out-chart svg').length`)) > 0, 'chart')
+
   // Dialog flow: Analyze ▸ Frequencies, move a variable, click OK.
   const tablesBefore: number = await vev(`document.querySelectorAll('.pt-table').length`)
   de.webContents.send(IPC.dialogOpen, 'frequencies')
