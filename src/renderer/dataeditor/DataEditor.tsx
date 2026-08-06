@@ -60,6 +60,7 @@ import {
   ReplaceMissingDialog,
   RecodeDifferentDialog
 } from '../dialogs/analysis/TransformDialogs'
+import { TransposeDialog, AggregateDialog, AddCasesDialog, AddVariablesDialog } from '../dialogs/analysis/DataStructDialogs'
 import './dataeditor.css'
 
 function TB({
@@ -317,6 +318,14 @@ export function DataEditor(): JSX.Element {
             return <ReplaceMissingDialog {...p} />
           case 'recode-different':
             return <RecodeDifferentDialog {...p} />
+          case 'transpose':
+            return <TransposeDialog {...p} />
+          case 'aggregate':
+            return <AggregateDialog {...p} />
+          case 'add-cases':
+            return <AddCasesDialog {...p} />
+          case 'add-variables':
+            return <AddVariablesDialog {...p} />
           default:
             return null
         }

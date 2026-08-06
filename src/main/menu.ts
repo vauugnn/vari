@@ -237,10 +237,16 @@ export function buildMenu(actions: MenuActions): Menu {
       { type: 'separator' },
       dialogItem('Sort Cases…', 'sort', actions.openDialog),
       proc('Sort Variables…'),
-      proc('Transpose…'),
-      proc('Merge Files'),
+      dialogItem('Transpose…', 'transpose', actions.openDialog),
+      {
+        label: 'Merge Files',
+        submenu: [
+          dialogItem('Add Cases…', 'add-cases', actions.openDialog),
+          dialogItem('Add Variables…', 'add-variables', actions.openDialog)
+        ]
+      },
       proc('Restructure…'),
-      proc('Aggregate…'),
+      dialogItem('Aggregate…', 'aggregate', actions.openDialog),
       { type: 'separator' },
       dialogItem('Split File…', 'splitfile', actions.openDialog),
       dialogItem('Select Cases…', 'selectcases', actions.openDialog),

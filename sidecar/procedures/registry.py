@@ -6,6 +6,7 @@ from ..syntax.registry import Registry
 from .correlations import Correlations
 from .crosstabs import Crosstabs
 from .data_ops import Filter, SelectIf, SortCases, SplitFile, UseCommand, Weight
+from .data_ops2 import AddCmd, Aggregate, Flip, MatchFiles
 from .descriptives import Descriptives
 from .examine import Examine
 from .metadata import Formats, MissingValues, RenameVariables, ValueLabels, VariableCmd
@@ -62,5 +63,9 @@ def build_registry() -> Registry:
     reg.register("ADD")(lambda: ValueLabels(add=True))
     reg.register("MISSING")(MissingValues)
     reg.register("RENAME")(RenameVariables)
+    reg.register("ADD")(AddCmd)
     reg.register("FORMATS")(Formats)
+    reg.register("AGGREGATE")(Aggregate)
+    reg.register("FLIP")(Flip)
+    reg.register("MATCH")(MatchFiles)
     return reg
