@@ -3,9 +3,12 @@ decorators) to keep imports acyclic."""
 from __future__ import annotations
 
 from ..syntax.registry import Registry
+from .correlations import Correlations
+from .crosstabs import Crosstabs
 from .descriptives import Descriptives
 from .frequencies import Frequencies
 from .nonproc import Get, PivotDemo, Save, Title
+from .ttest import TTest
 
 
 def build_registry() -> Registry:
@@ -16,4 +19,7 @@ def build_registry() -> Registry:
     reg.register("PIVOTDEMO")(PivotDemo)
     reg.register("FREQUENCIES")(Frequencies)
     reg.register("DESCRIPTIVES")(Descriptives)
+    reg.register("CORRELATIONS")(Correlations)
+    reg.register("CROSSTABS")(Crosstabs)
+    reg.register("TTEST")(TTest)
     return reg

@@ -54,7 +54,7 @@ class Registry:
         return deco
 
     def resolve(self, token: str) -> Optional[type[Procedure]]:
-        token = token.upper()
+        token = token.upper().replace("-", "")  # T-TEST -> TTEST
         if token in self._commands:
             return self._commands[token]
         matches = [n for n in self._commands if n.startswith(token)]

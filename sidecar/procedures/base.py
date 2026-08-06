@@ -1,11 +1,17 @@
 """Helpers shared by data procedures."""
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import numpy as np
 
 from ..data.missing import missing_mask
+
+
+def strip_leading_zero(s: str) -> str:
+    """SPSS suppresses the leading zero on correlations and p-values (.847)."""
+    return re.sub(r"^(-?)0\.", r"\1.", s)
 
 
 def var_index(ds: Any, name: str) -> int:
