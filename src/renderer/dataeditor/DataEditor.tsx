@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { SidecarStatus } from '../../shared/types'
 import { useStore } from '../state/store'
 import { DataViewGrid } from '../grid/DataViewGrid'
@@ -16,12 +16,22 @@ export function DataEditor(): JSX.Element {
   const setError = useStore((s) => s.setError)
 
   const [status, setStatus] = useState<SidecarStatus>({ state: 'starting' })
+  const initedRef = useRef(false)
 
   useEffect(() => window.spss.ds.onChanged(setSummary), [setSummary])
   useEffect(() => {
     void window.spss.getSidecarStatus().then(setStatus)
     return window.spss.onSidecarStatus(setStatus)
   }, [])
+
+  // Open an empty dataset on first ready, so the grid shows immediately like
+  // SPSS (an empty spreadsheet) rather than a placeholder.
+  useEffect(() => {
+    if (status.state === 'ready' && !summary && !initedRef.current) {
+      initedRef.current = true
+      void window.spss.ds.newDataset().then(setSummary).catch(() => (initedRef.current = false))
+    }
+  }, [status, summary, setSummary])
 
   const open = async (): Promise<void> => {
     const s = await window.spss.ds.openDialog()

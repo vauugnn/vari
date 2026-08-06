@@ -30,15 +30,19 @@ def test_title_case_insensitive():
 
 
 def test_unrecognized_returns_error():
-    out = syntax_execute({"text": "FREQUENCIES x."})
+    out = syntax_execute({"text": "BOGUSCMD x."})
     assert len(out) == 1
     assert out[0]["type"] == "Error"
-    assert "FREQUENCIES x." in out[0]["text"]
+    assert "BOGUSCMD" in out[0]["text"]
 
 
-def test_empty_returns_error():
-    out = syntax_execute({"text": "   "})
+def test_frequencies_without_dataset_errors():
+    out = syntax_execute({"text": "FREQUENCIES VARIABLES=x."})
     assert out[0]["type"] == "Error"
+
+
+def test_empty_yields_no_output():
+    assert syntax_execute({"text": "   "}) == []
 
 
 def test_unknown_method():

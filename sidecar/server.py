@@ -20,14 +20,11 @@ from .data.format import Format
 from .data.missing import MissingSpec
 from .data.variable import VariableMeta
 from .io.files import open_file, save_file
-from .output.model import Dimension, PivotTable, simple_table, title as title_obj
-
-_TITLE_RE = re.compile(
-    r"""^\s*TITLE\s+(?P<q>['"])(?P<text>.*?)(?P=q)\s*\.?\s*$""",
-    re.IGNORECASE | re.DOTALL,
-)
+from .procedures.registry import build_registry
+from .syntax.registry import Context, execute_syntax
 
 REGISTRY = DatasetRegistry()
+PROC_REGISTRY = build_registry()
 
 
 # ---- variable metadata (de)serialization ------------------------------
@@ -89,50 +86,14 @@ def m_ping(_p: Any) -> dict[str, Any]:
 
 def m_syntax_execute(p: Any) -> list[dict[str, Any]]:
     text = str(p.get("text", "")) if isinstance(p, dict) else str(p or "")
-    stripped = text.strip()
-    m = _TITLE_RE.match(stripped)
-    if m:
-        return [{"type": "Title", "text": m.group("text")}]
-    if re.match(r"^\s*PIVOTDEMO\s*\.?\s*$", stripped, re.IGNORECASE):
-        return _pivot_demo()
-    return [{"type": "Error", "text": f"Unrecognized command: {stripped or '(empty)'}"}]
-
-
-def _pivot_demo() -> list[dict[str, Any]]:
-    """A realistic Descriptives table (flat) plus a Crosstab (nested columns),
-    for verifying the PivotTable renderer before real procedures exist."""
-    desc = simple_table(
-        "Descriptive Statistics",
-        row_labels=["Age", "Annual income", "Satisfaction"],
-        col_labels=["N", "Minimum", "Maximum", "Mean", "Std. Deviation"],
-        matrix=[
-            [400, 18, 64, 38.42, 11.315],
-            [400, 12000, 145000, 51873.25, 21044.7],
-            [398, 1, 5, 3.27, 1.041],
-        ],
-        col_formats=[
-            Format("F", 8, 0),
-            Format("F", 8, 0),
-            Format("F", 8, 0),
-            Format("F", 8, 2),
-            Format("F", 8, 3),
-        ],
-    )
-
-    # Nested column dimensions: Gender (Male/Female) × statistic (Count/Expected).
-    ct = PivotTable(
-        "Agreement * Gender Crosstabulation",
-        row_dims=[Dimension("Agreement", ["Agree", "Neutral", "Disagree"])],
-        col_dims=[Dimension("Gender", ["Male", "Female"]), Dimension("", ["Count", "Expected"])],
-        corner="Agreement",
-    )
-    data = [[(80, 74.2), (70, 75.8)], [(30, 28.1), (27, 28.9)], [(20, 27.7), (36, 28.3)]]
-    for i, row in enumerate(data):
-        for g, (count, exp) in enumerate(row):
-            ct.set([i], [g, 0], Format("F", 8, 0).render(count), "num")
-            ct.set([i], [g, 1], Format("F", 8, 1).render(exp), "num")
-
-    return [title_obj("Descriptives"), desc.to_json(), ct.to_json()]
+    before = REGISTRY.active
+    outputs = execute_syntax(text, PROC_REGISTRY, Context(REGISTRY))
+    # If a command (e.g. GET FILE) changed the active dataset, tell the client
+    # so the Data Editor can refresh.
+    after = REGISTRY.active
+    if after is not None and after is not before:
+        outputs.append({"type": "_DatasetChanged", "summary": _dataset_summary(after)})
+    return outputs
 
 
 def m_dataset_new(_p: Any) -> dict[str, Any]:

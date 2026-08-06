@@ -28,14 +28,14 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
   const [nRows, setNRows] = useState(summary.nRows)
   useEffect(() => setNRows(summary.nRows), [summary])
 
-  const displayRows = nRows + 1 // trailing blank row (new case)
-  const displayCols = nVars + 1 // trailing blank column (new variable)
+  const EMPTY_COL_W = colWidthPx(8)
 
   const colWidths = useMemo(
     () => summary.variables.map((v) => colWidthPx(v.columns || v.width || 8)),
     [summary]
   )
-  const gutterW = Math.max(40, String(Math.max(displayRows, 1)).length * 9 + 20)
+  const realWidth = colWidths.reduce((a, b) => a + b, 0)
+  const gutterW = Math.max(40, String(Math.max(nRows + 1, 1)).length * 9 + 20)
 
   // ---- windowed row cache ------------------------------------------
   const cacheRef = useRef<Map<number, string[][]>>(new Map())
@@ -46,6 +46,7 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
   const scrollRef = useRef<HTMLDivElement>(null)
   const [scrollTop, setScrollTop] = useState(0)
   const [viewportH, setViewportH] = useState(400)
+  const [viewportW, setViewportW] = useState(800)
 
   useEffect(() => {
     cacheRef.current.clear()
@@ -56,11 +57,23 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
-    const ro = new ResizeObserver(() => setViewportH(el.clientHeight))
+    const ro = new ResizeObserver(() => {
+      setViewportH(el.clientHeight)
+      setViewportW(el.clientWidth)
+    })
     ro.observe(el)
     setViewportH(el.clientHeight)
+    setViewportW(el.clientWidth)
     return () => ro.disconnect()
   }, [])
+
+  // Fill the viewport with empty rows/columns so it always looks like a
+  // spreadsheet (SPSS shows an empty grid even with no data), plus one trailing
+  // slot for creating the next case / variable.
+  const fillCols = Math.max(1, Math.ceil((viewportW - gutterW - realWidth) / EMPTY_COL_W))
+  const displayCols = nVars + fillCols
+  const fillRows = Math.max(1, Math.ceil(viewportH / ROW_H) - nRows + 2)
+  const displayRows = nRows + fillRows
 
   const start = Math.max(0, Math.floor(scrollTop / ROW_H) - OVERSCAN)
   const end = Math.min(displayRows, Math.ceil((scrollTop + viewportH) / ROW_H) + OVERSCAN)
@@ -168,7 +181,7 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
     else if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) startEdit(r1, c1, e.key)
   }
 
-  const totalWidth = gutterW + colWidths.reduce((a, b) => a + b, 0) + colWidthPx(8)
+  const totalWidth = gutterW + realWidth + fillCols * EMPTY_COL_W
 
   const rows: JSX.Element[] = []
   for (let r = start; r < end; r++) {
@@ -245,7 +258,9 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
               {v.name}
             </div>
           ))}
-          <div className="col-head col-head--empty" style={{ width: colWidthPx(8) }} />
+          {Array.from({ length: fillCols }, (_, k) => (
+            <div key={'e' + k} className="col-head col-head--empty" style={{ width: EMPTY_COL_W }} />
+          ))}
         </div>
         <div style={{ height: start * ROW_H }} />
         {rows}

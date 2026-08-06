@@ -174,9 +174,20 @@ function wireIpc(): void {
   ipcMain.handle(IPC.syntaxExecute, async (_evt, text: string): Promise<OutputObject[]> => {
     try {
       const result = (await sidecar.request('syntax.execute', { text })) as OutputObject[]
-      const objects = Array.isArray(result) ? result : []
-      sendToViewer(objects)
-      showWindow('viewer')
+      const all = Array.isArray(result) ? result : []
+      // Internal signal: a command changed the active dataset — refresh the grid.
+      const objects: OutputObject[] = []
+      for (const o of all) {
+        if (o.type === '_DatasetChanged') {
+          broadcastDataset((o as unknown as { summary: DatasetSummary }).summary)
+        } else {
+          objects.push(o)
+        }
+      }
+      if (objects.length > 0) {
+        sendToViewer(objects)
+        showWindow('viewer')
+      }
       return objects
     } catch (err) {
       // Sidecar down / crashed mid-request: surface as an Error object rather
@@ -272,15 +283,26 @@ async function runSelfTest(): Promise<void> {
     const leafHeads = await ev(
       `[...document.querySelectorAll('.pt-colhead')].filter(e=>e.textContent==='Count'||e.textContent==='Expected').length`
     )
+    // Data Editor should have auto-opened an empty spreadsheet grid.
+    const de = windows.dataeditor!
+    const dev = (js: string): Promise<any> => de.webContents.executeJavaScript(js)
+    await until2(async () => (await dev(`document.querySelectorAll('.row').length`)) > 0, 6000)
+    const emptyGrid = await dev(
+      `document.querySelectorAll('.col-head--empty').length>0 && document.querySelectorAll('.row').length>0`
+    )
+    const statusDataset = await dev(`(document.querySelector('.statusbar')?.textContent||'').includes('DataSet')`)
+
     const pass =
       title === 'hello' &&
-      error.includes('FREQUENCIES x.') &&
+      error.toLowerCase().includes('freq') &&
       nTables === 2 &&
       hasMean === true &&
       genderSpan === 4 &&
-      leafHeads === 4
+      leafHeads === 4 &&
+      emptyGrid === true &&
+      statusDataset === true
     done(
-      `title=${JSON.stringify(title)} tables=${nTables} mean=${hasMean} genderSpan=${genderSpan} leaf=${leafHeads} -> ${pass ? 'PASS' : 'FAIL'}`
+      `title=${JSON.stringify(title)} tables=${nTables} mean=${hasMean} genderSpan=${genderSpan} leaf=${leafHeads} emptyGrid=${emptyGrid} status=${statusDataset} -> ${pass ? 'PASS' : 'FAIL'}`
     )
   } catch (err) {
     done(`ERROR ${String(err)}`)
@@ -302,6 +324,10 @@ async function runSelfTestPhase1(sav: string, done: (m: string) => void): Promis
   const heads: string[] = await ev(`Array.from(document.querySelectorAll('.col-head')).map(e=>e.textContent)`)
   check('varnames', heads.slice(0, 5).join(',') === 'id,gender,income,agree,sname', heads)
 
+  await until2(async () => {
+    const c: string[] = await ev(`Array.from((document.querySelectorAll('.row')[0]||{querySelectorAll:()=>[]}).querySelectorAll('.cell')).map(c=>c.textContent)`)
+    return c[0] === '1'
+  }, 6000)
   const row0: string[] = await ev(
     `Array.from(document.querySelectorAll('.row')[0].querySelectorAll('.cell')).map(c=>c.textContent)`
   )
@@ -335,6 +361,18 @@ async function runSelfTestPhase1(sav: string, done: (m: string) => void): Promis
        return r? r.querySelectorAll('.button-cell button')[1].textContent : null;})()`
   )
   check('vv_valuelabels', String(genderValues).includes('Male'), genderValues)
+
+  // Full syntax pipeline: run FREQUENCIES from the Syntax window; the dataset
+  // opened above is the sidecar's active dataset.
+  const viewer = windows.viewer!
+  const vev = (js: string): Promise<any> => viewer.webContents.executeJavaScript(js)
+  await windows.syntax!.webContents.executeJavaScript(
+    `window.spss.execute("FREQUENCIES VARIABLES=gender /STATISTICS=MEAN.")`
+  )
+  await until2(async () => (await vev(`document.querySelectorAll('.pt-table').length`)) >= 2, 6000)
+  const vtxt: string = await vev(`document.body.innerText`)
+  check('freq_tables', (await vev(`document.querySelectorAll('.pt-table').length`)) >= 2, 'tables')
+  check('freq_labels', vtxt.includes('Male') && vtxt.includes('No answer') && vtxt.includes('Statistics'), vtxt.slice(0, 80))
 
   const pass = results.every((r) => r.includes('PASS'))
   done(`${pass ? 'PASS' : 'FAIL'} :: ${results.join('  ')}`)

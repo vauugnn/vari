@@ -14,7 +14,16 @@ section 9. Move them here as they come up, with the actual fix.
 
 ## Open
 
-_Nothing yet._
+These are implemented but not yet verified against a real SPSS export (no
+licensed SPSS available in this environment). Confirm and move to Resolved when
+a fixture's SPSS output is on hand.
+
+| Procedure | Item | Our behavior | Note |
+|---|---|---|---|
+| FREQUENCIES | Percentiles / Median | HAVERAGE — weighted average at rank `(n+1)p` | Matches SPSS default definition; not yet cross-checked numerically. |
+| FREQUENCIES | Frequency table layout | Flat rows (value labels + Total, then Missing values, then grand Total) | SPSS nests a Valid/Missing/Total group column; our product-grid table can't render ragged groups, so the grouping is flattened. Values/percents match; visual nesting differs. |
+| DESCRIPTIVES | Decimal places | Min/Max/Sum/Range use the variable's own decimals; Mean/Std.Dev use `max(varDecimals, 2)` | SPSS's per-cell decimal rules are more elaborate; revisit with a parity fixture. |
+| FREQUENCIES/DESCRIPTIVES | Skewness/Kurtosis | G1/G2 with SES/SEK per HLD 9 formulas | Formula matches SPSS; not yet numerically cross-checked. |
 
 ## Resolved
 
