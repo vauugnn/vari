@@ -26,6 +26,9 @@ import {
 } from '../common/icons'
 import { FrequenciesDialog } from '../dialogs/analysis/FrequenciesDialog'
 import { DescriptivesDialog } from '../dialogs/analysis/DescriptivesDialog'
+import { CrosstabsDialog } from '../dialogs/analysis/CrosstabsDialog'
+import { OneSampleTTestDialog, IndependentTTestDialog, PairedTTestDialog } from '../dialogs/analysis/TTestDialogs'
+import { BivariateCorrelationsDialog } from '../dialogs/analysis/CorrelateDialog'
 import './dataeditor.css'
 
 function TB({
@@ -42,14 +45,15 @@ function TB({
   children: ReactNode
 }): JSX.Element {
   return (
-    <button
-      className={'icon-btn' + (active ? ' icon-btn--on' : '')}
-      title={title}
-      disabled={disabled}
-      onClick={onClick}
-    >
-      {children}
-    </button>
+    <span className="tt" data-tip={title}>
+      <button
+        className={'icon-btn' + (active ? ' icon-btn--on' : '')}
+        disabled={disabled}
+        onClick={onClick}
+      >
+        {children}
+      </button>
+    </span>
   )
 }
 
@@ -210,12 +214,28 @@ export function DataEditor(): JSX.Element {
         <span className="sb-seg">Filter Off</span>
       </div>
 
-      {dialogId && summary && dialogId === 'frequencies' && (
-        <FrequenciesDialog variables={summary.variables} onClose={() => setDialogId(null)} />
-      )}
-      {dialogId && summary && dialogId === 'descriptives' && (
-        <DescriptivesDialog variables={summary.variables} onClose={() => setDialogId(null)} />
-      )}
+      {(() => {
+        if (!dialogId || !summary) return null
+        const p = { variables: summary.variables, onClose: () => setDialogId(null) }
+        switch (dialogId) {
+          case 'frequencies':
+            return <FrequenciesDialog {...p} />
+          case 'descriptives':
+            return <DescriptivesDialog {...p} />
+          case 'crosstabs':
+            return <CrosstabsDialog {...p} />
+          case 'ttest-one':
+            return <OneSampleTTestDialog {...p} />
+          case 'ttest-ind':
+            return <IndependentTTestDialog {...p} />
+          case 'ttest-paired':
+            return <PairedTTestDialog {...p} />
+          case 'correlate':
+            return <BivariateCorrelationsDialog {...p} />
+          default:
+            return null
+        }
+      })()}
     </div>
   )
 }

@@ -355,7 +355,7 @@ async function runSelfTestPhase1(sav: string, done: (m: string) => void): Promis
   check('rawvalues', row0[0] === '1' && row0[1] === '1' && row0[2] === '50000' && row0[4] === 'al', row0)
 
   // Toggle value labels and re-read.
-  await ev(`[...document.querySelectorAll('.de-toolbar .icon-btn')].find(b=>b.getAttribute('title')==='Value Labels')?.click()`)
+  await ev(`[...document.querySelectorAll('.de-toolbar .tt')].find(t=>t.getAttribute('data-tip')==='Value Labels')?.querySelector('button')?.click()`)
   await until2(async () => {
     const c: string[] = await ev(`Array.from(document.querySelectorAll('.row')[0].querySelectorAll('.cell')).map(c=>c.textContent)`)
     return c[1] === 'Male'
@@ -415,12 +415,27 @@ async function runSelfTestPhase1(sav: string, done: (m: string) => void): Promis
   await ev(`[...document.querySelectorAll('.de-tab')].find(b=>b.textContent==='Data View')?.click()`)
   await until2(async () => (await ev(`document.querySelectorAll('.col-head-name').length`)) > 0, 4000)
   const colsBefore: number = await ev(`document.querySelectorAll('.col-head-name').length`)
-  const titles: string[] = await ev(`[...document.querySelectorAll('.de-toolbar .icon-btn')].map(b=>b.getAttribute('title'))`)
+  const titles: string[] = await ev(`[...document.querySelectorAll('.de-toolbar .tt')].map(t=>t.getAttribute('data-tip'))`)
   check('has_insertvar_btn', titles.includes('Insert Variable'), titles)
-  await ev(`(()=>{const b=[...document.querySelectorAll('.de-toolbar .icon-btn')].find(b=>b.getAttribute('title')==='Insert Variable'); if(b) b.click();})()`)
+  await ev(`[...document.querySelectorAll('.de-toolbar .tt')].find(t=>t.getAttribute('data-tip')==='Insert Variable')?.querySelector('button')?.click()`)
   await until2(async () => (await ev(`document.querySelectorAll('.col-head-name').length`)) > colsBefore, 4000)
   const colsAfter: number = await ev(`document.querySelectorAll('.col-head-name').length`)
   check('insert_var', colsAfter > colsBefore, { colsBefore, colsAfter })
+
+  // Stage 2: Crosstabs dialog (two movers), OK -> Crosstabulation table.
+  de.webContents.send(IPC.dialogOpen, 'crosstabs')
+  await until2(async () => (await ev(`document.querySelectorAll('.vm').length`)) >= 2, 4000)
+  await ev(
+    `(()=>{const ms=document.querySelectorAll('.vm');
+      const g=[...ms[0].querySelectorAll('.vm-col')[0].querySelectorAll('.vm-item')].find(e=>e.textContent.includes('Gender'));
+      if(g) g.dispatchEvent(new MouseEvent('dblclick',{bubbles:true}));
+      const a=[...ms[1].querySelectorAll('.vm-col')[0].querySelectorAll('.vm-item')].find(e=>e.textContent.includes('Agreement'));
+      if(a) a.dispatchEvent(new MouseEvent('dblclick',{bubbles:true}));})()`
+  )
+  await ev(`[...document.querySelectorAll('.af-footer button')].find(b=>b.textContent==='OK')?.click()`)
+  await until2(async () => (await vev(`document.body.innerText.includes('Crosstabulation')`)) === true, 6000)
+  const ctOk: boolean = await vev(`document.body.innerText.includes('Crosstabulation')`)
+  check('crosstabs_dialog', ctOk === true, ctOk)
 
   const pass = results.every((r) => r.includes('PASS'))
   done(`${pass ? 'PASS' : 'FAIL'} :: ${results.join('  ')}`)

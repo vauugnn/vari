@@ -41,7 +41,7 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
           dialogItem('Frequencies…', 'frequencies', open),
           dialogItem('Descriptives…', 'descriptives', open),
           proc('Explore…'),
-          proc('Crosstabs…'),
+          dialogItem('Crosstabs…', 'crosstabs', open),
           proc('TURF Analysis'),
           proc('Ratio…'),
           proc('P-P Plots…'),
@@ -54,10 +54,10 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
         label: 'Compare Means',
         submenu: [
           proc('Means…'),
-          proc('One-Sample T Test…'),
-          proc('Independent-Samples T Test…'),
+          dialogItem('One-Sample T Test…', 'ttest-one', open),
+          dialogItem('Independent-Samples T Test…', 'ttest-ind', open),
           proc('Summary Independent-Samples T Test…'),
-          proc('Paired-Samples T Test…'),
+          dialogItem('Paired-Samples T Test…', 'ttest-paired', open),
           proc('One-Way ANOVA…')
         ]
       },
@@ -74,7 +74,7 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
       { label: 'Mixed Models', enabled: false, submenu: [proc('Linear…'), proc('Generalized Linear…')] },
       {
         label: 'Correlate',
-        submenu: [proc('Bivariate…'), proc('Partial…'), proc('Distances…'), proc('Canonical Correlation')]
+        submenu: [dialogItem('Bivariate…', 'correlate', open), proc('Partial…'), proc('Distances…'), proc('Canonical Correlation')]
       },
       {
         label: 'Regression',
