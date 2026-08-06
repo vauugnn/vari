@@ -1,5 +1,5 @@
 """Phase 0 sidecar tests: ping + syntax.execute round trip via dispatch()."""
-from server import dispatch, syntax_execute
+from sidecar.server import dispatch, syntax_execute
 
 
 def test_ping():
