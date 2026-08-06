@@ -14,6 +14,7 @@ from .npar import NparTests
 from .oneway import Oneway
 from .regression import Regression
 from .reliability import Reliability
+from .transforms import Compute, Count, Execute, If, Recode
 from .ttest import TTest
 
 
@@ -34,4 +35,9 @@ def build_registry() -> Registry:
     reg.register("MEANS")(Means)
     reg.register("NONPAR")(NonparCorr)
     reg.register("NPAR")(NparTests)
+    reg.register("COMPUTE")(Compute)
+    reg.register("IF")(If)
+    reg.register("RECODE")(Recode)
+    reg.register("COUNT")(Count)
+    reg.register("EXECUTE")(Execute)
     return reg

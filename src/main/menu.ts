@@ -250,7 +250,7 @@ export function buildMenu(actions: MenuActions): Menu {
   template.push({
     label: 'Transform',
     submenu: [
-      proc('Compute Variable…'),
+      dialogItem('Compute Variable…', 'compute', actions.openDialog),
       proc('Count Values within Cases…'),
       proc('Shift Values…'),
       proc('Recode into Same Variables…'),

@@ -15,10 +15,14 @@ class Context:
 
     def __init__(self, ds_registry: Any):
         self.ds_registry = ds_registry
+        self.data_changed = False
 
     @property
     def active(self) -> Any:
         return self.ds_registry.active
+
+    def mark_changed(self) -> None:
+        self.data_changed = True
 
 
 class Procedure:

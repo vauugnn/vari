@@ -87,11 +87,12 @@ def m_ping(_p: Any) -> dict[str, Any]:
 def m_syntax_execute(p: Any) -> list[dict[str, Any]]:
     text = str(p.get("text", "")) if isinstance(p, dict) else str(p or "")
     before = REGISTRY.active
-    outputs = execute_syntax(text, PROC_REGISTRY, Context(REGISTRY))
-    # If a command (e.g. GET FILE) changed the active dataset, tell the client
-    # so the Data Editor can refresh.
+    ctx = Context(REGISTRY)
+    outputs = execute_syntax(text, PROC_REGISTRY, ctx)
+    # If a command changed the active dataset (opened one, or a transform mutated
+    # it in place), tell the client so the Data Editor refreshes.
     after = REGISTRY.active
-    if after is not None and after is not before:
+    if after is not None and (after is not before or ctx.data_changed):
         outputs.append({"type": "_DatasetChanged", "summary": _dataset_summary(after)})
     return outputs
 

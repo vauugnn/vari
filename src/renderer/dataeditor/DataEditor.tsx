@@ -38,6 +38,7 @@ import { OneWayAnovaDialog } from '../dialogs/analysis/OneWayAnovaDialog'
 import { ReliabilityDialog } from '../dialogs/analysis/ReliabilityDialog'
 import { LinearRegressionDialog } from '../dialogs/analysis/RegressionDialog'
 import { MeansDialog } from '../dialogs/analysis/MeansDialog'
+import { ComputeDialog } from '../dialogs/analysis/ComputeDialog'
 import './dataeditor.css'
 
 function TB({
@@ -244,6 +245,8 @@ export function DataEditor(): JSX.Element {
             return <LinearRegressionDialog {...p} />
           case 'means':
             return <MeansDialog {...p} />
+          case 'compute':
+            return <ComputeDialog {...p} />
           default:
             return null
         }
