@@ -82,6 +82,7 @@ export const IPC = {
   sidecarStatusGet: 'sidecar.status.get',
   sidecarStatusEvent: 'sidecar.status',
   outputAppend: 'output.append',
+  outputExportHtml: 'output.exportHtml',
   windowShow: 'window.show',
   datasetChanged: 'dataset.changed',
   ds: {
@@ -126,5 +127,6 @@ export interface SpssApi {
   onSidecarStatus: (cb: (status: SidecarStatus) => void) => () => void
   onOutput: (cb: (objects: OutputObject[]) => void) => () => void
   showWindow: (name: WindowName) => void
+  exportHtml: (html: string) => Promise<{ ok: boolean; path: string } | null>
   ds: DatasetApi
 }

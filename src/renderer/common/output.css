@@ -15,6 +15,17 @@
   white-space: pre-wrap;
 }
 
+.out-text {
+  margin: 4px 0;
+  white-space: pre-wrap;
+}
+
+.out-warning {
+  color: #8a6d00;
+  margin: 4px 0;
+  white-space: pre-wrap;
+}
+
 .out-unknown {
   color: #555;
   font-style: italic;

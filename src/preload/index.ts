@@ -58,6 +58,8 @@ const api: SpssApi = {
     return () => ipcRenderer.removeListener(IPC.outputAppend, listener)
   },
   showWindow: (name: WindowName) => ipcRenderer.send(IPC.windowShow, name),
+  exportHtml: (html: string) =>
+    ipcRenderer.invoke(IPC.outputExportHtml, html) as Promise<{ ok: boolean; path: string } | null>,
   ds
 }
 

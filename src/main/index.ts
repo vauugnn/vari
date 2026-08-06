@@ -1,4 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron'
+import { writeFile } from 'fs/promises'
 import { join } from 'path'
 import { buildMenu, focusOrShow } from './menu'
 import { Sidecar } from './sidecar'
@@ -105,11 +106,12 @@ async function openViaDialog(): Promise<DatasetSummary | null> {
     title: 'Open Data',
     properties: ['openFile'],
     filters: [
+      { name: 'All Supported Data', extensions: ['sav', 'por', 'dta', 'xlsx', 'xls', 'csv', 'tsv', 'txt'] },
       { name: 'SPSS Statistics (*.sav)', extensions: ['sav'] },
       { name: 'SPSS Portable (*.por)', extensions: ['por'] },
       { name: 'Stata (*.dta)', extensions: ['dta'] },
-      { name: 'Excel (*.xlsx)', extensions: ['xlsx'] },
-      { name: 'CSV (*.csv)', extensions: ['csv'] },
+      { name: 'Excel (*.xlsx, *.xls)', extensions: ['xlsx', 'xls'] },
+      { name: 'Text / CSV (*.csv, *.tsv, *.txt)', extensions: ['csv', 'tsv', 'txt'] },
       { name: 'All Files', extensions: ['*'] }
     ]
   })
@@ -188,6 +190,17 @@ function wireIpc(): void {
 
   ipcMain.handle(IPC.sidecarStatusGet, (): SidecarStatus => sidecar.currentStatus)
 
+  ipcMain.handle(IPC.outputExportHtml, async (_e, html: string) => {
+    const res = await dialog.showSaveDialog(windows.viewer as BrowserWindow, {
+      title: 'Export Output as HTML',
+      defaultPath: 'output.html',
+      filters: [{ name: 'HTML (*.html)', extensions: ['html'] }]
+    })
+    if (res.canceled || !res.filePath) return null
+    await writeFile(res.filePath, html, 'utf8')
+    return { ok: true, path: res.filePath }
+  })
+
   ipcMain.on(IPC.windowShow, (_evt, name: WindowName) => showWindow(name))
 }
 
@@ -243,17 +256,32 @@ async function runSelfTest(): Promise<void> {
 
     const syntax = windows.syntax!
     const viewer = windows.viewer!
+    const ev = (js: string): Promise<any> => viewer.webContents.executeJavaScript(js)
     await syntax.webContents.executeJavaScript(`window.spss.execute("TITLE 'hello'.")`)
     await syntax.webContents.executeJavaScript(`window.spss.execute("FREQUENCIES x.")`)
-    await new Promise((r) => setTimeout(r, 400))
-    const title = await viewer.webContents.executeJavaScript(
-      `document.querySelector('.out-title')?.textContent ?? null`
+    await syntax.webContents.executeJavaScript(`window.spss.execute("PIVOTDEMO.")`)
+    await new Promise((r) => setTimeout(r, 500))
+
+    const title = await ev(`document.querySelector('.out-title')?.textContent ?? null`)
+    const error = await ev(`[...document.querySelectorAll('.out-error')].map(e=>e.textContent).join('|')`)
+    const nTables = await ev(`document.querySelectorAll('.pt-table').length`)
+    const hasMean = await ev(`document.body.innerText.includes('38.42')`)
+    const genderSpan = await ev(
+      `(()=>{const th=[...document.querySelectorAll('.pt-colhead')].find(e=>e.textContent==='Gender');return th?th.colSpan:0;})()`
     )
-    const error = await viewer.webContents.executeJavaScript(
-      `document.querySelector('.out-error')?.textContent ?? null`
+    const leafHeads = await ev(
+      `[...document.querySelectorAll('.pt-colhead')].filter(e=>e.textContent==='Count'||e.textContent==='Expected').length`
     )
-    const pass = title === 'hello' && typeof error === 'string' && error.includes('FREQUENCIES x.')
-    done(`title=${JSON.stringify(title)} error=${JSON.stringify(error)} -> ${pass ? 'PASS' : 'FAIL'}`)
+    const pass =
+      title === 'hello' &&
+      error.includes('FREQUENCIES x.') &&
+      nTables === 2 &&
+      hasMean === true &&
+      genderSpan === 4 &&
+      leafHeads === 4
+    done(
+      `title=${JSON.stringify(title)} tables=${nTables} mean=${hasMean} genderSpan=${genderSpan} leaf=${leafHeads} -> ${pass ? 'PASS' : 'FAIL'}`
+    )
   } catch (err) {
     done(`ERROR ${String(err)}`)
   }

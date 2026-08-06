@@ -1,21 +1,28 @@
 import type { OutputObject } from '../../shared/types'
+import { PivotTableView, type PivotTableJson } from '../output/PivotTable'
 import './output.css'
 
 /**
  * Renders one output object. Switches on `type` with a fallback for unknown
- * types, so later phases add PivotTable/Chart/Notes without touching plumbing
- * (PHASE-0 section 5).
+ * types, so new object types slot in without touching plumbing (PHASE-0 §5).
  */
-function OutputItem({ obj }: { obj: OutputObject }): JSX.Element {
+export function OutputItem({ obj }: { obj: OutputObject }): JSX.Element {
   switch (obj.type) {
     case 'Title':
-      return <div className="out-title">{obj.text}</div>
+      return <div className="out-title">{(obj as { text: string }).text}</div>
+    case 'TextBlock':
+      return <div className="out-text">{(obj as { text: string }).text}</div>
+    case 'Warning':
+      return <div className="out-warning">{(obj as { text: string }).text}</div>
     case 'Error':
-      return <div className="out-error">{obj.text}</div>
+      return <div className="out-error">{(obj as { text: string }).text}</div>
+    case 'PivotTable':
+      return <PivotTableView table={obj as unknown as PivotTableJson} />
     default:
       return (
         <div className="out-unknown">
-          [{obj.type}]{typeof obj.text === 'string' ? ` ${obj.text}` : ''}
+          [{obj.type}]
+          {typeof (obj as { text?: string }).text === 'string' ? ` ${(obj as { text: string }).text}` : ''}
         </div>
       )
   }

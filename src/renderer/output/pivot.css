@@ -1,0 +1,72 @@
+/* SPSS default TableLook: thin outer frame, a rule under the column headers, a
+   rule after the row-header block, no other interior vertical borders. */
+.pt-wrap {
+  margin: 10px 14px;
+  display: inline-block;
+}
+
+.pt-title {
+  font-weight: bold;
+  margin: 6px 0 4px;
+}
+
+.pt-table {
+  border-collapse: collapse;
+  border: 1px solid #000000;
+  font-size: 12px;
+  background: #ffffff;
+}
+
+.pt-table th,
+.pt-table td {
+  padding: 1px 8px;
+  line-height: 17px;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+/* Column headers: centered, underlined by the header/body divider. */
+.pt-colhead {
+  text-align: center;
+  font-weight: normal;
+  border-bottom: 1px solid #000000;
+  border-left: 1px solid #d9d9d9;
+}
+
+.pt-dimlabel {
+  text-align: center;
+  font-weight: normal;
+  border-bottom: 1px solid #d9d9d9;
+}
+
+/* Corner and row headers: left aligned, separated from data by a vertical rule. */
+.pt-corner {
+  text-align: left;
+  font-weight: normal;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+}
+
+.pt-rowhead {
+  text-align: left;
+  font-weight: normal;
+  border-right: 1px solid #000000;
+}
+
+.pt-cell {
+  border-left: 1px solid #eeeeee;
+}
+
+.pt-cell--num {
+  text-align: right;
+}
+
+.pt-cell--text {
+  text-align: left;
+}
+
+.pt-caption {
+  font-size: 11px;
+  color: #333;
+  margin-top: 3px;
+}
