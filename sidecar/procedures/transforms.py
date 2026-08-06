@@ -45,6 +45,78 @@ class Execute(Procedure):
         return []
 
 
+class Rank(Procedure):
+    def execute(self, rest: str, ctx: Context) -> list[dict[str, Any]]:
+        from scipy import stats as sps
+
+        ds = ctx.active
+        if ds is None:
+            raise RuntimeError("No active dataset.")
+        body = re.sub(r"^\s*VARIABLES?\s*=?\s*", "", rest, flags=re.IGNORECASE)
+        body = re.split(r"\bBY\b|/", body, flags=re.IGNORECASE)[0]
+        from ..data.missing import missing_mask
+
+        for nm in expand_varlist(body, [v.name for v in ds.variables]):
+            mask = missing_mask(ds.df[nm], ds.variables[ds._index_of(nm)]).to_numpy()
+            x = ds.df[nm].to_numpy(dtype="float64")
+            out = np.full(len(x), np.nan)
+            keep = ~mask & ~np.isnan(x)
+            out[keep] = sps.rankdata(x[keep], method="average")
+            _set_column(ds, ("R" + nm)[:64], out)
+        ctx.mark_changed()
+        return []
+
+
+class AutoRecode(Procedure):
+    def execute(self, rest: str, ctx: Context) -> list[dict[str, Any]]:
+        ds = ctx.active
+        if ds is None:
+            raise RuntimeError("No active dataset.")
+        m = re.search(r"\bINTO\b(.*)$", rest, re.IGNORECASE | re.DOTALL)
+        targets = m.group(1).split() if m else []
+        body = re.sub(r"\bINTO\b.*$", "", rest, flags=re.IGNORECASE | re.DOTALL)
+        body = re.sub(r"^\s*VARIABLES?\s*=?\s*", "", body, flags=re.IGNORECASE)
+        srcs = expand_varlist(body.split("/")[0], [v.name for v in ds.variables])
+        from ..data.missing import missing_mask
+        from ..data.variable import VariableMeta
+
+        for k, src in enumerate(srcs):
+            series = ds.df[src]
+            mask = missing_mask(series, ds.variables[ds._index_of(src)]).to_numpy()
+            valid = series[~mask].dropna()
+            uniq = sorted(set(valid.tolist()), key=lambda v: (isinstance(v, str), v))
+            mapping = {v: i + 1 for i, v in enumerate(uniq)}
+            out = np.full(len(series), np.nan)
+            raw = series.to_numpy()
+            for i in range(len(series)):
+                if not mask[i] and raw[i] in mapping:
+                    out[i] = mapping[raw[i]]
+            tgt = targets[k] if k < len(targets) else "A" + src
+            _set_column(ds, tgt, out)
+            meta = ds.variables[ds._index_of(tgt)]
+            meta.value_labels = {float(code): str(val) for val, code in mapping.items()}
+            meta.measure = "nominal"
+        ctx.mark_changed()
+        return []
+
+
+class Rmv(Procedure):
+    def execute(self, rest: str, ctx: Context) -> list[dict[str, Any]]:
+        ds = ctx.active
+        if ds is None:
+            raise RuntimeError("No active dataset.")
+        from ..data.missing import missing_mask
+
+        for target, src in re.findall(r"([A-Za-z@#$][\w@#$.]*)\s*=\s*SMEAN\(\s*([A-Za-z@#$][\w@#$.]*)\s*\)", rest, re.IGNORECASE):
+            mask = missing_mask(ds.df[src], ds.variables[ds._index_of(src)]).to_numpy()
+            x = ds.df[src].to_numpy(dtype="float64").copy()
+            mean = np.nanmean(np.where(mask, np.nan, x))
+            x[mask | np.isnan(x)] = mean
+            _set_column(ds, target, x)
+        ctx.mark_changed()
+        return []
+
+
 class Compute(Procedure):
     def execute(self, rest: str, ctx: Context) -> list[dict[str, Any]]:
         ds = ctx.active

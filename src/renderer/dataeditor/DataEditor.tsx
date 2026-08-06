@@ -53,6 +53,13 @@ import {
   TwoRelatedDialog,
   KRelatedDialog
 } from '../dialogs/analysis/NparDialogs'
+import {
+  RankCasesDialog,
+  AutoRecodeDialog,
+  CountValuesDialog,
+  ReplaceMissingDialog,
+  RecodeDifferentDialog
+} from '../dialogs/analysis/TransformDialogs'
 import './dataeditor.css'
 
 function TB({
@@ -300,6 +307,16 @@ export function DataEditor(): JSX.Element {
             return <TwoRelatedDialog {...p} />
           case 'npar-krelated':
             return <KRelatedDialog {...p} />
+          case 'rank':
+            return <RankCasesDialog {...p} />
+          case 'autorecode':
+            return <AutoRecodeDialog {...p} />
+          case 'count':
+            return <CountValuesDialog {...p} />
+          case 'rmv':
+            return <ReplaceMissingDialog {...p} />
+          case 'recode-different':
+            return <RecodeDifferentDialog {...p} />
           default:
             return null
         }

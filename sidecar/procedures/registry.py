@@ -8,6 +8,7 @@ from .crosstabs import Crosstabs
 from .data_ops import Filter, SelectIf, SortCases, SplitFile, UseCommand, Weight
 from .descriptives import Descriptives
 from .examine import Examine
+from .metadata import Formats, MissingValues, RenameVariables, ValueLabels, VariableCmd
 from .partial import PartialCorr
 from .frequencies import Frequencies
 from .graph import Graph
@@ -18,7 +19,7 @@ from .npar import NparTests
 from .oneway import Oneway
 from .regression import Regression
 from .reliability import Reliability
-from .transforms import Compute, Count, Execute, If, Recode
+from .transforms import AutoRecode, Compute, Count, Execute, If, Rank, Recode, Rmv
 from .ttest import TTest
 
 
@@ -53,4 +54,13 @@ def build_registry() -> Registry:
     reg.register("USE")(UseCommand)
     reg.register("EXAMINE")(Examine)
     reg.register("PARTIAL")(PartialCorr)
+    reg.register("RANK")(Rank)
+    reg.register("AUTORECODE")(AutoRecode)
+    reg.register("RMV")(Rmv)
+    reg.register("VARIABLE")(VariableCmd)
+    reg.register("VALUE")(ValueLabels)
+    reg.register("ADD")(lambda: ValueLabels(add=True))
+    reg.register("MISSING")(MissingValues)
+    reg.register("RENAME")(RenameVariables)
+    reg.register("FORMATS")(Formats)
     return reg
