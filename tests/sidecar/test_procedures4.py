@@ -89,3 +89,25 @@ def test_npar_mann_whitney_matches_scipy():
     u = sps.mannwhitneyu(a, b, alternative="two-sided")
     U = min(u.statistic, 20 * 22 - u.statistic)
     assert abs(float(cells(ts)[((0,), (0,))]) - U) < 0.5
+
+
+def test_npar_chisquare_gof():
+    reg = make_registry(pd.DataFrame({"x": [1.0] * 10 + [2.0] * 20 + [3.0] * 30}))
+    out = run(reg, "NPAR TESTS /CHISQUARE=x.")
+    ts = [t for t in tables(out) if t["title"] == "Test Statistics"][0]
+    obs = np.array([10, 20, 30], float)
+    exp = np.full(3, 20.0)
+    chi = ((obs - exp) ** 2 / exp).sum()
+    assert abs(float(cells(ts)[((0,), (0,))]) - chi) < 0.01
+
+
+def test_npar_friedman():
+    rng = np.random.RandomState(21)
+    df = pd.DataFrame({"a": rng.normal(0, 1, 20), "b": rng.normal(0.5, 1, 20), "c": rng.normal(1, 1, 20)})
+    reg = make_registry(df)
+    out = run(reg, "NPAR TESTS /FRIEDMAN=a b c.")
+    ts = [t for t in tables(out) if t["title"] == "Test Statistics"][0]
+    from scipy import stats as sps2
+
+    stat, _ = sps2.friedmanchisquare(df["a"], df["b"], df["c"])
+    assert abs(float(cells(ts)[((1,), (0,))]) - stat) < 0.01

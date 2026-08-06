@@ -42,9 +42,63 @@ class NparTests(DataProcedure):
             elif key == "WILCOXON":
                 out += self._wilcoxon(ds, body)
                 handled = True
+            elif key == "CHISQUARE":
+                out += self._chisquare(ds, body)
+                handled = True
+            elif key == "FRIEDMAN":
+                out += self._friedman(ds, body)
+                handled = True
         if not handled:
-            return [{"type": "Error", "text": "NPAR TESTS: supported subcommands are /M-W, /K-W, /WILCOXON."}]
+            return [{"type": "Error", "text": "NPAR TESTS: /M-W, /K-W, /WILCOXON, /CHISQUARE, /FRIEDMAN."}]
         return out
+
+    def _chisquare(self, ds, body):
+        allnames = [v.name for v in ds.variables]
+        names = expand_varlist(body, allnames)
+        out = []
+        for var in names:
+            x = ds.df[var].to_numpy(float)
+            x = x[~missing_mask(ds.df[var], ds.variables[ds._index_of(var)]).to_numpy()]
+            vals, counts = np.unique(x[~np.isnan(x)], return_counts=True)
+            expected = np.full(len(counts), counts.sum() / len(counts))
+            chi = float(((counts - expected) ** 2 / expected).sum())
+            dfree = len(counts) - 1
+            p = float(sps.chi2.sf(chi, dfree))
+            freq = PivotTable(var, [Dimension("", [value_label(ds, var, v) for v in vals] + ["Total"])],
+                              [Dimension("", ["Observed N", "Expected N", "Residual"])], corner="")
+            for i, (o, e) in enumerate(zip(counts, expected)):
+                freq.set([i], [0], _F0.render(int(o))); freq.set([i], [1], _F2.render(float(e)))
+                freq.set([i], [2], _F2.render(float(o - e)))
+            freq.set([len(counts)], [0], _F0.render(int(counts.sum())))
+            out.append(freq.to_json())
+            ts = PivotTable("Test Statistics", [Dimension("", ["Chi-Square", "df", "Asymp. Sig."])],
+                            [Dimension("", [var])])
+            ts.set([0], [0], _F3.render(chi)); ts.set([1], [0], _F0.render(dfree))
+            ts.set([2], [0], strip_leading_zero(_F3.render(p)))
+            out.append(ts.to_json())
+        return out
+
+    def _friedman(self, ds, body):
+        allnames = [v.name for v in ds.variables]
+        names = expand_varlist(body, allnames)
+        cols = {}
+        for nm in names:
+            s = ds.df[nm]
+            cols[nm] = s.where(~missing_mask(s, ds.variables[ds._index_of(nm)]))
+        import pandas as pd
+
+        data = pd.DataFrame(cols).dropna()
+        arrs = [data[nm].to_numpy(float) for nm in names]
+        stat, p = sps.friedmanchisquare(*arrs)
+        ranks = sps.rankdata(data.to_numpy(float), axis=1)
+        rt = PivotTable("Ranks", [Dimension("", list(names))], [Dimension("", ["Mean Rank"])])
+        for i in range(len(names)):
+            rt.set([i], [0], _F2.render(float(ranks[:, i].mean())))
+        ts = PivotTable("Test Statistics", [Dimension("", ["N", "Chi-Square", "df", "Asymp. Sig."])],
+                        [Dimension("", ["Friedman"])])
+        ts.set([0], [0], _F0.render(len(data))); ts.set([1], [0], _F3.render(float(stat)))
+        ts.set([2], [0], _F0.render(len(names) - 1)); ts.set([3], [0], strip_leading_zero(_F3.render(float(p))))
+        return [rt.to_json(), ts.to_json()]
 
     def _by_groups(self, ds, body):
         m = re.search(r"(.+?)\bBY\b\s*(\w+)\s*\(([^)]*)\)", body, re.IGNORECASE)
