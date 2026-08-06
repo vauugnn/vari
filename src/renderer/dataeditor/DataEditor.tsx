@@ -43,6 +43,16 @@ import { HistogramDialog, BarChartDialog, PieChartDialog, ScatterDialog } from '
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
 import { ExploreDialog, PartialCorrDialog } from '../dialogs/analysis/ExploreDialog'
 import { ImportWizard } from '../dialogs/ImportWizard'
+import {
+  ChiSquareDialog,
+  BinomialDialog,
+  RunsDialog,
+  OneSampleKSDialog,
+  TwoIndependentDialog,
+  KIndependentDialog,
+  TwoRelatedDialog,
+  KRelatedDialog
+} from '../dialogs/analysis/NparDialogs'
 import './dataeditor.css'
 
 function TB({
@@ -274,6 +284,22 @@ export function DataEditor(): JSX.Element {
             return <ExploreDialog {...p} />
           case 'partial':
             return <PartialCorrDialog {...p} />
+          case 'npar-chisquare':
+            return <ChiSquareDialog {...p} />
+          case 'npar-binomial':
+            return <BinomialDialog {...p} />
+          case 'npar-runs':
+            return <RunsDialog {...p} />
+          case 'npar-ks':
+            return <OneSampleKSDialog {...p} />
+          case 'npar-2indep':
+            return <TwoIndependentDialog {...p} />
+          case 'npar-kindep':
+            return <KIndependentDialog {...p} />
+          case 'npar-2related':
+            return <TwoRelatedDialog {...p} />
+          case 'npar-krelated':
+            return <KRelatedDialog {...p} />
           default:
             return null
         }

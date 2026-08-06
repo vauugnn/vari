@@ -48,9 +48,186 @@ class NparTests(DataProcedure):
             elif key == "FRIEDMAN":
                 out += self._friedman(ds, body)
                 handled = True
+            elif key == "BINOMIAL":
+                out += self._binomial(ds, name, body)
+                handled = True
+            elif key == "RUNS":
+                out += self._runs(ds, name, body)
+                handled = True
+            elif key == "K-S":
+                out += self._ks_one(ds, body)
+                handled = True
+            elif key == "SIGN":
+                out += self._sign(ds, body)
+                handled = True
+            elif key == "MCNEMAR":
+                out += self._mcnemar(ds, body)
+                handled = True
+            elif key == "COCHRAN":
+                out += self._cochran(ds, body)
+                handled = True
+            elif key == "KENDALL":
+                out += self._kendall_w(ds, body)
+                handled = True
         if not handled:
-            return [{"type": "Error", "text": "NPAR TESTS: /M-W, /K-W, /WILCOXON, /CHISQUARE, /FRIEDMAN."}]
+            return [{"type": "Error", "text": "NPAR TESTS: /M-W /K-W /WILCOXON /CHISQUARE /FRIEDMAN /BINOMIAL /RUNS /K-S /SIGN /MCNEMAR /COCHRAN /KENDALL."}]
         return out
+
+    def _binomial(self, ds, subname, body):
+        m = re.match(r"\(([\d.]+)\)", body)
+        test_p = float(m.group(1)) if m else 0.5
+        body = re.sub(r"^\([\d.]+\)\s*=?\s*", "", body)
+        out = []
+        for var in expand_varlist(body, [v.name for v in ds.variables]):
+            x = ds.df[var].to_numpy(float)
+            x = x[~missing_mask(ds.df[var], ds.variables[ds._index_of(var)]).to_numpy()]
+            x = x[~np.isnan(x)]
+            uniq = np.unique(x)
+            g1 = (x == uniq[0]).sum()
+            n = x.size
+            res = sps.binomtest(int(g1), n, test_p)
+            t = PivotTable(var, [Dimension("", ["Group 1", "Group 2", "Total"])],
+                           [Dimension("", ["Category", "N", "Observed Prop.", "Test Prop.", "Asymp. Sig. (2-tailed)"])], corner="")
+            t.set([0], [0], value_label(ds, var, uniq[0]), "text"); t.set([0], [1], _F0.render(int(g1)))
+            t.set([0], [2], strip_leading_zero(_F3.render(g1 / n))); t.set([0], [3], strip_leading_zero(_F3.render(test_p)))
+            t.set([0], [4], strip_leading_zero(_F3.render(float(res.pvalue))))
+            t.set([1], [0], "others" if len(uniq) > 2 else value_label(ds, var, uniq[-1]), "text")
+            t.set([1], [1], _F0.render(int(n - g1))); t.set([1], [2], strip_leading_zero(_F3.render((n - g1) / n)))
+            t.set([2], [1], _F0.render(int(n)))
+            out.append(t.to_json())
+        return out
+
+    def _runs(self, ds, subname, body):
+        body = re.sub(r"^\([A-Za-z]+\)\s*=?\s*", "", body)
+        out = []
+        for var in expand_varlist(body, [v.name for v in ds.variables]):
+            x = ds.df[var].to_numpy(float)
+            x = x[~missing_mask(ds.df[var], ds.variables[ds._index_of(var)]).to_numpy()]
+            x = x[~np.isnan(x)]
+            cut = float(np.median(x))
+            signs = x >= cut
+            n1 = int(signs.sum()); n2 = int((~signs).sum())
+            runs = 1 + int((signs[1:] != signs[:-1]).sum()) if x.size else 0
+            n = n1 + n2
+            mean = 2 * n1 * n2 / n + 1 if n else float("nan")
+            var_r = (2 * n1 * n2 * (2 * n1 * n2 - n)) / (n * n * (n - 1)) if n > 1 else float("nan")
+            z = (runs - mean) / math.sqrt(var_r) if var_r > 0 else float("nan")
+            p = float(2 * sps.norm.sf(abs(z))) if z == z else float("nan")
+            t = PivotTable("Runs Test", [Dimension("", ["Test Value (Median)", "Cases < Test Value", "Cases >= Test Value",
+                                                        "Total Cases", "Number of Runs", "Z", "Asymp. Sig. (2-tailed)"])],
+                           [Dimension("", [var])])
+            for i, val in enumerate([_F3.render(cut), _F0.render(n2), _F0.render(n1), _F0.render(n),
+                                     _F0.render(runs), _F3.render(z), strip_leading_zero(_F3.render(p))]):
+                t.set([i], [0], val)
+            out.append(t.to_json())
+        return out
+
+    def _ks_one(self, ds, body):
+        body = re.sub(r"^\([A-Za-z]+\)\s*=?\s*", "", body)
+        out = []
+        for var in expand_varlist(body, [v.name for v in ds.variables]):
+            x = ds.df[var].to_numpy(float)
+            x = x[~missing_mask(ds.df[var], ds.variables[ds._index_of(var)]).to_numpy()]
+            x = x[~np.isnan(x)]
+            mean, sd = float(x.mean()), float(x.std(ddof=0))
+            d, p = sps.kstest(x, "norm", args=(mean, sd))
+            t = PivotTable("One-Sample Kolmogorov-Smirnov Test",
+                           [Dimension("", ["N", "Normal Mean", "Normal Std. Dev.", "Kolmogorov-Smirnov Z", "Asymp. Sig. (2-tailed)"])],
+                           [Dimension("", [var])])
+            zval = d * math.sqrt(x.size)
+            for i, val in enumerate([_F0.render(x.size), _F3.render(mean), _F3.render(sd), _F3.render(zval),
+                                     strip_leading_zero(_F3.render(float(p)))]):
+                t.set([i], [0], val)
+            out.append(t.to_json())
+        return out
+
+    def _pairs(self, ds, body):
+        toks = re.split(r"\bWITH\b", body, flags=re.IGNORECASE)
+        allnames = [v.name for v in ds.variables]
+        left = expand_varlist(toks[0], allnames)
+        right = expand_varlist(toks[1], allnames) if len(toks) > 1 else []
+        return list(zip(left, right))
+
+    def _clean_pair(self, ds, a_name, b_name):
+        am = missing_mask(ds.df[a_name], ds.variables[ds._index_of(a_name)]).to_numpy()
+        bm = missing_mask(ds.df[b_name], ds.variables[ds._index_of(b_name)]).to_numpy()
+        keep = ~(am | bm)
+        return ds.df[a_name].to_numpy(float)[keep], ds.df[b_name].to_numpy(float)[keep]
+
+    def _sign(self, ds, body):
+        out = []
+        for a_name, b_name in self._pairs(ds, body):
+            a, b = self._clean_pair(ds, a_name, b_name)
+            d = b - a
+            pos = int((d > 0).sum()); neg = int((d < 0).sum())
+            nn = pos + neg
+            p = float(sps.binomtest(min(pos, neg), nn, 0.5).pvalue) if nn else float("nan")
+            t = PivotTable("Test Statistics", [Dimension("", ["Negative Differences", "Positive Differences", "Ties", "Exact Sig. (2-tailed)"])],
+                           [Dimension("", [f"{b_name} - {a_name}"])])
+            t.set([0], [0], _F0.render(neg)); t.set([1], [0], _F0.render(pos))
+            t.set([2], [0], _F0.render(len(d) - nn)); t.set([3], [0], strip_leading_zero(_F3.render(p)))
+            out.append(t.to_json())
+        return out
+
+    def _mcnemar(self, ds, body):
+        out = []
+        for a_name, b_name in self._pairs(ds, body):
+            a, b = self._clean_pair(ds, a_name, b_name)
+            import pandas as pd
+
+            ct = pd.crosstab(a, b).reindex(index=[0, 1], columns=[0, 1]).fillna(0).to_numpy() if set(np.unique(np.concatenate([a, b]))) <= {0.0, 1.0} else pd.crosstab(a, b).to_numpy()
+            b_, c_ = (ct[0, 1], ct[1, 0]) if ct.shape == (2, 2) else (0, 0)
+            stat = (abs(b_ - c_) - 1) ** 2 / (b_ + c_) if (b_ + c_) else float("nan")
+            p = float(sps.chi2.sf(stat, 1)) if stat == stat else float("nan")
+            t = PivotTable("Test Statistics", [Dimension("", ["N", "Chi-Square", "Asymp. Sig."])],
+                           [Dimension("", [f"{a_name} & {b_name}"])])
+            t.set([0], [0], _F0.render(len(a))); t.set([1], [0], _F3.render(stat) if stat == stat else ".")
+            t.set([2], [0], strip_leading_zero(_F3.render(p)) if p == p else ".")
+            out.append(t.to_json())
+        return out
+
+    def _related_matrix(self, ds, body):
+        names = expand_varlist(body, [v.name for v in ds.variables])
+        import pandas as pd
+
+        cols = {nm: ds.df[nm].where(~missing_mask(ds.df[nm], ds.variables[ds._index_of(nm)]).to_numpy()) for nm in names}
+        data = pd.DataFrame(cols).dropna()
+        return names, data.to_numpy(float)
+
+    def _cochran(self, ds, body):
+        names, m = self._related_matrix(ds, body)
+        k = m.shape[1]
+        col = m.sum(axis=0)
+        row = m.sum(axis=1)
+        grand = m.sum()
+        num = (k - 1) * (k * (col**2).sum() - grand**2)
+        den = k * grand - (row**2).sum()
+        q = num / den if den else float("nan")
+        p = float(sps.chi2.sf(q, k - 1)) if q == q else float("nan")
+        t = PivotTable("Test Statistics", [Dimension("", ["N", "Cochran's Q", "df", "Asymp. Sig."])],
+                       [Dimension("", ["Value"])])
+        t.set([0], [0], _F0.render(m.shape[0])); t.set([1], [0], _F3.render(float(q)) if q == q else ".")
+        t.set([2], [0], _F0.render(k - 1)); t.set([3], [0], strip_leading_zero(_F3.render(p)) if p == p else ".")
+        return [t.to_json()]
+
+    def _kendall_w(self, ds, body):
+        names, m = self._related_matrix(ds, body)
+        n, k = m.shape
+        ranks = sps.rankdata(m, axis=1)
+        rank_sums = ranks.sum(axis=0)
+        s = ((rank_sums - rank_sums.mean()) ** 2).sum()
+        w = 12 * s / (n * n * (k**3 - k)) if (k**3 - k) else float("nan")
+        chi = n * (k - 1) * w
+        p = float(sps.chi2.sf(chi, k - 1)) if chi == chi else float("nan")
+        rt = PivotTable("Ranks", [Dimension("", list(names))], [Dimension("", ["Mean Rank"])])
+        for i in range(k):
+            rt.set([i], [0], _F2.render(float(ranks[:, i].mean())))
+        ts = PivotTable("Test Statistics", [Dimension("", ["N", "Kendall's W", "Chi-Square", "df", "Asymp. Sig."])],
+                        [Dimension("", ["Value"])])
+        for i, val in enumerate([_F0.render(n), _F3.render(float(w)), _F3.render(float(chi)), _F0.render(k - 1),
+                                 strip_leading_zero(_F3.render(p))]):
+            ts.set([i], [0], val)
+        return [rt.to_json(), ts.to_json()]
 
     def _chisquare(self, ds, body):
         allnames = [v.name for v in ds.variables]

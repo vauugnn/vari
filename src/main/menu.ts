@@ -114,14 +114,14 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
           {
             label: 'Legacy Dialogs',
             submenu: [
-              proc('Chi-square…'),
-              proc('Binomial…'),
-              proc('Runs…'),
-              proc('1-Sample K-S…'),
-              proc('2 Independent Samples…'),
-              proc('K Independent Samples…'),
-              proc('2 Related Samples…'),
-              proc('K Related Samples…')
+              dialogItem('Chi-square…', 'npar-chisquare', open),
+              dialogItem('Binomial…', 'npar-binomial', open),
+              dialogItem('Runs…', 'npar-runs', open),
+              dialogItem('1-Sample K-S…', 'npar-ks', open),
+              dialogItem('2 Independent Samples…', 'npar-2indep', open),
+              dialogItem('K Independent Samples…', 'npar-kindep', open),
+              dialogItem('2 Related Samples…', 'npar-2related', open),
+              dialogItem('K Related Samples…', 'npar-krelated', open)
             ]
           }
         ]

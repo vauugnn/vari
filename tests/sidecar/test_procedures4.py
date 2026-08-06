@@ -111,3 +111,20 @@ def test_npar_friedman():
 
     stat, _ = sps2.friedmanchisquare(df["a"], df["b"], df["c"])
     assert abs(float(cells(ts)[((1,), (0,))]) - stat) < 0.01
+
+
+def test_npar_extra_tests_run():
+    rng = np.random.RandomState(30)
+    df = pd.DataFrame({
+        "b1": rng.randint(0, 2, 40).astype(float),
+        "b2": rng.randint(0, 2, 40).astype(float),
+        "b3": rng.randint(0, 2, 40).astype(float),
+        "x": rng.normal(0, 1, 40),
+    })
+    reg = make_registry(df)
+    for cmd in ["NPAR TESTS /BINOMIAL=b1.", "NPAR TESTS /RUNS=x.", "NPAR TESTS /K-S(NORMAL)=x.",
+                "NPAR TESTS /SIGN=b1 WITH b2.", "NPAR TESTS /MCNEMAR=b1 WITH b2.",
+                "NPAR TESTS /COCHRAN=b1 b2 b3.", "NPAR TESTS /KENDALL=b1 b2 b3."]:
+        out = run(reg, cmd)
+        assert any(o["type"] == "PivotTable" for o in out), cmd
+        assert not any(o["type"] == "Error" for o in out), (cmd, [o for o in out if o["type"] == "Error"])
