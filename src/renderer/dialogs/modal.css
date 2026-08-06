@@ -1,0 +1,89 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: #f0f0f0;
+  border: 1px solid #808080;
+  min-width: 340px;
+  max-width: 560px;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.modal-title {
+  background: #dfe6ef;
+  border-bottom: 1px solid #b0b0b0;
+  padding: 4px 8px;
+  font-weight: bold;
+}
+
+.modal-body {
+  padding: 10px 12px;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  padding: 8px 12px;
+  border-top: 1px solid #cccccc;
+}
+
+.modal-body label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 3px 0;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.field-row input[type='text'],
+.field-row input[type='number'] {
+  padding: 1px 4px;
+  border: 1px solid #7f9db9;
+}
+
+.radio-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vl-list {
+  border: 1px solid #7f9db9;
+  background: #fff;
+  height: 120px;
+  overflow: auto;
+  margin: 4px 0;
+}
+
+.vl-item {
+  padding: 1px 6px;
+  cursor: default;
+}
+
+.vl-item--sel {
+  background: #cbdcf0;
+}
+
+.type-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border: 1px solid #7f9db9;
+  background: #fff;
+  padding: 4px;
+  width: 200px;
+}

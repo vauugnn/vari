@@ -79,8 +79,22 @@ class Dataset:
         return v.print_format.render(val)
 
     # ---- cell edit ----------------------------------------------------
+    def ensure_rows(self, n: int) -> None:
+        """Grow the frame to at least n rows, filling new cells with blanks."""
+        if n <= self.n_rows:
+            return
+        extra = n - self.n_rows
+        blank = {v.name: ("" if v.is_string else np.nan) for v in self.variables}
+        pad = pd.DataFrame([blank] * extra)
+        self.df = pd.concat([self.df, pad], ignore_index=True)
+        self._sync_columns()
+
     def set_cell(self, row: int, col: int, raw: str) -> None:
-        if not (0 <= row < self.n_rows) or not (0 <= col < self.n_vars):
+        if col < 0 or col >= self.n_vars:
+            raise IndexError("Cell out of range.")
+        if row >= self.n_rows:
+            self.ensure_rows(row + 1)
+        if row < 0:
             raise IndexError("Cell out of range.")
         v = self.variables[col]
         if v.is_string:

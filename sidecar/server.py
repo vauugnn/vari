@@ -95,6 +95,14 @@ def m_syntax_execute(p: Any) -> list[dict[str, Any]]:
     return [{"type": "Error", "text": f"Unrecognized command: {stripped or '(empty)'}"}]
 
 
+def m_dataset_new(_p: Any) -> dict[str, Any]:
+    import pandas as pd
+
+    ds = Dataset(pd.DataFrame(), [], name=REGISTRY.next_name())
+    REGISTRY.add(ds, activate=True)
+    return _dataset_summary(ds)
+
+
 def m_dataset_open(p: dict[str, Any]) -> dict[str, Any]:
     path = p["path"]
     ds = open_file(path, name=REGISTRY.next_name())
@@ -170,6 +178,7 @@ def m_variables_list(_p: Any) -> list[dict[str, Any]]:
 METHODS = {
     "ping": m_ping,
     "syntax.execute": m_syntax_execute,
+    "dataset.new": m_dataset_new,
     "dataset.open": m_dataset_open,
     "dataset.save": m_dataset_save,
     "dataset.getRows": m_dataset_get_rows,

@@ -8,7 +8,13 @@ import { Menu, MenuItemConstructorOptions, app, BrowserWindow } from 'electron'
  * Everything not wired yet is a stub that logs.
  */
 
-type ShowWindow = (name: 'dataeditor' | 'viewer' | 'syntax') => void
+export interface MenuActions {
+  showWindow: (name: 'dataeditor' | 'viewer' | 'syntax') => void
+  fileNew: () => void
+  fileOpen: () => void
+  fileSave: () => void
+  fileSaveAs: () => void
+}
 
 function stub(label: string): () => void {
   return () => console.log(`[menu] stub: ${label}`)
@@ -124,7 +130,8 @@ function analyzeSubmenu(): MenuItemConstructorOptions {
   }
 }
 
-export function buildMenu(showWindow: ShowWindow): Menu {
+export function buildMenu(actions: MenuActions): Menu {
+  const { showWindow } = actions
   const isMac = process.platform === 'darwin'
 
   const template: MenuItemConstructorOptions[] = []
@@ -149,14 +156,30 @@ export function buildMenu(showWindow: ShowWindow): Menu {
   template.push({
     label: 'File',
     submenu: [
-      { label: 'New', submenu: [proc('Data'), proc('Syntax'), proc('Output'), proc('Script…')] },
-      { label: 'Open', submenu: [proc('Data…'), proc('Syntax…'), proc('Output…'), proc('Script…')] },
+      {
+        label: 'New',
+        submenu: [
+          { label: 'Data', accelerator: 'CmdOrCtrl+N', click: actions.fileNew },
+          proc('Syntax'),
+          proc('Output'),
+          proc('Script…')
+        ]
+      },
+      {
+        label: 'Open',
+        submenu: [
+          { label: 'Data…', accelerator: 'CmdOrCtrl+O', click: actions.fileOpen },
+          proc('Syntax…'),
+          proc('Output…'),
+          proc('Script…')
+        ]
+      },
       proc('Open Database'),
       proc('Import Data'),
       { type: 'separator' },
       proc('Close'),
-      proc('Save'),
-      proc('Save As…'),
+      { label: 'Save', accelerator: 'CmdOrCtrl+S', click: actions.fileSave },
+      { label: 'Save As…', accelerator: 'CmdOrCtrl+Shift+S', click: actions.fileSaveAs },
       proc('Export'),
       { type: 'separator' },
       proc('Print…'),
