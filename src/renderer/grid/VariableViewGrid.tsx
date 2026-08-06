@@ -1,0 +1,251 @@
+import { useState } from 'react'
+import type { Align, DatasetSummary, Measure, Role, ValueLabel, MissingJson, VariableMetaJson } from '../../shared/types'
+import { useStore } from '../state/store'
+import { VariableTypeDialog } from '../dialogs/VariableTypeDialog'
+import { ValueLabelsDialog } from '../dialogs/ValueLabelsDialog'
+import { MissingValuesDialog } from '../dialogs/MissingValuesDialog'
+import './grid.css'
+
+const COLUMNS = ['Name', 'Type', 'Width', 'Decimals', 'Label', 'Values', 'Missing', 'Columns', 'Align', 'Measure', 'Role']
+const MEASURES: Measure[] = ['scale', 'ordinal', 'nominal']
+const ALIGNS: Align[] = ['left', 'right', 'center']
+const ROLES: Role[] = ['input', 'target', 'both', 'none', 'partition', 'split']
+
+const DATE_CODES = new Set(['DATE', 'ADATE', 'EDATE', 'SDATE', 'JDATE', 'DATETIME', 'TIME', 'DTIME'])
+
+function codeOf(fmt: string): string {
+  const m = /^[A-Za-z]+/.exec(fmt)
+  return (m ? m[0] : 'F').toUpperCase()
+}
+
+function rebuildFormat(meta: VariableMetaJson, width: number, decimals: number): string {
+  const code = codeOf(meta.format)
+  if (code === 'A') return `A${width}`
+  if (DATE_CODES.has(code)) return `${code}${width}`
+  return `${code}${width}.${decimals}`
+}
+
+function valueLabelsSummary(vl: ValueLabel[]): string {
+  if (!vl.length) return 'None'
+  return `{${vl[0].value}, ${vl[0].label}}` + (vl.length > 1 ? '…' : '')
+}
+
+function missingSummary(m: MissingJson): string {
+  if (m.kind === 'none') return 'None'
+  if (m.kind === 'discrete') return m.values.join(', ') || 'None'
+  const lo = m.lo ?? 'LO'
+  const hi = m.hi ?? 'HI'
+  return `${lo}–${hi}${m.values.length ? ', ' + m.values[0] : ''}`
+}
+
+type DialogState =
+  | { kind: 'type'; index: number }
+  | { kind: 'values'; index: number }
+  | { kind: 'missing'; index: number }
+  | null
+
+export function VariableViewGrid({ summary }: { summary: DatasetSummary }): JSX.Element {
+  const setSummary = useStore((s) => s.setSummary)
+  const setError = useStore((s) => s.setError)
+  const [dialog, setDialog] = useState<DialogState>(null)
+  const [newName, setNewName] = useState('')
+
+  const commit = async (index: number, patch: Partial<VariableMetaJson>): Promise<void> => {
+    const meta = { ...summary.variables[index], ...patch }
+    try {
+      const s = await window.spss.ds.setVariableMeta(index, meta)
+      setSummary(s)
+      setError(null)
+    } catch (err) {
+      setError(String(err instanceof Error ? err.message : err))
+    }
+  }
+
+  const addVariable = async (name: string): Promise<void> => {
+    if (!name.trim()) return
+    const meta: VariableMetaJson = {
+      name: name.trim(),
+      type: 'Numeric',
+      format: 'F8.2',
+      width: 8,
+      decimals: 2,
+      label: '',
+      valueLabels: [],
+      missing: { kind: 'none', values: [], lo: null, hi: null },
+      columns: 8,
+      align: 'right',
+      measure: 'scale',
+      role: 'input',
+      isString: false
+    }
+    try {
+      const s = await window.spss.ds.insertVariable(null, meta)
+      setSummary(s)
+      setNewName('')
+      setError(null)
+    } catch (err) {
+      setError(String(err instanceof Error ? err.message : err))
+    }
+  }
+
+  return (
+    <div className="vv">
+      <table>
+        <thead>
+          <tr>
+            <th className="rownum" />
+            {COLUMNS.map((c) => (
+              <th key={c}>{c}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {summary.variables.map((v, i) => (
+            <tr key={i}>
+              <td className="rownum">{i + 1}</td>
+              <td>
+                <TextCell value={v.name} onCommit={(val) => commit(i, { name: val })} />
+              </td>
+              <td className="button-cell">
+                <button onClick={() => setDialog({ kind: 'type', index: i })}>{v.type}</button>
+              </td>
+              <td>
+                <NumCell value={v.width} onCommit={(val) => commit(i, { format: rebuildFormat(v, val, v.decimals), width: val })} />
+              </td>
+              <td>
+                <NumCell
+                  value={v.decimals}
+                  disabled={v.isString}
+                  onCommit={(val) => commit(i, { format: rebuildFormat(v, v.width, val), decimals: val })}
+                />
+              </td>
+              <td>
+                <TextCell value={v.label} onCommit={(val) => commit(i, { label: val })} />
+              </td>
+              <td className="button-cell">
+                <button onClick={() => setDialog({ kind: 'values', index: i })}>{valueLabelsSummary(v.valueLabels)}</button>
+              </td>
+              <td className="button-cell">
+                <button onClick={() => setDialog({ kind: 'missing', index: i })}>{missingSummary(v.missing)}</button>
+              </td>
+              <td>
+                <NumCell value={v.columns} onCommit={(val) => commit(i, { columns: val })} />
+              </td>
+              <td>
+                <SelectCell value={v.align} options={ALIGNS} onCommit={(val) => commit(i, { align: val as Align })} />
+              </td>
+              <td>
+                <SelectCell value={v.measure} options={MEASURES} onCommit={(val) => commit(i, { measure: val as Measure })} />
+              </td>
+              <td>
+                <SelectCell value={v.role} options={ROLES} onCommit={(val) => commit(i, { role: val as Role })} />
+              </td>
+            </tr>
+          ))}
+          {/* trailing empty row: type a name to create a variable */}
+          <tr>
+            <td className="rownum">{summary.variables.length + 1}</td>
+            <td>
+              <input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onBlur={() => void addVariable(newName)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void addVariable(newName)
+                }}
+              />
+            </td>
+            {COLUMNS.slice(1).map((c) => (
+              <td key={c} />
+            ))}
+          </tr>
+        </tbody>
+      </table>
+
+      {dialog?.kind === 'type' && (
+        <VariableTypeDialog
+          meta={summary.variables[dialog.index]}
+          onOk={(format) => {
+            void commit(dialog.index, { format })
+            setDialog(null)
+          }}
+          onCancel={() => setDialog(null)}
+        />
+      )}
+      {dialog?.kind === 'values' && (
+        <ValueLabelsDialog
+          meta={summary.variables[dialog.index]}
+          onOk={(valueLabels) => {
+            void commit(dialog.index, { valueLabels })
+            setDialog(null)
+          }}
+          onCancel={() => setDialog(null)}
+        />
+      )}
+      {dialog?.kind === 'missing' && (
+        <MissingValuesDialog
+          meta={summary.variables[dialog.index]}
+          onOk={(missing) => {
+            void commit(dialog.index, { missing })
+            setDialog(null)
+          }}
+          onCancel={() => setDialog(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+function TextCell({ value, onCommit }: { value: string; onCommit: (v: string) => void }): JSX.Element {
+  const [v, setV] = useState(value)
+  return (
+    <input
+      value={v}
+      onChange={(e) => setV(e.target.value)}
+      onBlur={() => v !== value && onCommit(v)}
+      onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+    />
+  )
+}
+
+function NumCell({
+  value,
+  disabled,
+  onCommit
+}: {
+  value: number
+  disabled?: boolean
+  onCommit: (v: number) => void
+}): JSX.Element {
+  const [v, setV] = useState(String(value))
+  return (
+    <input
+      type="number"
+      disabled={disabled}
+      value={v}
+      onChange={(e) => setV(e.target.value)}
+      onBlur={() => Number(v) !== value && onCommit(Number(v))}
+      onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+    />
+  )
+}
+
+function SelectCell({
+  value,
+  options,
+  onCommit
+}: {
+  value: string
+  options: string[]
+  onCommit: (v: string) => void
+}): JSX.Element {
+  return (
+    <select value={value} onChange={(e) => onCommit(e.target.value)}>
+      {options.map((o) => (
+        <option key={o} value={o}>
+          {o.charAt(0).toUpperCase() + o.slice(1)}
+        </option>
+      ))}
+    </select>
+  )
+}

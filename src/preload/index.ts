@@ -1,6 +1,15 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/types'
-import type { OutputObject, SidecarStatus, SpssApi, WindowName } from '../shared/types'
+import type {
+  DatasetApi,
+  DatasetSummary,
+  OutputObject,
+  RowWindow,
+  SidecarStatus,
+  SpssApi,
+  VariableMetaJson,
+  WindowName
+} from '../shared/types'
 
 // Which window this preload belongs to, from ?window=... on the entry URL.
 function detectWindow(): WindowName {
@@ -9,6 +18,29 @@ function detectWindow(): WindowName {
   if (location.pathname.includes('viewer')) return 'viewer'
   if (location.pathname.includes('syntax')) return 'syntax'
   return 'dataeditor'
+}
+
+const ds: DatasetApi = {
+  newDataset: () => ipcRenderer.invoke(IPC.ds.new) as Promise<DatasetSummary>,
+  openDialog: () => ipcRenderer.invoke(IPC.ds.openDialog) as Promise<DatasetSummary | null>,
+  open: (path: string) => ipcRenderer.invoke(IPC.ds.open, path) as Promise<DatasetSummary>,
+  save: () => ipcRenderer.invoke(IPC.ds.save) as Promise<{ ok: boolean; path: string } | { error: string }>,
+  saveAs: () => ipcRenderer.invoke(IPC.ds.saveAs) as Promise<{ ok: boolean; path: string } | null>,
+  getRows: (offset, limit, valueLabels) =>
+    ipcRenderer.invoke(IPC.ds.getRows, { offset, limit, valueLabels }) as Promise<RowWindow>,
+  setCell: (row, col, value) => ipcRenderer.invoke(IPC.ds.setCell, { row, col, value }) as Promise<void>,
+  setVariableMeta: (index, meta: VariableMetaJson) =>
+    ipcRenderer.invoke(IPC.ds.setVariableMeta, { index, meta }) as Promise<DatasetSummary>,
+  insertVariable: (index, meta) =>
+    ipcRenderer.invoke(IPC.ds.insertVariable, { index, meta }) as Promise<DatasetSummary>,
+  deleteVariable: (index) => ipcRenderer.invoke(IPC.ds.deleteVariable, { index }) as Promise<DatasetSummary>,
+  insertCase: (index) => ipcRenderer.invoke(IPC.ds.insertCase, { index }) as Promise<{ nRows: number }>,
+  deleteCase: (index) => ipcRenderer.invoke(IPC.ds.deleteCase, { index }) as Promise<{ nRows: number }>,
+  onChanged: (cb) => {
+    const listener = (_e: unknown, summary: DatasetSummary) => cb(summary)
+    ipcRenderer.on(IPC.datasetChanged, listener)
+    return () => ipcRenderer.removeListener(IPC.datasetChanged, listener)
+  }
 }
 
 const api: SpssApi = {
@@ -25,7 +57,8 @@ const api: SpssApi = {
     ipcRenderer.on(IPC.outputAppend, listener)
     return () => ipcRenderer.removeListener(IPC.outputAppend, listener)
   },
-  showWindow: (name: WindowName) => ipcRenderer.send(IPC.windowShow, name)
+  showWindow: (name: WindowName) => ipcRenderer.send(IPC.windowShow, name),
+  ds
 }
 
 contextBridge.exposeInMainWorld('spss', api)

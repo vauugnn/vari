@@ -49,14 +49,14 @@ export class Sidecar extends EventEmitter {
     return join(root, 'venv', win ? 'Scripts' : 'bin', win ? 'python.exe' : 'python')
   }
 
-  private serverScript(): string {
-    return join(app.getAppPath(), 'sidecar', 'server.py')
+  private appRoot(): string {
+    return app.getAppPath()
   }
 
   start(): void {
     this.setStatus({ state: 'starting' })
     const python = this.pythonPath()
-    const script = this.serverScript()
+    const root = this.appRoot()
 
     if (!existsSync(python)) {
       this.setStatus({
@@ -68,7 +68,11 @@ export class Sidecar extends EventEmitter {
 
     let proc: ChildProcess
     try {
-      proc = spawn(python, [script], { stdio: ['pipe', 'pipe', 'pipe'] })
+      // Run as a package module so sidecar/io does not shadow stdlib io.
+      proc = spawn(python, ['-m', 'sidecar.server'], {
+        cwd: root,
+        stdio: ['pipe', 'pipe', 'pipe']
+      })
     } catch (err) {
       this.setStatus({ state: 'down', detail: `Failed to spawn sidecar: ${String(err)}` })
       return
