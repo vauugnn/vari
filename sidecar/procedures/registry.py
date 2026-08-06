@@ -7,6 +7,8 @@ from .correlations import Correlations
 from .crosstabs import Crosstabs
 from .data_ops import Filter, SelectIf, SortCases, SplitFile, UseCommand, Weight
 from .descriptives import Descriptives
+from .examine import Examine
+from .partial import PartialCorr
 from .frequencies import Frequencies
 from .graph import Graph
 from .means import Means
@@ -49,4 +51,6 @@ def build_registry() -> Registry:
     reg.register("WEIGHT")(Weight)
     reg.register("SPLIT")(SplitFile)
     reg.register("USE")(UseCommand)
+    reg.register("EXAMINE")(Examine)
+    reg.register("PARTIAL")(PartialCorr)
     return reg

@@ -16,7 +16,7 @@ from ..data.format import Format
 from ..data.missing import missing_mask
 from ..output.model import Dimension, PivotTable
 from ..syntax.registry import DataProcedure
-from .base import strip_leading_zero, value_label
+from .base import get_weights, strip_leading_zero, value_label
 
 _F0 = Format("F", 8, 0)
 _F1 = Format("F", 8, 1)
@@ -54,7 +54,11 @@ class Crosstabs(DataProcedure):
         valid = ~(missing_mask(ds.df[rv], rmeta).to_numpy() | missing_mask(ds.df[cv], cmeta).to_numpy())
         r = ds.df[rv].to_numpy()[valid]
         c = ds.df[cv].to_numpy()[valid]
-        ct = pd.crosstab(r, c)
+        w = get_weights(ds)
+        if w is not None:
+            ct = pd.crosstab(r, c, values=w[valid], aggfunc="sum").fillna(0)
+        else:
+            ct = pd.crosstab(r, c)
         ct = ct.sort_index(axis=0).sort_index(axis=1)
         row_vals = list(ct.index)
         col_vals = list(ct.columns)

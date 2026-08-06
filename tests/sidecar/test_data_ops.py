@@ -72,3 +72,35 @@ def test_weight_state_set():
     assert reg.active.weight_var == "w"
     run(reg, "WEIGHT OFF.")
     assert reg.active.weight_var is None
+
+
+def test_weight_applies_to_frequencies():
+    reg = make(pd.DataFrame({"g": [1.0, 2], "w": [3.0, 5]}))
+    run(reg, "WEIGHT BY w.")
+    out = run(reg, "FREQUENCIES VARIABLES=g.")
+    freq = tables(out)[1]
+    cats = freq["rowDims"][0]["categories"]
+    cells = {(tuple(c["r"]), tuple(c["c"])): c["v"] for c in freq["cells"]}
+    # weighted total = 3 + 5 = 8
+    assert cells[((cats.index("Total"),), (0,))] in ("8", "8.00")
+
+
+def test_weight_applies_to_descriptives():
+    reg = make(pd.DataFrame({"y": [10.0, 20], "w": [1.0, 3]}))
+    run(reg, "WEIGHT BY w.")
+    out = run(reg, "DESCRIPTIVES VARIABLES=y.")
+    t = tables(out)[0]
+    cells = {(tuple(c["r"]), tuple(c["c"])): c["v"] for c in t["cells"]}
+    # weighted mean = (10*1 + 20*3)/4 = 17.5 ; N = 4
+    assert cells[((0,), (0,))] in ("4", "4.00")
+    assert cells[((0,), (3,))] == "17.50"
+
+
+def test_weight_applies_to_crosstabs():
+    reg = make(pd.DataFrame({"r": [1.0, 1, 2], "c": [1.0, 2, 2], "w": [2.0, 3, 4]}))
+    run(reg, "WEIGHT BY w.")
+    out = run(reg, "CROSSTABS /TABLES=r BY c /CELLS=COUNT.")
+    ct = tables(out)[0]
+    cells = {(tuple(cc["r"]), tuple(cc["c"])): cc["v"] for cc in ct["cells"]}
+    # cell (r=1,c=1) weighted count = 2
+    assert cells[((0, 0), (0,))] == "2"

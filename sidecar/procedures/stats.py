@@ -136,3 +136,31 @@ def mode(x: np.ndarray) -> Optional[float]:
     vals, counts = np.unique(v, return_counts=True)
     top = counts.max()
     return float(vals[counts == top].min())
+
+
+# ---- weighted variants (WEIGHT BY) ----
+def _wvalid(x: np.ndarray, w: np.ndarray):
+    x = np.asarray(x, dtype="float64")
+    w = np.asarray(w, dtype="float64")
+    keep = ~np.isnan(x) & ~np.isnan(w) & (w > 0)
+    return x[keep], w[keep]
+
+
+def w_n(x: np.ndarray, w: np.ndarray) -> float:
+    _, ww = _wvalid(x, w)
+    return float(ww.sum())
+
+
+def w_mean(x: np.ndarray, w: np.ndarray) -> Optional[float]:
+    xv, ww = _wvalid(x, w)
+    return float((xv * ww).sum() / ww.sum()) if ww.sum() > 0 else None
+
+
+def w_std(x: np.ndarray, w: np.ndarray) -> Optional[float]:
+    xv, ww = _wvalid(x, w)
+    sw = ww.sum()
+    if sw <= 1:
+        return None
+    m = (xv * ww).sum() / sw
+    var = (ww * (xv - m) ** 2).sum() / (sw - 1)
+    return float(math.sqrt(var))

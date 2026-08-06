@@ -75,7 +75,11 @@ def scatter(x: Sequence[float], y: Sequence[float], title: str = "", xlabel: str
 
 def boxplot(groups: Sequence[Sequence[float]], labels: Sequence[str], title: str = "", ylabel: str = "") -> dict[str, Any]:
     fig, ax = plt.subplots(figsize=(4.4, 3.4))
-    ax.boxplot([np.asarray(g, float) for g in groups], labels=[str(x) for x in labels],
-               patch_artist=True, boxprops=dict(facecolor="#cfe0f2", edgecolor=_EDGE))
+    try:
+        ax.boxplot([np.asarray(g, float) for g in groups], tick_labels=[str(x) for x in labels],
+                   patch_artist=True, boxprops=dict(facecolor="#cfe0f2", edgecolor=_EDGE))
+    except TypeError:  # older matplotlib
+        ax.boxplot([np.asarray(g, float) for g in groups], labels=[str(x) for x in labels],
+                   patch_artist=True, boxprops=dict(facecolor="#cfe0f2", edgecolor=_EDGE))
     ax.set_ylabel(ylabel)
     return _finish(fig, title)

@@ -40,7 +40,7 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
         submenu: [
           dialogItem('Frequencies…', 'frequencies', open),
           dialogItem('Descriptives…', 'descriptives', open),
-          proc('Explore…'),
+          dialogItem('Explore…', 'explore', open),
           dialogItem('Crosstabs…', 'crosstabs', open),
           proc('TURF Analysis'),
           proc('Ratio…'),
@@ -74,7 +74,7 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
       { label: 'Mixed Models', enabled: false, submenu: [proc('Linear…'), proc('Generalized Linear…')] },
       {
         label: 'Correlate',
-        submenu: [dialogItem('Bivariate…', 'correlate', open), proc('Partial…'), proc('Distances…'), proc('Canonical Correlation')]
+        submenu: [dialogItem('Bivariate…', 'correlate', open), dialogItem('Partial…', 'partial', open), proc('Distances…'), proc('Canonical Correlation')]
       },
       {
         label: 'Regression',

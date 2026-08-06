@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 
@@ -16,6 +16,16 @@ def strip_leading_zero(s: str) -> str:
 
 def var_index(ds: Any, name: str) -> int:
     return ds._index_of(name)
+
+
+def get_weights(ds: Any) -> Optional[np.ndarray]:
+    """The active weight vector (WEIGHT BY), or None. Non-positive/missing
+    weights are treated as 0."""
+    wv = getattr(ds, "weight_var", None)
+    if not wv or wv not in ds.df.columns:
+        return None
+    w = ds.df[wv].to_numpy(dtype="float64")
+    return np.where(np.isnan(w) | (w < 0), 0.0, w)
 
 
 def numeric_valid(ds: Any, name: str, include_user_missing: bool = False) -> np.ndarray:

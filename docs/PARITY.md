@@ -33,7 +33,7 @@ a fixture's SPSS output is on hand.
 
 | Item | Status |
 |---|---|
-| WEIGHT BY | Sets dataset state and shows in the status bar, but procedures do **not** yet replicate counts/means by the weight. SPLIT FILE, FILTER, SELECT IF, SORT CASES are fully applied through the `DataProcedure` base. |
+| WEIGHT BY | Applied to FREQUENCIES (counts/percents/N), CROSSTABS (observed counts + chi-square), and DESCRIPTIVES (N/mean/std). Other procedures (T-TEST, ANOVA, REGRESSION, etc.) do not yet replicate by weight. SPLIT FILE, FILTER, SELECT IF, SORT CASES apply through the `DataProcedure` base. |
 | SPLIT FILE | Runs each procedure once per split group with a heading. LAYERED vs SEPARATE both render as separate table sets (SPSS's layered single-table pivot not yet built). |
 
 ## Resolved

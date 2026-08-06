@@ -15,7 +15,7 @@ from ..output.model import Dimension, PivotTable
 from ..syntax.lexer import expand_varlist
 from ..syntax.registry import DataProcedure
 from . import stats
-from .base import numeric_valid
+from .base import get_weights, numeric_valid
 
 _STAT_COLS = {
     "MEAN": ("Mean", stats.mean),
@@ -60,13 +60,22 @@ class Descriptives(DataProcedure):
 
         t = PivotTable("Descriptive Statistics", [Dimension("", row_labels)], [Dimension("", col_labels)])
         f0 = Format("F", 8, 0)
+        w = get_weights(ds)
         for i, nm in enumerate(names):
             x = numeric_valid(ds, nm)
-            t.set([i], [0], f0.render(stats.n_valid(x)), "num")
+            if w is None:
+                t.set([i], [0], f0.render(stats.n_valid(x)), "num")
+            else:
+                idx = ds._index_of(nm)
+                mask = missing_mask(ds.df[nm], ds.variables[idx]).to_numpy()
+                xful = ds.df[nm].to_numpy(dtype="float64")
+                t.set([i], [0], f0.render(float(w[~mask].sum())), "num")
             for j, k in enumerate(ordered, start=1):
-                fn = _STAT_COLS[k][1]
-                val = fn(x)
                 fmt = Format("F", 8, _decimals_for(ds, nm, k))
+                if w is not None and k in ("MEAN", "STDDEV"):
+                    val = stats.w_mean(xful, w) if k == "MEAN" else stats.w_std(xful, w)
+                else:
+                    val = _STAT_COLS[k][1](x)
                 t.set([i], [j], fmt.render(val) if val is not None else ".", "num")
 
         # Valid N (listwise): rows with no missing across all selected variables.
@@ -74,7 +83,8 @@ class Descriptives(DataProcedure):
         for nm in names:
             idx = ds._index_of(nm)
             listwise |= missing_mask(ds.df[nm], ds.variables[idx]).to_numpy()
-        t.set([len(names)], [0], f0.render(int((~listwise).sum())), "num")
+        lw_n = float(w[~listwise].sum()) if w is not None else int((~listwise).sum())
+        t.set([len(names)], [0], f0.render(lw_n), "num")
         for j in range(1, len(col_labels)):
             t.set([len(names)], [j], "", "text")
         return [t.to_json()]

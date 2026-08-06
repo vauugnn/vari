@@ -41,6 +41,7 @@ import { MeansDialog } from '../dialogs/analysis/MeansDialog'
 import { ComputeDialog } from '../dialogs/analysis/ComputeDialog'
 import { HistogramDialog, BarChartDialog, PieChartDialog, ScatterDialog } from '../dialogs/analysis/GraphDialogs'
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
+import { ExploreDialog, PartialCorrDialog } from '../dialogs/analysis/ExploreDialog'
 import './dataeditor.css'
 
 function TB({
@@ -265,6 +266,10 @@ export function DataEditor(): JSX.Element {
             return <SplitFileDialog {...p} />
           case 'sort':
             return <SortCasesDialog {...p} />
+          case 'explore':
+            return <ExploreDialog {...p} />
+          case 'partial':
+            return <PartialCorrDialog {...p} />
           default:
             return null
         }

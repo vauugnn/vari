@@ -15,7 +15,7 @@ from ..output.model import Dimension, PivotTable
 from ..syntax.lexer import expand_varlist
 from ..syntax.registry import DataProcedure
 from . import stats
-from .base import numeric_valid, value_label
+from .base import get_weights, numeric_valid, value_label
 
 _STAT_ROWS = {
     "MEAN": ("Mean", stats.mean, 3),
@@ -97,12 +97,14 @@ class Frequencies(DataProcedure):
         rows = ["Valid", "Missing"] + [_STAT_ROWS[k][0] for k in stat_keys]
         t = PivotTable("Statistics", [Dimension("N", rows)], [Dimension("", list(names))], corner="")
         f0 = Format("F", 8, 0)
+        w = get_weights(ds)
         for j, nm in enumerate(names):
             series = ds.df[nm]
             meta = ds.variables[ds._index_of(nm)]
             miss = missing_mask(series, meta).to_numpy()
-            t.set([0], [j], f0.render(int((~miss).sum())), "num")
-            t.set([1], [j], f0.render(int(miss.sum())), "num")
+            wv = w if w is not None else np.ones(len(series))
+            t.set([0], [j], f0.render(float(wv[~miss].sum())), "num")
+            t.set([1], [j], f0.render(float(wv[miss].sum())), "num")
             x = numeric_valid(ds, nm)
             for i, k in enumerate(stat_keys, start=2):
                 _, fn, dec = _STAT_ROWS[k]
@@ -114,15 +116,17 @@ class Frequencies(DataProcedure):
         meta = ds.variables[ds._index_of(name)]
         series = ds.df[name]
         miss_mask = missing_mask(series, meta).to_numpy()
-        total_n = len(series)
+        w = get_weights(ds)
+        wfull = w if w is not None else np.ones(len(series))
+        total_n = float(wfull.sum())
         valid_series = series[~miss_mask]
-        valid_n = len(valid_series)
+        valid_n = float(wfull[~miss_mask].sum())
 
         # counts for valid values (sorted), then missing values (sorted)
-        valid_counts = _counts(valid_series)
+        valid_counts = _counts(valid_series, wfull[~miss_mask])
         missing_series = series[miss_mask]
-        missing_counts = _counts(missing_series.dropna())
-        sysmis_n = int(series.isna().sum())
+        missing_counts = _counts(missing_series, wfull[miss_mask])
+        sysmis_n = float(wfull[series.isna().to_numpy()].sum())
 
         row_labels: list[str] = []
         rows_data: list[tuple[Any, Any, Any, Any]] = []
@@ -161,9 +165,18 @@ class Frequencies(DataProcedure):
         return t.to_json()
 
 
-def _counts(series: Any) -> list[tuple[Any, int]]:
-    vc = series.value_counts(dropna=True)
-    pairs = [(k, int(v)) for k, v in vc.items()]
+def _counts(series: Any, weights: Any = None) -> list[tuple[Any, float]]:
+    if weights is None:
+        vc = series.value_counts(dropna=True)
+        pairs = [(k, float(v)) for k, v in vc.items()]
+    else:
+        import pandas as pd
+
+        df = pd.DataFrame({"v": np.asarray(series), "w": np.asarray(weights, dtype="float64")})
+        df = df.dropna(subset=["v"])
+        df = df[df["w"] > 0]
+        g = df.groupby("v")["w"].sum()
+        pairs = [(k, float(v)) for k, v in g.items()]
     pairs.sort(key=lambda kv: _sortkey(kv[0]))
     return pairs
 
