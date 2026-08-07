@@ -1,8 +1,8 @@
 # electron-builder config. Packaging is out of scope for Phase 0 (run via
 # `npm run dev`); this exists so the build pipeline is defined from the start.
 # The Python sidecar + venv are shipped as extra resources, unpacked from asar.
-appId: com.local.spssclone
-productName: SPSS Clone
+appId: com.vari.app
+productName: Vari
 directories:
   output: dist
   buildResources: build

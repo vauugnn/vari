@@ -257,7 +257,7 @@ export function DataEditor(): JSX.Element {
 
       <div className="statusbar">
         <span className="sb-seg">
-          IBM SPSS Statistics Processor is {status.state === 'ready' ? 'ready' : status.state === 'down' ? 'unavailable' : 'starting'}
+          Vari Processor is {status.state === 'ready' ? 'ready' : status.state === 'down' ? 'unavailable' : 'starting'}
         </span>
         {summary && <span className="sb-seg">{summary.name}</span>}
         {summary && <span className="sb-seg">{summary.nVars} variables</span>}

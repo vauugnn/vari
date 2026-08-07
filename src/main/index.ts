@@ -17,6 +17,8 @@ const windows: Record<WindowName, BrowserWindow | null> = {
 
 const sidecar = new Sidecar()
 
+app.setName('Vari')
+
 function loadEntry(win: BrowserWindow, entry: WindowName): void {
   if (RENDERER_URL) {
     void win.loadURL(`${RENDERER_URL}/${entry}/index.html`)
@@ -71,7 +73,7 @@ function sendToViewer(objects: OutputObject[]): void {
 function createAllWindows(): void {
   // Data Editor — main window. Closing it quits the app.
   windows.dataeditor = createWindow('dataeditor', {
-    title: 'Untitled1 [DataSet0] - IBM SPSS Statistics Data Editor',
+    title: 'Untitled1 [DataSet0] - Vari Data Editor',
     width: 1100,
     height: 720
   })
@@ -81,7 +83,7 @@ function createAllWindows(): void {
   })
 
   windows.viewer = createWindow('viewer', {
-    title: 'Output1 - IBM SPSS Statistics Viewer',
+    title: 'Output1 - Vari Viewer',
     width: 1000,
     height: 720,
     x: 120,
@@ -90,7 +92,7 @@ function createAllWindows(): void {
   windows.viewer.on('closed', () => (windows.viewer = null))
 
   windows.syntax = createWindow('syntax', {
-    title: 'Syntax1 - IBM SPSS Statistics Syntax Editor',
+    title: 'Syntax1 - Vari Syntax Editor',
     width: 820,
     height: 560,
     x: 200,

@@ -1,7 +1,8 @@
 {
-  "name": "spss-clone",
+  "name": "vari",
+  "productName": "Vari",
   "version": "0.0.0",
-  "description": "Desktop reimplementation of IBM SPSS Statistics (Base) for coursework",
+  "description": "Vari — a desktop statistics application (SPSS-style workflow)",
   "private": true,
   "main": "./out/main/index.js",
   "scripts": {
