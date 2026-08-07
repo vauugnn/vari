@@ -16,7 +16,14 @@ extraResources:
 mac:
   category: public.app-category.education
   icon: build/icon.png
-  identity: null # unsigned (CI has no cert); users right-click ▸ Open first run
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  # When signing secrets (CSC_LINK) are present, electron-builder signs with the
+  # Developer ID cert; when absent it skips signing and afterPack.js ad-hoc-signs
+  # so Apple Silicon still runs the app. Notarization is enabled from CI via
+  # --config.mac.notarize=true only when Apple credentials exist.
   target:
     - dmg
     - zip
