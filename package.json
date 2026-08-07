@@ -12,7 +12,9 @@
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.preload.json && tsc --noEmit -p tsconfig.web.json",
     "test": "vitest run",
-    "pack": "electron-vite build && electron-builder --dir"
+    "sidecar:freeze": "python packaging/build_sidecar.py",
+    "pack": "electron-vite build && electron-builder --dir",
+    "dist": "electron-vite build && electron-builder"
   },
   "dependencies": {
     "react": "^18.3.1",

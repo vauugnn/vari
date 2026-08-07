@@ -49,28 +49,39 @@ export class Sidecar extends EventEmitter {
     return join(root, 'venv', win ? 'Scripts' : 'bin', win ? 'python.exe' : 'python')
   }
 
+  /** In a packaged build, the sidecar is a PyInstaller binary under resources. */
+  private frozenPath(): string {
+    const exe = process.platform === 'win32' ? 'vari-sidecar.exe' : 'vari-sidecar'
+    return join(process.resourcesPath, 'sidecar-bin', exe)
+  }
+
   private appRoot(): string {
     return app.getAppPath()
   }
 
   start(): void {
     this.setStatus({ state: 'starting' })
-    const python = this.pythonPath()
-    const root = this.appRoot()
 
-    if (!existsSync(python)) {
+    // Packaged: run the frozen sidecar binary. Dev: run the venv as a module.
+    const frozen = this.frozenPath()
+    const useFrozen = app.isPackaged && existsSync(frozen)
+    const command = useFrozen ? frozen : this.pythonPath()
+    const spawnArgs = useFrozen ? [] : ['-m', 'sidecar.server']
+
+    if (!existsSync(command)) {
       this.setStatus({
         state: 'down',
-        detail: `Python interpreter not found at ${python}. Create the venv (see CLAUDE.md) or set SPSS_SIDECAR_PYTHON.`
+        detail: app.isPackaged
+          ? `Sidecar binary not found at ${frozen}. The packaged build is incomplete.`
+          : `Python interpreter not found at ${command}. Create the venv (see CLAUDE.md) or set SPSS_SIDECAR_PYTHON.`
       })
       return
     }
 
     let proc: ChildProcess
     try {
-      // Run as a package module so sidecar/io does not shadow stdlib io.
-      proc = spawn(python, ['-m', 'sidecar.server'], {
-        cwd: root,
+      proc = spawn(command, spawnArgs, {
+        cwd: this.appRoot(),
         stdio: ['pipe', 'pipe', 'pipe']
       })
     } catch (err) {

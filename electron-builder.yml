@@ -1,6 +1,6 @@
-# electron-builder config. Packaging is out of scope for Phase 0 (run via
-# `npm run dev`); this exists so the build pipeline is defined from the start.
-# The Python sidecar + venv are shipped as extra resources, unpacked from asar.
+# electron-builder config. The Python compute sidecar is frozen by PyInstaller
+# (packaging/build_sidecar.py) into packaging/dist/vari-sidecar and shipped as
+# an extra resource ("sidecar-bin"); the app spawns it at runtime.
 appId: com.vari.app
 productName: Vari
 directories:
@@ -10,21 +10,24 @@ files:
   - out/**/*
   - package.json
 extraResources:
-  - from: sidecar
-    to: sidecar
-    filter: ["**/*.py"]
-asarUnpack:
-  - sidecar/**
+  - from: packaging/dist/vari-sidecar
+    to: sidecar-bin
 mac:
   category: public.app-category.education
   icon: build/icon.png
+  identity: null # unsigned (CI has no cert); users right-click ▸ Open first run
   target:
-    - dir
+    - dmg
+    - zip
 win:
   icon: build/icon.png
   target:
-    - dir
+    - nsis
+    - zip
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
 linux:
   icon: build/icon.png
   target:
-    - dir
+    - AppImage
