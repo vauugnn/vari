@@ -78,7 +78,11 @@ import {
   RocDialog,
   LineDialog,
   AreaDialog,
-  ErrorBarDialog
+  ErrorBarDialog,
+  QQPlotDialog,
+  PPPlotDialog,
+  RatioDialog,
+  KappaDialog
 } from '../dialogs/analysis/MoreDialogs'
 import './dataeditor.css'
 
@@ -375,6 +379,14 @@ export function DataEditor(): JSX.Element {
             return <AreaDialog {...p} />
           case 'graph-errorbar':
             return <ErrorBarDialog {...p} />
+          case 'qqplot':
+            return <QQPlotDialog {...p} />
+          case 'ppplot':
+            return <PPPlotDialog {...p} />
+          case 'ratio':
+            return <RatioDialog {...p} />
+          case 'kappa':
+            return <KappaDialog {...p} />
           default:
             return null
         }

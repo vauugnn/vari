@@ -44,9 +44,9 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
           dialogItem('Explore…', 'explore', open),
           dialogItem('Crosstabs…', 'crosstabs', open),
           proc('TURF Analysis'),
-          proc('Ratio…'),
-          proc('P-P Plots…'),
-          proc('Q-Q Plots…')
+          dialogItem('Ratio…', 'ratio', open),
+          dialogItem('P-P Plots…', 'ppplot', open),
+          dialogItem('Q-Q Plots…', 'qqplot', open)
         ]
       },
       { label: 'Bayesian Statistics', enabled: false, submenu: [proc('One Sample Normal…'), proc('One Sample Binomial…'), proc('One Sample Poisson…'), proc('Related Sample Normal…'), proc('Independent Sample Normal…')] },
@@ -115,7 +115,7 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
       },
       {
         label: 'Scale',
-        submenu: [dialogItem('Reliability Analysis…', 'reliability', open), proc('Weighted Kappa…'), proc('Multidimensional Unfolding (PREFSCAL)…'), proc('Multidimensional Scaling (PROXSCAL)…'), proc('Multidimensional Scaling (ALSCAL)…')]
+        submenu: [dialogItem('Reliability Analysis…', 'reliability', open), dialogItem('Weighted Kappa…', 'kappa', open), proc('Multidimensional Unfolding (PREFSCAL)…'), proc('Multidimensional Scaling (PROXSCAL)…'), proc('Multidimensional Scaling (ALSCAL)…')]
       },
       {
         label: 'Nonparametric Tests',

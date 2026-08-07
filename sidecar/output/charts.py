@@ -108,6 +108,31 @@ def error_bar(labels: Sequence[str], means: Sequence[float], errors: Sequence[fl
     return _finish(fig, title)
 
 
+def qq(values: Sequence[float], title: str = "", normal: bool = True) -> dict[str, Any]:
+    from scipy import stats as sps
+
+    v = np.sort(np.asarray([x for x in values if x == x], dtype=float))
+    n = v.size
+    fig, ax = plt.subplots(figsize=(4.2, 3.6))
+    if n:
+        probs = (np.arange(1, n + 1) - 0.5) / n
+        theo = sps.norm.ppf(probs, loc=v.mean(), scale=v.std(ddof=1) or 1)
+        if normal:
+            ax.scatter(theo, v, s=14, color=_BAR_COLOR, edgecolor=_EDGE, linewidth=0.4)
+            lo, hi = min(theo.min(), v.min()), max(theo.max(), v.max())
+            ax.plot([lo, hi], [lo, hi], color="#999", linewidth=0.8)
+            ax.set_xlabel("Expected Normal Value")
+            ax.set_ylabel("Observed Value")
+        else:  # P-P
+            ecdf = probs
+            tcdf = sps.norm.cdf((v - v.mean()) / (v.std(ddof=1) or 1))
+            ax.scatter(tcdf, ecdf, s=14, color=_BAR_COLOR, edgecolor=_EDGE, linewidth=0.4)
+            ax.plot([0, 1], [0, 1], color="#999", linewidth=0.8)
+            ax.set_xlabel("Expected Cum Prob")
+            ax.set_ylabel("Observed Cum Prob")
+    return _finish(fig, title)
+
+
 def boxplot(groups: Sequence[Sequence[float]], labels: Sequence[str], title: str = "", ylabel: str = "") -> dict[str, Any]:
     fig, ax = plt.subplots(figsize=(4.4, 3.4))
     try:

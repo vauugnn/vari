@@ -8,6 +8,7 @@ from .correlations import Correlations
 from .crosstabs import Crosstabs
 from .curvefit import CurveFit
 from .discriminant import Discriminant
+from .misc_procs import Kappa, Pplot, RatioStats
 from .reports import Codebook, Summarize
 from .roc import Roc
 from .data_ops import Filter, SelectIf, SortCases, SplitFile, UseCommand, Weight
@@ -88,4 +89,7 @@ def build_registry() -> Registry:
     reg.register("CURVEFIT")(CurveFit)
     reg.register("SUMMARIZE")(Summarize)
     reg.register("CODEBOOK")(Codebook)
+    reg.register("PPLOT")(Pplot)
+    reg.register("RATIO")(RatioStats)
+    reg.register("KAPPA")(Kappa)
     return reg

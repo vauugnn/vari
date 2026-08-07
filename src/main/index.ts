@@ -30,6 +30,7 @@ function createWindow(entry: WindowName, opts: Electron.BrowserWindowConstructor
     width: 1000,
     height: 700,
     show: false,
+    icon: join(app.getAppPath(), 'build/icon.png'),
     ...opts,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),

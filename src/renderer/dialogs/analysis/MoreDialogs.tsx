@@ -98,3 +98,44 @@ function meanByDialog(title: string, kind: 'LINE' | 'AREA' | 'ERRORBAR') {
 export const LineDialog = meanByDialog('Line Charts', 'LINE')
 export const AreaDialog = meanByDialog('Area Charts', 'AREA')
 export const ErrorBarDialog = meanByDialog('Error Bar', 'ERRORBAR')
+
+export const QQPlotDialog = (function () {
+  return function Dialog({ variables, onClose }: Props): JSX.Element {
+    const [vars, setVars] = useState<string[]>([])
+    const s = () => `PPLOT VARIABLES=${vars.join(' ')} /TYPE=Q-Q.`
+    return frame('Q-Q Plots', s, !vars.length, onClose, (
+      <VarMover variables={variables} value={vars} onChange={setVars} label="Variables:" accept={(v) => !v.isString} />
+    ), () => setVars([]))
+  }
+})()
+
+export const PPPlotDialog = (function () {
+  return function Dialog({ variables, onClose }: Props): JSX.Element {
+    const [vars, setVars] = useState<string[]>([])
+    const s = () => `PPLOT VARIABLES=${vars.join(' ')} /TYPE=P-P.`
+    return frame('P-P Plots', s, !vars.length, onClose, (
+      <VarMover variables={variables} value={vars} onChange={setVars} label="Variables:" accept={(v) => !v.isString} />
+    ), () => setVars([]))
+  }
+})()
+
+export function RatioDialog({ variables, onClose }: Props): JSX.Element {
+  const [num, setNum] = useState<string[]>([])
+  const [den, setDen] = useState<string[]>([])
+  const s = () => `RATIO STATISTICS ${num[0]} WITH ${den[0]}.`
+  return frame('Ratio Statistics', s, !num.length || !den.length, onClose, (
+    <>
+      <VarMover variables={variables} value={num} onChange={(v) => setNum(v.slice(-1))} label="Numerator:" accept={(v) => !v.isString} />
+      <div style={{ height: 6 }} />
+      <VarMover variables={variables} value={den} onChange={(v) => setDen(v.slice(-1))} label="Denominator:" accept={(v) => !v.isString} />
+    </>
+  ), () => { setNum([]); setDen([]) })
+}
+
+export function KappaDialog({ variables, onClose }: Props): JSX.Element {
+  const [vars, setVars] = useState<string[]>([])
+  const s = () => `KAPPA ${vars.slice(0, 2).join(' ')}.`
+  return frame('Weighted Kappa', s, vars.length < 2, onClose, (
+    <VarMover variables={variables} value={vars} onChange={setVars} label="Two Rating Variables:" />
+  ), () => setVars([]))
+}
