@@ -31,6 +31,7 @@ const RESPAWN_DELAY_MS = 800
 export class Sidecar extends EventEmitter {
   private proc: ChildProcess | null = null
   private buffer = ''
+  private lastStderr = ''
   private nextId = 1
   private pending = new Map<number, Pending>()
   private quitting = false
@@ -90,11 +91,16 @@ export class Sidecar extends EventEmitter {
     }
     this.proc = proc
     this.buffer = ''
+    this.lastStderr = ''
 
     proc.stdout?.setEncoding('utf8')
     proc.stdout?.on('data', (chunk: string) => this.onStdout(chunk))
     proc.stderr?.setEncoding('utf8')
-    proc.stderr?.on('data', (chunk: string) => console.error('[sidecar]', chunk.trimEnd()))
+    proc.stderr?.on('data', (chunk: string) => {
+      // Keep the tail so a crash reason can be surfaced in the UI.
+      this.lastStderr = (this.lastStderr + chunk).slice(-2000)
+      console.error('[sidecar]', chunk.trimEnd())
+    })
     proc.on('error', (err) => {
       console.error('[sidecar] process error', err)
       this.handleExit(`process error: ${err.message}`)
@@ -121,7 +127,11 @@ export class Sidecar extends EventEmitter {
       }
       await delay(PING_INTERVAL_MS)
     }
-    this.setStatus({ state: 'down', detail: 'Sidecar did not answer ping() in time.' })
+    const tail = this.lastStderr.trim()
+    this.setStatus({
+      state: 'down',
+      detail: 'Sidecar did not answer ping() in time.' + (tail ? `\n\n${tail}` : '')
+    })
   }
 
   private onStdout(chunk: string): void {
@@ -186,7 +196,8 @@ export class Sidecar extends EventEmitter {
       this.setStatus({ state: 'down', detail: 'Sidecar stopped (app quitting).' })
       return
     }
-    this.setStatus({ state: 'down', detail: `Sidecar ${reason}. Restarting…` })
+    const tail = this.lastStderr.trim()
+    this.setStatus({ state: 'down', detail: `Sidecar ${reason}. Restarting…` + (tail ? `\n\n${tail}` : '') })
     if (this.respawnTimer) clearTimeout(this.respawnTimer)
     this.respawnTimer = setTimeout(() => {
       this.respawnTimer = null

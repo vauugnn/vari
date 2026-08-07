@@ -13,6 +13,7 @@ files:
 extraResources:
   - from: packaging/dist/vari-sidecar
     to: sidecar-bin
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 mac:
   category: public.app-category.education
   icon: build/icon.png
