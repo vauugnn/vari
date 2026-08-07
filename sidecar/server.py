@@ -47,7 +47,10 @@ def _meta_to_json(v: VariableMeta) -> dict[str, Any]:
 
 
 def _meta_from_json(d: dict[str, Any]) -> VariableMeta:
-    fmt = Format.parse(d["format"]) if d.get("format") else Format("F", 8, 2)
+    try:
+        fmt = Format.parse(d["format"]) if d.get("format") else Format("F", 8, 2)
+    except (ValueError, KeyError):
+        fmt = Format("F", 8, 2)
     vlabels = {item["value"]: item["label"] for item in d.get("valueLabels", [])}
     return VariableMeta(
         name=d["name"],

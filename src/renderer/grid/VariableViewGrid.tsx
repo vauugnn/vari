@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Align, DatasetSummary, Measure, Role, ValueLabel, MissingJson, VariableMetaJson } from '../../shared/types'
 import { useStore } from '../state/store'
+import { MeasureIcon } from '../common/icons'
 import { VariableTypeDialog } from '../dialogs/VariableTypeDialog'
 import { ValueLabelsDialog } from '../dialogs/ValueLabelsDialog'
 import { MissingValuesDialog } from '../dialogs/MissingValuesDialog'
@@ -135,7 +136,12 @@ export function VariableViewGrid({ summary }: { summary: DatasetSummary }): JSX.
                 <SelectCell value={v.align} options={ALIGNS} onCommit={(val) => commit(i, { align: val as Align })} />
               </td>
               <td>
-                <SelectCell value={v.measure} options={MEASURES} onCommit={(val) => commit(i, { measure: val as Measure })} />
+                <MeasureCell
+                  value={v.measure}
+                  isString={v.isString}
+                  isDate={v.type === 'Date'}
+                  onCommit={(val) => commit(i, { measure: val })}
+                />
               </td>
               <td>
                 <SelectCell value={v.role} options={ROLES} onCommit={(val) => commit(i, { role: val as Role })} />
@@ -198,6 +204,9 @@ export function VariableViewGrid({ summary }: { summary: DatasetSummary }): JSX.
 
 function TextCell({ value, onCommit }: { value: string; onCommit: (v: string) => void }): JSX.Element {
   const [v, setV] = useState(value)
+  // Resync when the underlying variable changes (reload, insert/delete, undo);
+  // rows are keyed by position, so without this the input keeps stale text.
+  useEffect(() => setV(value), [value])
   return (
     <input
       value={v}
@@ -218,6 +227,7 @@ function NumCell({
   onCommit: (v: number) => void
 }): JSX.Element {
   const [v, setV] = useState(String(value))
+  useEffect(() => setV(String(value)), [value])
   return (
     <input
       type="number"
@@ -227,6 +237,32 @@ function NumCell({
       onBlur={() => Number(v) !== value && onCommit(Number(v))}
       onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
     />
+  )
+}
+
+// SPSS shows the measurement-level icon in the Measure cell, not just a word.
+function MeasureCell({
+  value,
+  isString,
+  isDate,
+  onCommit
+}: {
+  value: Measure
+  isString: boolean
+  isDate: boolean
+  onCommit: (v: Measure) => void
+}): JSX.Element {
+  return (
+    <div className="measure-cell">
+      <MeasureIcon measure={value} isString={isString} isDate={isDate} size={14} />
+      <select value={value} onChange={(e) => onCommit(e.target.value as Measure)}>
+        {MEASURES.map((o) => (
+          <option key={o} value={o}>
+            {o.charAt(0).toUpperCase() + o.slice(1)}
+          </option>
+        ))}
+      </select>
+    </div>
   )
 }
 

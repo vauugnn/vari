@@ -187,6 +187,20 @@
   background: #fff;
 }
 
+.measure-cell {
+  display: flex;
+  align-items: center;
+  height: 20px;
+}
+.measure-cell svg {
+  flex: 0 0 auto;
+  margin-left: 4px;
+}
+.measure-cell select {
+  flex: 1 1 auto;
+  padding-left: 4px;
+}
+
 .vv td.button-cell {
   padding: 0;
 }
