@@ -13,7 +13,7 @@ interface Pending {
 
 const REQUEST_TIMEOUT_MS = 15000
 const PING_INTERVAL_MS = 200
-const PING_MAX_ATTEMPTS = 50 // ~10s to come up
+const PING_MAX_ATTEMPTS = 150 // ~30s: a frozen build's first-run imports are slow
 const RESPAWN_DELAY_MS = 800
 
 /**

@@ -12,15 +12,31 @@ from typing import Any, Optional, Sequence
 
 import numpy as np
 
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
-
 # SPSS-ish chart styling.
 _BAR_COLOR = "#4e79c4"
 _EDGE = "#2f4f8a"
-plt.rcParams.update({"font.size": 9, "font.family": "sans-serif", "axes.edgecolor": "#7f7f7f"})
+
+# matplotlib is imported lazily. Importing pyplot at module load triggers a
+# first-run font-cache build (several seconds), which is fine in a long-lived
+# process but blows past the packaged app's sidecar-ready ping window and shows
+# "Processor unavailable". Nothing here touches matplotlib until a chart is
+# actually drawn, so a sidecar that never plots never pays the cost.
+_PLT: Any = None
+
+
+def _plt() -> Any:
+    global _PLT
+    if _PLT is None:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        plt.rcParams.update(
+            {"font.size": 9, "font.family": "sans-serif", "axes.edgecolor": "#7f7f7f"}
+        )
+        _PLT = plt
+    return _PLT
 
 
 def _finish(fig: Any, title: str) -> dict[str, Any]:
@@ -28,7 +44,7 @@ def _finish(fig: Any, title: str) -> dict[str, Any]:
         fig.suptitle(title, fontsize=11, fontweight="bold")
     buf = io.StringIO()
     fig.savefig(buf, format="svg", bbox_inches="tight")
-    plt.close(fig)
+    _plt().close(fig)
     svg = buf.getvalue()
     svg = svg[svg.index("<svg") :]  # strip XML/DOCTYPE preamble
     return {"type": "Chart", "svg": svg}
@@ -37,7 +53,7 @@ def _finish(fig: Any, title: str) -> dict[str, Any]:
 def histogram(values: Sequence[float], title: str = "", xlabel: str = "",
               mean: Optional[float] = None, sd: Optional[float] = None, n: Optional[int] = None) -> dict[str, Any]:
     v = np.asarray([x for x in values if x == x], dtype=float)
-    fig, ax = plt.subplots(figsize=(4.4, 3.2))
+    fig, ax = _plt().subplots(figsize=(4.4, 3.2))
     if v.size:
         ax.hist(v, bins="auto", color=_BAR_COLOR, edgecolor=_EDGE, linewidth=0.5)
     ax.set_xlabel(xlabel)
@@ -49,7 +65,7 @@ def histogram(values: Sequence[float], title: str = "", xlabel: str = "",
 
 
 def bar_chart(labels: Sequence[str], counts: Sequence[float], title: str = "", xlabel: str = "") -> dict[str, Any]:
-    fig, ax = plt.subplots(figsize=(4.6, 3.2))
+    fig, ax = _plt().subplots(figsize=(4.6, 3.2))
     ax.bar([str(x) for x in labels], counts, color=_BAR_COLOR, edgecolor=_EDGE, linewidth=0.5)
     ax.set_xlabel(xlabel)
     ax.set_ylabel("Frequency")
@@ -58,7 +74,7 @@ def bar_chart(labels: Sequence[str], counts: Sequence[float], title: str = "", x
 
 
 def pie_chart(labels: Sequence[str], counts: Sequence[float], title: str = "") -> dict[str, Any]:
-    fig, ax = plt.subplots(figsize=(4.2, 3.4))
+    fig, ax = _plt().subplots(figsize=(4.2, 3.4))
     ax.pie(counts, labels=[str(x) for x in labels], autopct="%1.1f%%", startangle=90,
            colors=["#4e79c4", "#e08a2f", "#7ab648", "#d9433f", "#9b6fbf", "#e6a417"])
     ax.axis("equal")
@@ -66,7 +82,7 @@ def pie_chart(labels: Sequence[str], counts: Sequence[float], title: str = "") -
 
 
 def scatter(x: Sequence[float], y: Sequence[float], title: str = "", xlabel: str = "", ylabel: str = "") -> dict[str, Any]:
-    fig, ax = plt.subplots(figsize=(4.4, 3.4))
+    fig, ax = _plt().subplots(figsize=(4.4, 3.4))
     ax.scatter(x, y, s=16, color=_BAR_COLOR, edgecolor=_EDGE, linewidth=0.4)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -75,7 +91,7 @@ def scatter(x: Sequence[float], y: Sequence[float], title: str = "", xlabel: str
 
 def line(x: Sequence[float], y: Sequence[float], title: str = "", xlabel: str = "", ylabel: str = "",
          diagonal: bool = False) -> dict[str, Any]:
-    fig, ax = plt.subplots(figsize=(4.4, 3.4))
+    fig, ax = _plt().subplots(figsize=(4.4, 3.4))
     ax.plot(x, y, color=_BAR_COLOR, linewidth=1.6)
     if diagonal:
         ax.plot([0, 1], [0, 1], color="#999", linewidth=0.8, linestyle="--")
@@ -85,7 +101,7 @@ def line(x: Sequence[float], y: Sequence[float], title: str = "", xlabel: str = 
 
 
 def area(labels: Sequence[str], values: Sequence[float], title: str = "", xlabel: str = "", ylabel: str = "") -> dict[str, Any]:
-    fig, ax = plt.subplots(figsize=(4.6, 3.2))
+    fig, ax = _plt().subplots(figsize=(4.6, 3.2))
     xs = list(range(len(labels)))
     ax.fill_between(xs, values, color=_BAR_COLOR, alpha=0.5)
     ax.plot(xs, values, color=_EDGE, linewidth=1.2)
@@ -98,7 +114,7 @@ def area(labels: Sequence[str], values: Sequence[float], title: str = "", xlabel
 
 def error_bar(labels: Sequence[str], means: Sequence[float], errors: Sequence[float],
               title: str = "", xlabel: str = "", ylabel: str = "") -> dict[str, Any]:
-    fig, ax = plt.subplots(figsize=(4.6, 3.2))
+    fig, ax = _plt().subplots(figsize=(4.6, 3.2))
     xs = list(range(len(labels)))
     ax.errorbar(xs, means, yerr=errors, fmt="o", color=_BAR_COLOR, ecolor=_EDGE, capsize=4)
     ax.set_xticks(xs)
@@ -113,7 +129,7 @@ def qq(values: Sequence[float], title: str = "", normal: bool = True) -> dict[st
 
     v = np.sort(np.asarray([x for x in values if x == x], dtype=float))
     n = v.size
-    fig, ax = plt.subplots(figsize=(4.2, 3.6))
+    fig, ax = _plt().subplots(figsize=(4.2, 3.6))
     if n:
         probs = (np.arange(1, n + 1) - 0.5) / n
         theo = sps.norm.ppf(probs, loc=v.mean(), scale=v.std(ddof=1) or 1)
@@ -134,7 +150,7 @@ def qq(values: Sequence[float], title: str = "", normal: bool = True) -> dict[st
 
 
 def boxplot(groups: Sequence[Sequence[float]], labels: Sequence[str], title: str = "", ylabel: str = "") -> dict[str, Any]:
-    fig, ax = plt.subplots(figsize=(4.4, 3.4))
+    fig, ax = _plt().subplots(figsize=(4.4, 3.4))
     try:
         ax.boxplot([np.asarray(g, float) for g in groups], tick_labels=[str(x) for x in labels],
                    patch_artist=True, boxprops=dict(facecolor="#cfe0f2", edgecolor=_EDGE))
