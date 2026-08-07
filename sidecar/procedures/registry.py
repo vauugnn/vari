@@ -3,12 +3,17 @@ decorators) to keep imports acyclic."""
 from __future__ import annotations
 
 from ..syntax.registry import Registry
+from .cluster import Cluster, QuickCluster
 from .correlations import Correlations
 from .crosstabs import Crosstabs
+from .discriminant import Discriminant
 from .data_ops import Filter, SelectIf, SortCases, SplitFile, UseCommand, Weight
 from .data_ops2 import AddCmd, Aggregate, Flip, MatchFiles
 from .descriptives import Descriptives
 from .examine import Examine
+from .factor import Factor
+from .glm import Unianova
+from .logistic import LogisticRegression, Nomreg, Plum
 from .metadata import Formats, MissingValues, RenameVariables, ValueLabels, VariableCmd
 from .partial import PartialCorr
 from .frequencies import Frequencies
@@ -68,4 +73,12 @@ def build_registry() -> Registry:
     reg.register("AGGREGATE")(Aggregate)
     reg.register("FLIP")(Flip)
     reg.register("MATCH")(MatchFiles)
+    reg.register("UNIANOVA")(Unianova)
+    reg.register("FACTOR")(Factor)
+    reg.register("LOGISTIC")(LogisticRegression)
+    reg.register("NOMREG")(Nomreg)
+    reg.register("PLUM")(Plum)
+    reg.register("QUICK")(QuickCluster)
+    reg.register("CLUSTER")(Cluster)
+    reg.register("DISCRIMINANT")(Discriminant)
     return reg

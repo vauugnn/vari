@@ -65,7 +65,7 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
       {
         label: 'General Linear Model',
         submenu: [
-          proc('Univariate…'),
+          dialogItem('Univariate…', 'univariate', open),
           proc('Multivariate…'),
           proc('Repeated Measures…'),
           proc('Variance Components…')
@@ -84,9 +84,9 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
           dialogItem('Linear…', 'regression', open),
           proc('Curve Estimation…'),
           proc('Partial Least Squares…'),
-          proc('Binary Logistic…'),
-          proc('Multinomial Logistic…'),
-          proc('Ordinal…'),
+          dialogItem('Binary Logistic…', 'logistic', open),
+          dialogItem('Multinomial Logistic…', 'multinomial', open),
+          dialogItem('Ordinal…', 'ordinal', open),
           proc('Probit…'),
           proc('Nonlinear…'),
           proc('Weight Estimation…'),
@@ -96,10 +96,22 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
       },
       { label: 'Loglinear', enabled: false, submenu: [proc('General…'), proc('Logit…'), proc('Model Selection…')] },
       { label: 'Neural Networks', enabled: false, submenu: [proc('Multilayer Perceptron…'), proc('Radial Basis Function…')] },
-      { label: 'Classify', enabled: false, submenu: [proc('TwoStep Cluster…'), proc('K-Means Cluster…'), proc('Hierarchical Cluster…'), proc('Cluster Silhouettes…'), proc('Discriminant…'), proc('Nearest Neighbor…'), proc('ROC Curve…'), proc('ROC Analysis…')] },
+      {
+        label: 'Classify',
+        submenu: [
+          proc('TwoStep Cluster…'),
+          dialogItem('K-Means Cluster…', 'kmeans', open),
+          dialogItem('Hierarchical Cluster…', 'hierarchical', open),
+          proc('Cluster Silhouettes…'),
+          dialogItem('Discriminant…', 'discriminant', open),
+          proc('Nearest Neighbor…'),
+          proc('ROC Curve…'),
+          proc('ROC Analysis…')
+        ]
+      },
       {
         label: 'Dimension Reduction',
-        submenu: [proc('Factor…'), proc('Correspondence Analysis…'), proc('Optimal Scaling…')]
+        submenu: [dialogItem('Factor…', 'factor', open), proc('Correspondence Analysis…'), proc('Optimal Scaling…')]
       },
       {
         label: 'Scale',

@@ -61,6 +61,16 @@ import {
   RecodeDifferentDialog
 } from '../dialogs/analysis/TransformDialogs'
 import { TransposeDialog, AggregateDialog, AddCasesDialog, AddVariablesDialog } from '../dialogs/analysis/DataStructDialogs'
+import {
+  UnivariateDialog,
+  FactorDialog,
+  BinaryLogisticDialog,
+  MultinomialDialog,
+  OrdinalDialog,
+  KMeansDialog,
+  HierarchicalDialog,
+  DiscriminantDialog
+} from '../dialogs/analysis/Tier2Dialogs'
 import './dataeditor.css'
 
 function TB({
@@ -326,6 +336,22 @@ export function DataEditor(): JSX.Element {
             return <AddCasesDialog {...p} />
           case 'add-variables':
             return <AddVariablesDialog {...p} />
+          case 'univariate':
+            return <UnivariateDialog {...p} />
+          case 'factor':
+            return <FactorDialog {...p} />
+          case 'logistic':
+            return <BinaryLogisticDialog {...p} />
+          case 'multinomial':
+            return <MultinomialDialog {...p} />
+          case 'ordinal':
+            return <OrdinalDialog {...p} />
+          case 'kmeans':
+            return <KMeansDialog {...p} />
+          case 'hierarchical':
+            return <HierarchicalDialog {...p} />
+          case 'discriminant':
+            return <DiscriminantDialog {...p} />
           default:
             return null
         }

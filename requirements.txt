@@ -6,3 +6,4 @@ pingouin
 pyreadstat
 pytest
 openpyxl
+scikit-learn
