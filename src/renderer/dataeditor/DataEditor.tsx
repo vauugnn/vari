@@ -71,6 +71,15 @@ import {
   HierarchicalDialog,
   DiscriminantDialog
 } from '../dialogs/analysis/Tier2Dialogs'
+import {
+  CaseSummariesDialog,
+  CodebookDialog,
+  CurveEstimationDialog,
+  RocDialog,
+  LineDialog,
+  AreaDialog,
+  ErrorBarDialog
+} from '../dialogs/analysis/MoreDialogs'
 import './dataeditor.css'
 
 function TB({
@@ -352,6 +361,20 @@ export function DataEditor(): JSX.Element {
             return <HierarchicalDialog {...p} />
           case 'discriminant':
             return <DiscriminantDialog {...p} />
+          case 'summarize':
+            return <CaseSummariesDialog {...p} />
+          case 'codebook':
+            return <CodebookDialog {...p} />
+          case 'curvefit':
+            return <CurveEstimationDialog {...p} />
+          case 'roc':
+            return <RocDialog {...p} />
+          case 'graph-line':
+            return <LineDialog {...p} />
+          case 'graph-area':
+            return <AreaDialog {...p} />
+          case 'graph-errorbar':
+            return <ErrorBarDialog {...p} />
           default:
             return null
         }

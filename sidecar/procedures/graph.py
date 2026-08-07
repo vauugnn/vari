@@ -38,6 +38,20 @@ class Graph(DataProcedure):
                 out.append(ch.bar_chart(labels, counts, title=f"Bar Chart: {title}", xlabel=title)
                            if key == "BAR" else ch.pie_chart(labels, counts, title=title))
                 did = True
+            elif key in ("LINE", "AREA", "ERRORBAR"):
+                mby = re.search(r"\bBY\b\s*(\w+)", body, re.IGNORECASE)
+                depm = re.search(r"\bMEAN\s*\(\s*(\w+)\s*\)", body, re.IGNORECASE)
+                if mby and depm:
+                    dep, grp = depm.group(1), mby.group(1)
+                    labels, means, errs = _group_means(ds, dep, grp)
+                    title = f"{_label(ds, dep)} by {_label(ds, grp)}"
+                    if key == "LINE":
+                        out.append(ch.line(list(range(len(means))), means, title=title, xlabel=_label(ds, grp), ylabel=_label(ds, dep)))
+                    elif key == "AREA":
+                        out.append(ch.area(labels, means, title=title, xlabel=_label(ds, grp), ylabel=_label(ds, dep)))
+                    else:
+                        out.append(ch.error_bar(labels, means, errs, title=title, xlabel=_label(ds, grp), ylabel=_label(ds, dep)))
+                    did = True
             elif key == "SCATTERPLOT":
                 m = re.search(r"(\w+)\s+WITH\s+(\w+)", body, re.IGNORECASE)
                 if m:
@@ -66,6 +80,23 @@ def _value_counts(ds, var):
     valid = series[~missing_mask(series, meta).to_numpy()]
     pairs = _counts(valid.dropna())
     return [value_label(ds, var, v) for v, _ in pairs], [c for _, c in pairs]
+
+
+def _group_means(ds, dep, grp):
+    import math
+
+    dmask = missing_mask(ds.df[dep], ds.variables[ds._index_of(dep)]).to_numpy()
+    gmask = missing_mask(ds.df[grp], ds.variables[ds._index_of(grp)]).to_numpy()
+    keep = ~(dmask | gmask)
+    dv = ds.df[dep].to_numpy(float)[keep]
+    gv = ds.df[grp].to_numpy(float)[keep]
+    labels, means, errs = [], [], []
+    for lv in sorted(set(gv)):
+        vals = dv[gv == lv]
+        labels.append(value_label(ds, grp, lv))
+        means.append(float(vals.mean()))
+        errs.append(float(vals.std(ddof=1) / math.sqrt(len(vals))) if len(vals) > 1 else 0.0)
+    return labels, means, errs
 
 
 def _pair(ds, x, y):

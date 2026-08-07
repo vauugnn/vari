@@ -6,7 +6,10 @@ from ..syntax.registry import Registry
 from .cluster import Cluster, QuickCluster
 from .correlations import Correlations
 from .crosstabs import Crosstabs
+from .curvefit import CurveFit
 from .discriminant import Discriminant
+from .reports import Codebook, Summarize
+from .roc import Roc
 from .data_ops import Filter, SelectIf, SortCases, SplitFile, UseCommand, Weight
 from .data_ops2 import AddCmd, Aggregate, Flip, MatchFiles
 from .descriptives import Descriptives
@@ -81,4 +84,8 @@ def build_registry() -> Registry:
     reg.register("QUICK")(QuickCluster)
     reg.register("CLUSTER")(Cluster)
     reg.register("DISCRIMINANT")(Discriminant)
+    reg.register("ROC")(Roc)
+    reg.register("CURVEFIT")(CurveFit)
+    reg.register("SUMMARIZE")(Summarize)
+    reg.register("CODEBOOK")(Codebook)
     return reg

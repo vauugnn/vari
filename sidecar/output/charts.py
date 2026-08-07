@@ -73,6 +73,41 @@ def scatter(x: Sequence[float], y: Sequence[float], title: str = "", xlabel: str
     return _finish(fig, title)
 
 
+def line(x: Sequence[float], y: Sequence[float], title: str = "", xlabel: str = "", ylabel: str = "",
+         diagonal: bool = False) -> dict[str, Any]:
+    fig, ax = plt.subplots(figsize=(4.4, 3.4))
+    ax.plot(x, y, color=_BAR_COLOR, linewidth=1.6)
+    if diagonal:
+        ax.plot([0, 1], [0, 1], color="#999", linewidth=0.8, linestyle="--")
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    return _finish(fig, title)
+
+
+def area(labels: Sequence[str], values: Sequence[float], title: str = "", xlabel: str = "", ylabel: str = "") -> dict[str, Any]:
+    fig, ax = plt.subplots(figsize=(4.6, 3.2))
+    xs = list(range(len(labels)))
+    ax.fill_between(xs, values, color=_BAR_COLOR, alpha=0.5)
+    ax.plot(xs, values, color=_EDGE, linewidth=1.2)
+    ax.set_xticks(xs)
+    ax.set_xticklabels([str(x) for x in labels], rotation=30)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    return _finish(fig, title)
+
+
+def error_bar(labels: Sequence[str], means: Sequence[float], errors: Sequence[float],
+              title: str = "", xlabel: str = "", ylabel: str = "") -> dict[str, Any]:
+    fig, ax = plt.subplots(figsize=(4.6, 3.2))
+    xs = list(range(len(labels)))
+    ax.errorbar(xs, means, yerr=errors, fmt="o", color=_BAR_COLOR, ecolor=_EDGE, capsize=4)
+    ax.set_xticks(xs)
+    ax.set_xticklabels([str(x) for x in labels], rotation=30)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    return _finish(fig, title)
+
+
 def boxplot(groups: Sequence[Sequence[float]], labels: Sequence[str], title: str = "", ylabel: str = "") -> dict[str, Any]:
     fig, ax = plt.subplots(figsize=(4.4, 3.4))
     try:

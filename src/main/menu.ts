@@ -35,7 +35,7 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
   return {
     label: 'Analyze',
     submenu: [
-      { label: 'Reports', enabled: false, submenu: [proc('Codebook'), proc('OLAP Cubes'), proc('Case Summaries'), proc('Report Summaries in Rows'), proc('Report Summaries in Columns')] },
+      { label: 'Reports', submenu: [dialogItem('Codebook', 'codebook', open), proc('OLAP Cubes'), dialogItem('Case Summaries', 'summarize', open), proc('Report Summaries in Rows'), proc('Report Summaries in Columns')] },
       {
         label: 'Descriptive Statistics',
         submenu: [
@@ -82,7 +82,7 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
         submenu: [
           proc('Automatic Linear Modeling…'),
           dialogItem('Linear…', 'regression', open),
-          proc('Curve Estimation…'),
+          dialogItem('Curve Estimation…', 'curvefit', open),
           proc('Partial Least Squares…'),
           dialogItem('Binary Logistic…', 'logistic', open),
           dialogItem('Multinomial Logistic…', 'multinomial', open),
@@ -105,7 +105,7 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
           proc('Cluster Silhouettes…'),
           dialogItem('Discriminant…', 'discriminant', open),
           proc('Nearest Neighbor…'),
-          proc('ROC Curve…'),
+          dialogItem('ROC Curve…', 'roc', open),
           proc('ROC Analysis…')
         ]
       },
@@ -301,12 +301,12 @@ export function buildMenu(actions: MenuActions): Menu {
         submenu: [
           dialogItem('Bar…', 'graph-bar', actions.openDialog),
           proc('3-D Bar…'),
-          proc('Line…'),
-          proc('Area…'),
+          dialogItem('Line…', 'graph-line', actions.openDialog),
+          dialogItem('Area…', 'graph-area', actions.openDialog),
           dialogItem('Pie…', 'graph-pie', actions.openDialog),
           proc('High-Low…'),
           proc('Boxplot…'),
-          proc('Error Bar…'),
+          dialogItem('Error Bar…', 'graph-errorbar', actions.openDialog),
           proc('Population Pyramid…'),
           dialogItem('Scatter/Dot…', 'graph-scatter', actions.openDialog),
           dialogItem('Histogram…', 'graph-histogram', actions.openDialog)
