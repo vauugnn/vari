@@ -1,7 +1,7 @@
 import { spawn, ChildProcess } from 'child_process'
 import { EventEmitter } from 'events'
 import { existsSync } from 'fs'
-import { join } from 'path'
+import { dirname, join } from 'path'
 import { app } from 'electron'
 import type { SidecarStatus } from '../shared/types'
 
@@ -79,10 +79,16 @@ export class Sidecar extends EventEmitter {
       return
     }
 
+    // cwd must be a real directory. In a packaged build app.getAppPath() is
+    // .../Resources/app.asar — a FILE — so chdir'ing there fails with ENOTDIR.
+    // For the frozen sidecar, run from its own folder; in dev, the repo root is
+    // needed so `-m sidecar.server` resolves.
+    const cwd = useFrozen ? dirname(command) : this.appRoot()
+
     let proc: ChildProcess
     try {
       proc = spawn(command, spawnArgs, {
-        cwd: this.appRoot(),
+        cwd,
         stdio: ['pipe', 'pipe', 'pipe']
       })
     } catch (err) {
