@@ -136,12 +136,32 @@ class Dataset:
         self.df.rename(columns={old: new_name}, inplace=True)
 
     def set_variable_meta(self, index: int, meta: VariableMeta) -> None:
-        if meta.name.lower() != self.variables[index].name.lower():
+        old = self.variables[index]
+        if meta.name.lower() != old.name.lower():
             others = {v.name for i, v in enumerate(self.variables) if i != index}
             validate_name(meta.name, others)
-            self.df.rename(columns={self.variables[index].name: meta.name}, inplace=True)
+            self.df.rename(columns={old.name: meta.name}, inplace=True)
         self.variables[index] = meta
         self._sync_columns()
+        # A type change (Numeric <-> String) must recast the stored data, or the
+        # column keeps the wrong dtype and cells render/parse wrong.
+        if meta.is_string != old.is_string:
+            self._recast_column(index, to_string=meta.is_string, old=old)
+
+    def _recast_column(self, index: int, to_string: bool, old: VariableMeta) -> None:
+        col = self.variables[index].name
+        s = self.df[col]
+        if to_string:
+            # Numeric -> String: format each value the way it displayed, blanks empty.
+            def fmt(x: Any) -> str:
+                if x is None or (isinstance(x, float) and np.isnan(x)):
+                    return ""
+                return old.print_format.render(x).strip()
+
+            self.df[col] = s.map(fmt).astype(object)
+        else:
+            # String -> Numeric: coerce; anything non-numeric becomes system-missing.
+            self.df[col] = pd.to_numeric(s, errors="coerce")
 
     def insert_case(self, index: int) -> None:
         index = max(0, min(index, self.n_rows))

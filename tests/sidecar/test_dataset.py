@@ -81,3 +81,18 @@ def test_snapshot_is_independent():
     snap = ds.snapshot()
     ds.set_cell(0, 0, "99")
     assert snap.df.iat[0, 0] == 1.0  # unchanged
+
+
+def test_type_change_recasts_column():
+    ds = _ds()
+    # Numeric -> String: values become formatted text, sysmis becomes blank.
+    ds.set_variable_meta(0, VariableMeta(name="g", print_format=Format("A", 8)))
+    assert ds.df["g"].dtype == object
+    assert list(ds.df["g"]) == ["1", "2", ""]
+    # A string value now sticks instead of becoming NaN.
+    ds.set_cell(0, 0, "hello")
+    assert ds.df.iat[0, 0] == "hello"
+    # String -> Numeric coerces; non-numeric text becomes system-missing.
+    ds.set_variable_meta(0, VariableMeta(name="g", print_format=Format("F", 8, 0)))
+    assert np.isnan(ds.df.iat[0, 0])
+    assert ds.df.iat[1, 0] == 2.0
