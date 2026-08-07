@@ -54,12 +54,14 @@ export function ValueLabelsDialog({
         <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} style={{ width: 200 }} />
       </div>
       <div className="field-row">
-        <button onClick={add}>Add</button>
-        <button onClick={change} disabled={selected === null}>
-          Change
+        <button className="vl-btn" onClick={add} title="Add">
+          +
         </button>
-        <button onClick={remove} disabled={selected === null}>
-          Remove
+        <button className="vl-btn" onClick={remove} disabled={selected === null} title="Remove">
+          −
+        </button>
+        <button onClick={change} disabled={selected === null} title="Change">
+          Change
         </button>
       </div>
       <div className="vl-list">

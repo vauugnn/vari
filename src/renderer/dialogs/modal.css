@@ -61,6 +61,15 @@
   gap: 2px;
 }
 
+.vl-btn {
+  width: 24px;
+  height: 22px;
+  font-size: 15px;
+  font-weight: bold;
+  line-height: 1;
+  padding: 0;
+}
+
 .vl-list {
   border: 1px solid #7f9db9;
   background: #fff;
