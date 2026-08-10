@@ -50,6 +50,7 @@ import { TwoStepDialog, NearestNeighborDialog, CorrespondenceDialog, ProxscalDia
 import { OlapDialog, CtablesDialog, MultiResponseDialog, ControlChartDialog, ParetoDialog, BayesNormalDialog, BayesBinomialDialog, BayesPoissonDialog } from '../dialogs/analysis/Wave6Dialogs'
 import { VarsToCasesDialog, CasesToVarsDialog, VisualBinDialog } from '../dialogs/analysis/Wave7Dialogs'
 import { FindDialog, GoToCaseDialog, GoToVariableDialog } from '../dialogs/analysis/FindGotoDialogs'
+import { ChartBuilderDialog } from '../dialogs/analysis/ChartBuilderDialog'
 import { RunScriptDialog } from '../dialogs/RunScriptDialog'
 import { OpenDatabaseDialog } from '../dialogs/OpenDatabaseDialog'
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
@@ -362,6 +363,8 @@ export function DataEditor(): JSX.Element {
             return <PyramidDialog {...p} />
           case 'graph-bar3d':
             return <Bar3dDialog {...p} />
+          case 'chartbuilder':
+            return <ChartBuilderDialog {...p} />
           case 'multivariate-glm':
             return <MultivariateDialog {...p} />
           case 'distances':

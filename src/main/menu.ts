@@ -317,7 +317,7 @@ export function buildMenu(actions: MenuActions): Menu {
   template.push({
     label: 'Graphs',
     submenu: [
-      proc('Chart Builder…'),
+      dialogItem('Chart Builder…', 'chartbuilder', actions.openDialog),
       proc('Graphboard Template Chooser…'),
       proc('Weibull Plot…'),
       proc('Compare Subgroups'),
