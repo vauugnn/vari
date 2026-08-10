@@ -31,6 +31,7 @@ from .regression import Regression
 from .reliability import Reliability
 from .transforms import AutoRecode, Compute, Count, Create, Execute, If, Rank, Recode, Rmv, SetCmd
 from .multivariate import CanCorr, Manova, Proximities
+from .regression2 import GlmRepeated, Pls, Probit, Tsls, Varcomp
 from .ttest import TTest
 
 
@@ -73,6 +74,11 @@ def build_registry() -> Registry:
     reg.register("GLM")(Manova)
     reg.register("PROXIMITIES")(Proximities)
     reg.register("CANCORR")(CanCorr)
+    reg.register("PROBIT")(Probit)
+    reg.register("PLS")(Pls)
+    reg.register("2SLS")(Tsls)
+    reg.register("VARCOMP")(Varcomp)
+    reg.register("GLMRM")(GlmRepeated)
     reg.register("VARIABLE")(VariableCmd)
     reg.register("VALUE")(ValueLabels)
     reg.register("ADD")(lambda: ValueLabels(add=True))

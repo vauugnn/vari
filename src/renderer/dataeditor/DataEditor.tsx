@@ -41,6 +41,7 @@ import { MeansDialog } from '../dialogs/analysis/MeansDialog'
 import { ComputeDialog } from '../dialogs/analysis/ComputeDialog'
 import { HistogramDialog, BarChartDialog, PieChartDialog, ScatterDialog, BoxplotDialog, HighLowDialog, PyramidDialog, Bar3dDialog } from '../dialogs/analysis/GraphDialogs'
 import { MultivariateDialog, DistancesDialog, CanonicalDialog } from '../dialogs/analysis/MultivariateDialogs'
+import { ProbitDialog, PlsDialog, TslsDialog, VarcompDialog, RepeatedDialog } from '../dialogs/analysis/Regression2Dialogs'
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
 import { ExploreDialog, PartialCorrDialog } from '../dialogs/analysis/ExploreDialog'
 import { ImportWizard } from '../dialogs/ImportWizard'
@@ -334,6 +335,16 @@ export function DataEditor(): JSX.Element {
             return <DistancesDialog {...p} />
           case 'cancorr':
             return <CanonicalDialog {...p} />
+          case 'probit':
+            return <ProbitDialog {...p} />
+          case 'pls':
+            return <PlsDialog {...p} />
+          case 'tsls':
+            return <TslsDialog {...p} />
+          case 'varcomp':
+            return <VarcompDialog {...p} />
+          case 'glm-repeated':
+            return <RepeatedDialog {...p} />
           case 'selectcases':
             return <SelectCasesDialog {...p} />
           case 'weight':

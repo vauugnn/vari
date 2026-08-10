@@ -53,7 +53,8 @@ def split_commands(text: str) -> list[str]:
 
 def command_name(cmd: str) -> tuple[str, str]:
     """Return (NAME, rest). NAME may be two words for commands like GET DATA."""
-    m = re.match(r"\s*([A-Za-z][A-Za-z-]*)(.*)$", cmd, re.DOTALL)
+    # First char may be a digit for commands like 2SLS / 3SLS.
+    m = re.match(r"\s*([A-Za-z0-9][A-Za-z-]*)(.*)$", cmd, re.DOTALL)
     if not m:
         return "", ""
     return m.group(1).upper(), m.group(2)

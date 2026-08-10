@@ -72,8 +72,8 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
         submenu: [
           dialogItem('Univariate…', 'univariate', open),
           dialogItem('Multivariate…', 'multivariate-glm', open),
-          proc('Repeated Measures…'),
-          proc('Variance Components…')
+          dialogItem('Repeated Measures…', 'glm-repeated', open),
+          dialogItem('Variance Components…', 'varcomp', open)
         ]
       },
       { label: 'Generalized Linear Models', enabled: false, submenu: [proc('Generalized Linear Models…'), proc('Generalized Estimating Equations…')] },
@@ -88,14 +88,14 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
           proc('Automatic Linear Modeling…'),
           dialogItem('Linear…', 'regression', open),
           dialogItem('Curve Estimation…', 'curvefit', open),
-          proc('Partial Least Squares…'),
+          dialogItem('Partial Least Squares…', 'pls', open),
           dialogItem('Binary Logistic…', 'logistic', open),
           dialogItem('Multinomial Logistic…', 'multinomial', open),
           dialogItem('Ordinal…', 'ordinal', open),
-          proc('Probit…'),
+          dialogItem('Probit…', 'probit', open),
           proc('Nonlinear…'),
           proc('Weight Estimation…'),
-          proc('2-Stage Least Squares…'),
+          dialogItem('2-Stage Least Squares…', 'tsls', open),
           proc('Optimal Scaling (CATREG)…')
         ]
       },
