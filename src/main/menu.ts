@@ -71,7 +71,7 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
         label: 'General Linear Model',
         submenu: [
           dialogItem('Univariate…', 'univariate', open),
-          proc('Multivariate…'),
+          dialogItem('Multivariate…', 'multivariate-glm', open),
           proc('Repeated Measures…'),
           proc('Variance Components…')
         ]
@@ -80,7 +80,7 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
       { label: 'Mixed Models', enabled: false, submenu: [proc('Linear…'), proc('Generalized Linear…')] },
       {
         label: 'Correlate',
-        submenu: [dialogItem('Bivariate…', 'correlate', open), dialogItem('Partial…', 'partial', open), proc('Distances…'), proc('Canonical Correlation')]
+        submenu: [dialogItem('Bivariate…', 'correlate', open), dialogItem('Partial…', 'partial', open), dialogItem('Distances…', 'distances', open), dialogItem('Canonical Correlation', 'cancorr', open)]
       },
       {
         label: 'Regression',

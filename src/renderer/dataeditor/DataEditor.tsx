@@ -40,6 +40,7 @@ import { LinearRegressionDialog } from '../dialogs/analysis/RegressionDialog'
 import { MeansDialog } from '../dialogs/analysis/MeansDialog'
 import { ComputeDialog } from '../dialogs/analysis/ComputeDialog'
 import { HistogramDialog, BarChartDialog, PieChartDialog, ScatterDialog, BoxplotDialog, HighLowDialog, PyramidDialog, Bar3dDialog } from '../dialogs/analysis/GraphDialogs'
+import { MultivariateDialog, DistancesDialog, CanonicalDialog } from '../dialogs/analysis/MultivariateDialogs'
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
 import { ExploreDialog, PartialCorrDialog } from '../dialogs/analysis/ExploreDialog'
 import { ImportWizard } from '../dialogs/ImportWizard'
@@ -327,6 +328,12 @@ export function DataEditor(): JSX.Element {
             return <PyramidDialog {...p} />
           case 'graph-bar3d':
             return <Bar3dDialog {...p} />
+          case 'multivariate-glm':
+            return <MultivariateDialog {...p} />
+          case 'distances':
+            return <DistancesDialog {...p} />
+          case 'cancorr':
+            return <CanonicalDialog {...p} />
           case 'selectcases':
             return <SelectCasesDialog {...p} />
           case 'weight':

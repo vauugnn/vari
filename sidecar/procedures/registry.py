@@ -30,6 +30,7 @@ from .oneway import Oneway
 from .regression import Regression
 from .reliability import Reliability
 from .transforms import AutoRecode, Compute, Count, Create, Execute, If, Rank, Recode, Rmv, SetCmd
+from .multivariate import CanCorr, Manova, Proximities
 from .ttest import TTest
 
 
@@ -69,6 +70,9 @@ def build_registry() -> Registry:
     reg.register("RMV")(Rmv)
     reg.register("CREATE")(Create)
     reg.register("SET")(SetCmd)
+    reg.register("GLM")(Manova)
+    reg.register("PROXIMITIES")(Proximities)
+    reg.register("CANCORR")(CanCorr)
     reg.register("VARIABLE")(VariableCmd)
     reg.register("VALUE")(ValueLabels)
     reg.register("ADD")(lambda: ValueLabels(add=True))
