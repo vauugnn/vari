@@ -42,6 +42,7 @@ from .neural import Mlp, Rbf
 from .reports2 import Ctables, MultResponse, Olap
 from .qc import Pareto, SpChart
 from .bayesian import Bayes
+from .dataops3 import CasesToVars, VarsToCases, VisualBin
 from .ttest import TTest
 
 
@@ -115,6 +116,9 @@ def build_registry() -> Registry:
     reg.register("SPCHART")(SpChart)
     reg.register("PARETO")(Pareto)
     reg.register("BAYES")(Bayes)
+    reg.register("VARSTOCASES")(VarsToCases)
+    reg.register("CASESTOVARS")(CasesToVars)
+    reg.register("VBIN")(VisualBin)
     reg.register("VARIABLE")(VariableCmd)
     reg.register("VALUE")(ValueLabels)
     reg.register("ADD")(lambda: ValueLabels(add=True))

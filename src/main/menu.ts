@@ -272,7 +272,13 @@ export function buildMenu(actions: MenuActions): Menu {
           dialogItem('Add Variables…', 'add-variables', actions.openDialog)
         ]
       },
-      proc('Restructure…'),
+      {
+        label: 'Restructure',
+        submenu: [
+          dialogItem('Variables to Cases…', 'varstocases', actions.openDialog),
+          dialogItem('Cases to Variables…', 'casestovars', actions.openDialog)
+        ]
+      },
       dialogItem('Aggregate…', 'aggregate', actions.openDialog),
       { type: 'separator' },
       dialogItem('Split File…', 'splitfile', actions.openDialog),
@@ -290,7 +296,7 @@ export function buildMenu(actions: MenuActions): Menu {
       dialogItem('Recode into Same Variables…', 'recode-same', actions.openDialog),
       dialogItem('Recode into Different Variables…', 'recode-different', actions.openDialog),
       dialogItem('Automatic Recode…', 'autorecode', actions.openDialog),
-      proc('Visual Binning…'),
+      dialogItem('Visual Binning…', 'visualbin', actions.openDialog),
       dialogItem('Rank Cases…', 'rank', actions.openDialog),
       { type: 'separator' },
       proc('Date and Time Wizard…'),

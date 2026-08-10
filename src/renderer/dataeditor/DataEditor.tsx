@@ -48,6 +48,7 @@ import { KaplanMeierDialog, CoxDialog, LifeTableDialog } from '../dialogs/analys
 import { ArimaDialog, SeasonDialog, SpectraDialog, CsDescriptivesDialog, CsTabulateDialog } from '../dialogs/analysis/ForecastCsDialogs'
 import { TwoStepDialog, NearestNeighborDialog, CorrespondenceDialog, ProxscalDialog, AlscalDialog, PrefscalDialog, MlpDialog, RbfDialog } from '../dialogs/analysis/Wave5Dialogs'
 import { OlapDialog, CtablesDialog, MultiResponseDialog, ControlChartDialog, ParetoDialog, BayesNormalDialog, BayesBinomialDialog, BayesPoissonDialog } from '../dialogs/analysis/Wave6Dialogs'
+import { VarsToCasesDialog, CasesToVarsDialog, VisualBinDialog } from '../dialogs/analysis/Wave7Dialogs'
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
 import { ExploreDialog, PartialCorrDialog } from '../dialogs/analysis/ExploreDialog'
 import { ImportWizard } from '../dialogs/ImportWizard'
@@ -426,6 +427,12 @@ export function DataEditor(): JSX.Element {
             return <BayesBinomialDialog {...p} />
           case 'bayes-poisson':
             return <BayesPoissonDialog {...p} />
+          case 'varstocases':
+            return <VarsToCasesDialog {...p} />
+          case 'casestovars':
+            return <CasesToVarsDialog {...p} />
+          case 'visualbin':
+            return <VisualBinDialog {...p} />
           case 'selectcases':
             return <SelectCasesDialog {...p} />
           case 'weight':
