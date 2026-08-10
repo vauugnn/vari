@@ -100,27 +100,27 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
         ]
       },
       { label: 'Loglinear', submenu: [dialogItem('General…', 'genlog', open), dialogItem('Logit…', 'genlog', open), proc('Model Selection…')] },
-      { label: 'Neural Networks', enabled: false, submenu: [proc('Multilayer Perceptron…'), proc('Radial Basis Function…')] },
+      { label: 'Neural Networks', submenu: [dialogItem('Multilayer Perceptron…', 'mlp', open), dialogItem('Radial Basis Function…', 'rbf', open)] },
       {
         label: 'Classify',
         submenu: [
-          proc('TwoStep Cluster…'),
+          dialogItem('TwoStep Cluster…', 'twostep', open),
           dialogItem('K-Means Cluster…', 'kmeans', open),
           dialogItem('Hierarchical Cluster…', 'hierarchical', open),
           proc('Cluster Silhouettes…'),
           dialogItem('Discriminant…', 'discriminant', open),
-          proc('Nearest Neighbor…'),
+          dialogItem('Nearest Neighbor…', 'knn', open),
           dialogItem('ROC Curve…', 'roc', open),
           proc('ROC Analysis…')
         ]
       },
       {
         label: 'Dimension Reduction',
-        submenu: [dialogItem('Factor…', 'factor', open), proc('Correspondence Analysis…'), proc('Optimal Scaling…')]
+        submenu: [dialogItem('Factor…', 'factor', open), dialogItem('Correspondence Analysis…', 'correspondence', open), proc('Optimal Scaling…')]
       },
       {
         label: 'Scale',
-        submenu: [dialogItem('Reliability Analysis…', 'reliability', open), dialogItem('Weighted Kappa…', 'kappa', open), proc('Multidimensional Unfolding (PREFSCAL)…'), proc('Multidimensional Scaling (PROXSCAL)…'), proc('Multidimensional Scaling (ALSCAL)…')]
+        submenu: [dialogItem('Reliability Analysis…', 'reliability', open), dialogItem('Weighted Kappa…', 'kappa', open), dialogItem('Multidimensional Unfolding (PREFSCAL)…', 'prefscal', open), dialogItem('Multidimensional Scaling (PROXSCAL)…', 'proxscal', open), dialogItem('Multidimensional Scaling (ALSCAL)…', 'alscal', open)]
       },
       {
         label: 'Nonparametric Tests',

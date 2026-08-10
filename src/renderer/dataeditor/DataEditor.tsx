@@ -45,6 +45,7 @@ import { ProbitDialog, PlsDialog, TslsDialog, VarcompDialog, RepeatedDialog } fr
 import { GenlinDialog, GeeDialog, MixedDialog, GenlogDialog } from '../dialogs/analysis/Glm3Dialogs'
 import { KaplanMeierDialog, CoxDialog, LifeTableDialog } from '../dialogs/analysis/SurvivalDialogs'
 import { ArimaDialog, SeasonDialog, SpectraDialog, CsDescriptivesDialog, CsTabulateDialog } from '../dialogs/analysis/ForecastCsDialogs'
+import { TwoStepDialog, NearestNeighborDialog, CorrespondenceDialog, ProxscalDialog, AlscalDialog, PrefscalDialog, MlpDialog, RbfDialog } from '../dialogs/analysis/Wave5Dialogs'
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
 import { ExploreDialog, PartialCorrDialog } from '../dialogs/analysis/ExploreDialog'
 import { ImportWizard } from '../dialogs/ImportWizard'
@@ -372,6 +373,22 @@ export function DataEditor(): JSX.Element {
             return <CsDescriptivesDialog {...p} />
           case 'cstab':
             return <CsTabulateDialog {...p} />
+          case 'twostep':
+            return <TwoStepDialog {...p} />
+          case 'knn':
+            return <NearestNeighborDialog {...p} />
+          case 'correspondence':
+            return <CorrespondenceDialog {...p} />
+          case 'proxscal':
+            return <ProxscalDialog {...p} />
+          case 'alscal':
+            return <AlscalDialog {...p} />
+          case 'prefscal':
+            return <PrefscalDialog {...p} />
+          case 'mlp':
+            return <MlpDialog {...p} />
+          case 'rbf':
+            return <RbfDialog {...p} />
           case 'selectcases':
             return <SelectCasesDialog {...p} />
           case 'weight':

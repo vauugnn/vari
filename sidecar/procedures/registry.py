@@ -36,6 +36,9 @@ from .glm3 import Gee, Genlin, Genlog, Mixed
 from .survival import CoxReg, KaplanMeier, LifeTable
 from .forecasting import Arima, Season, Spectra
 from .complex_samples import CsDescriptives, CsTabulate
+from .classify2 import NearestNeighbor, TwoStep
+from .dimension import Alscal, Correspondence, Mds
+from .neural import Mlp, Rbf
 from .ttest import TTest
 
 
@@ -95,6 +98,14 @@ def build_registry() -> Registry:
     reg.register("SPECTRA")(Spectra)
     reg.register("CSDESCRIPTIVES")(CsDescriptives)
     reg.register("CSTABULATE")(CsTabulate)
+    reg.register("TWOSTEP")(TwoStep)
+    reg.register("KNN")(NearestNeighbor)
+    reg.register("CORRESPONDENCE")(Correspondence)
+    reg.register("PROXSCAL")(Mds)
+    reg.register("ALSCAL")(Alscal)
+    reg.register("PREFSCAL")(Alscal)
+    reg.register("MLP")(Mlp)
+    reg.register("RBF")(Rbf)
     reg.register("VARIABLE")(VariableCmd)
     reg.register("VALUE")(ValueLabels)
     reg.register("ADD")(lambda: ValueLabels(add=True))
