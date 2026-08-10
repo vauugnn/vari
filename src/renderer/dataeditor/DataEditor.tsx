@@ -3,6 +3,7 @@ import type { SidecarStatus } from '../../shared/types'
 import { useStore } from '../state/store'
 import { DataViewGrid } from '../grid/DataViewGrid'
 import { VariableViewGrid } from '../grid/VariableViewGrid'
+import { OverviewPanel } from './OverviewPanel'
 import {
   DescMuIcon,
   FindIcon,
@@ -259,12 +260,17 @@ export function DataEditor(): JSX.Element {
           <div className="de-placeholder">No dataset open. Use File ▸ Open ▸ Data… or the Open button.</div>
         ) : activeTab === 'data' ? (
           <DataViewGrid summary={summary} />
-        ) : (
+        ) : activeTab === 'variable' ? (
           <VariableViewGrid summary={summary} />
+        ) : (
+          <OverviewPanel summary={summary} />
         )}
       </div>
 
       <div className="de-tabs">
+        <button className={activeTab === 'overview' ? 'de-tab de-tab--active' : 'de-tab'} onClick={() => setActiveTab('overview')}>
+          Overview
+        </button>
         <button className={activeTab === 'data' ? 'de-tab de-tab--active' : 'de-tab'} onClick={() => setActiveTab('data')}>
           Data View
         </button>

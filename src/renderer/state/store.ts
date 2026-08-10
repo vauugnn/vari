@@ -8,7 +8,7 @@ interface DataState {
   showStatusBar: boolean
   /** Bumped on every data/metadata mutation so grids invalidate their caches. */
   revision: number
-  activeTab: 'data' | 'variable'
+  activeTab: 'data' | 'variable' | 'overview'
   lastError: string | null
 
   setSummary: (s: DatasetSummary) => void
@@ -16,7 +16,7 @@ interface DataState {
   toggleValueLabels: () => void
   toggleGridLines: () => void
   toggleStatusBar: () => void
-  setActiveTab: (t: 'data' | 'variable') => void
+  setActiveTab: (t: 'data' | 'variable' | 'overview') => void
   setError: (msg: string | null) => void
   updateVariable: (index: number, meta: VariableMetaJson) => void
 
