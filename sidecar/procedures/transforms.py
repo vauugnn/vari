@@ -208,6 +208,45 @@ class Recode(Procedure):
         return []
 
 
+class Create(Procedure):
+    """CREATE newvar = LAG(var[, n])  |  LEAD(var[, n])  — the Shift Values command."""
+
+    def execute(self, rest: str, ctx: Context) -> list[dict[str, Any]]:
+        ds = ctx.active
+        if ds is None:
+            raise RuntimeError("No active dataset.")
+        did = False
+        for m in re.finditer(
+            r"([A-Za-z@#$][\w@#$.]*)\s*=\s*(LAG|LEAD|DIFF)\s*\(\s*([A-Za-z@#$][\w@#$.]*)\s*(?:,\s*(\d+))?\s*\)",
+            rest, re.IGNORECASE,
+        ):
+            tgt, fn, src, n = m.group(1), m.group(2).upper(), m.group(3), int(m.group(4) or 1)
+            col = ds.df[src].to_numpy(dtype="float64")
+            out = np.full(len(col), np.nan)
+            if fn == "LAG":
+                out[n:] = col[: len(col) - n]
+            elif fn == "LEAD":
+                out[: len(col) - n] = col[n:]
+            else:  # DIFF: value minus its n-lag
+                out[n:] = col[n:] - col[: len(col) - n]
+            _set_column(ds, tgt, out)
+            did = True
+        if not did:
+            return [{"type": "Error", "text": "CREATE syntax: newvar = LAG(var, n) | LEAD(var, n) | DIFF(var, n)."}]
+        ctx.mark_changed()
+        return []
+
+
+class SetCmd(Procedure):
+    """SET SEED = n — makes RV.* / sampling reproducible for later commands."""
+
+    def execute(self, rest: str, ctx: Context) -> list[dict[str, Any]]:
+        m = re.search(r"\bSEED\s*=?\s*(\d+)", rest, re.IGNORECASE)
+        if m:
+            np.random.seed(int(m.group(1)))
+        return []
+
+
 # ---- helpers ----
 def _bare_names(s: str) -> list[str]:
     return re.findall(r"[A-Za-z@#$][A-Za-z0-9@#$._]*", s)

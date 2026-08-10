@@ -56,6 +56,38 @@ export function ReplaceMissingDialog({ variables, onClose }: Props): JSX.Element
   )
 }
 
+export function ShiftValuesDialog({ variables, onClose }: Props): JSX.Element {
+  const [src, setSrc] = useState<string[]>([])
+  const [fn, setFn] = useState<'LAG' | 'LEAD'>('LAG')
+  const [n, setN] = useState('1')
+  const [name, setName] = useState('')
+  const target = name.trim() || (src[0] ? `${src[0]}_${fn.toLowerCase()}` : '')
+  const s = () => `CREATE ${target} = ${fn}(${src[0]}, ${n || 1}).`
+  return (
+    <AnalysisFrame title="Shift Values" onOk={() => run(s(), onClose)} onPaste={() => { window.spss.paste(s()); onClose() }} onReset={() => { setSrc([]); setName('') }} onCancel={onClose} okDisabled={!src.length || !target}>
+      <VarMover variables={variables} value={src} onChange={(v) => setSrc(v.slice(-1))} label="Variable:" accept={(v) => !v.isString} />
+      <div className="field-row" style={{ marginTop: 6 }}>
+        <span>Function:</span>
+        <label><input type="radio" checked={fn === 'LAG'} onChange={() => setFn('LAG')} /> Lag (previous)</label>
+        <label><input type="radio" checked={fn === 'LEAD'} onChange={() => setFn('LEAD')} /> Lead (next)</label>
+      </div>
+      <div className="field-row"><span>Order (n):</span><input type="number" min={1} value={n} onChange={(e) => setN(e.target.value)} style={{ width: 60 }} /></div>
+      <div className="field-row"><span>Name of shifted variable:</span><input value={name} onChange={(e) => setName(e.target.value)} placeholder={target} style={{ width: 140 }} /></div>
+    </AnalysisFrame>
+  )
+}
+
+export function RandomSeedDialog({ onClose }: Props): JSX.Element {
+  const [seed, setSeed] = useState('2000000')
+  const s = () => `SET SEED = ${seed || 0}.`
+  return (
+    <AnalysisFrame title="Random Number Generators" onOk={() => run(s(), onClose)} onPaste={() => { window.spss.paste(s()); onClose() }} onReset={() => setSeed('2000000')} onCancel={onClose} okDisabled={!seed.trim()}>
+      <div className="field-row"><span>Set Starting Point — Fixed Value:</span><input type="number" value={seed} onChange={(e) => setSeed(e.target.value)} style={{ width: 140 }} /></div>
+      <div style={{ fontSize: 11, color: '#666', marginTop: 4 }}>Makes RV.* draws and random sampling reproducible.</div>
+    </AnalysisFrame>
+  )
+}
+
 export function RecodeSameDialog({ variables, onClose }: Props): JSX.Element {
   const [src, setSrc] = useState<string[]>([])
   const [rules, setRules] = useState('(1 THRU 5=1)(6 THRU 10=2)(ELSE=SYSMIS)')

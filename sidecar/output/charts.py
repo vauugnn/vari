@@ -159,3 +159,56 @@ def boxplot(groups: Sequence[Sequence[float]], labels: Sequence[str], title: str
                    patch_artist=True, boxprops=dict(facecolor="#cfe0f2", edgecolor=_EDGE))
     ax.set_ylabel(ylabel)
     return _finish(fig, title)
+
+
+def high_low(categories: Sequence[str], highs: Sequence[float], lows: Sequence[float],
+             closes: Optional[Sequence[float]] = None, title: str = "", ylabel: str = "") -> dict[str, Any]:
+    fig, ax = _plt().subplots(figsize=(4.6, 3.4))
+    xs = list(range(len(categories)))
+    for i in xs:
+        ax.plot([i, i], [lows[i], highs[i]], color=_EDGE, linewidth=1.4)
+        ax.plot([i - 0.15, i], [highs[i], highs[i]], color=_EDGE, linewidth=1.4)
+        ax.plot([i, i + 0.15], [lows[i], lows[i]], color=_EDGE, linewidth=1.4)
+        if closes is not None:
+            ax.plot([i, i + 0.15], [closes[i], closes[i]], color=_BAR_COLOR, linewidth=1.6)
+    ax.set_xticks(xs)
+    ax.set_xticklabels([str(c) for c in categories], rotation=30)
+    ax.set_ylabel(ylabel)
+    return _finish(fig, title)
+
+
+def population_pyramid(labels: Sequence[str], left: Sequence[float], right: Sequence[float],
+                       side_labels: Sequence[str], title: str = "", xlabel: str = "") -> dict[str, Any]:
+    fig, ax = _plt().subplots(figsize=(4.8, 3.6))
+    ys = list(range(len(labels)))
+    ax.barh(ys, [-v for v in left], color=_BAR_COLOR, edgecolor=_EDGE, linewidth=0.5, label=str(side_labels[0]))
+    ax.barh(ys, list(right), color="#e08a2f", edgecolor="#a75f16", linewidth=0.5, label=str(side_labels[1]))
+    ax.set_yticks(ys)
+    ax.set_yticklabels([str(x) for x in labels])
+    ax.set_ylabel(xlabel)
+    ticks = ax.get_xticks()
+    ax.set_xticks(ticks)
+    ax.set_xticklabels([str(int(abs(t))) for t in ticks])
+    ax.legend(fontsize=8)
+    return _finish(fig, title)
+
+
+def bar3d(row_labels: Sequence[str], col_labels: Sequence[str], grid: Sequence[Sequence[float]],
+          title: str = "", xlabel: str = "") -> dict[str, Any]:
+    plt = _plt()
+    fig = plt.figure(figsize=(4.8, 3.8))
+    ax = fig.add_subplot(111, projection="3d")
+    palette = ["#4e79c4", "#e08a2f", "#7ab648", "#d9433f", "#9b6fbf", "#e6a417"]
+    for ci in range(len(col_labels)):
+        xs = list(range(len(row_labels)))
+        ys = [ci] * len(row_labels)
+        zs = [0] * len(row_labels)
+        heights = [grid[ri][ci] for ri in range(len(row_labels))]
+        ax.bar3d(xs, ys, zs, 0.6, 0.6, heights, color=palette[ci % len(palette)], shade=True)
+    ax.set_xticks(list(range(len(row_labels))))
+    ax.set_xticklabels([str(x) for x in row_labels], fontsize=7)
+    ax.set_yticks(list(range(len(col_labels))))
+    ax.set_yticklabels([str(x) for x in col_labels], fontsize=7)
+    ax.set_xlabel(xlabel, fontsize=8)
+    ax.set_zlabel("Count", fontsize=8)
+    return _finish(fig, title)

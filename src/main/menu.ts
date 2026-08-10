@@ -285,7 +285,7 @@ export function buildMenu(actions: MenuActions): Menu {
     submenu: [
       dialogItem('Compute Variable…', 'compute', actions.openDialog),
       dialogItem('Count Values within Cases…', 'count', actions.openDialog),
-      proc('Shift Values…'),
+      dialogItem('Shift Values…', 'shift-values', actions.openDialog),
       dialogItem('Recode into Same Variables…', 'recode-same', actions.openDialog),
       dialogItem('Recode into Different Variables…', 'recode-different', actions.openDialog),
       dialogItem('Automatic Recode…', 'autorecode', actions.openDialog),
@@ -294,7 +294,7 @@ export function buildMenu(actions: MenuActions): Menu {
       { type: 'separator' },
       proc('Date and Time Wizard…'),
       dialogItem('Replace Missing Values…', 'rmv', actions.openDialog),
-      proc('Random Number Generators…'),
+      dialogItem('Random Number Generators…', 'random-seed', actions.openDialog),
       { type: 'separator' },
       { label: 'Run Pending Transforms', accelerator: 'CmdOrCtrl+G', click: () => actions.execSyntax('EXECUTE.') }
     ]
@@ -314,14 +314,14 @@ export function buildMenu(actions: MenuActions): Menu {
         label: 'Legacy Dialogs',
         submenu: [
           dialogItem('Bar…', 'graph-bar', actions.openDialog),
-          proc('3-D Bar…'),
+          dialogItem('3-D Bar…', 'graph-bar3d', actions.openDialog),
           dialogItem('Line…', 'graph-line', actions.openDialog),
           dialogItem('Area…', 'graph-area', actions.openDialog),
           dialogItem('Pie…', 'graph-pie', actions.openDialog),
-          proc('High-Low…'),
-          proc('Boxplot…'),
+          dialogItem('High-Low…', 'graph-highlow', actions.openDialog),
+          dialogItem('Boxplot…', 'graph-boxplot', actions.openDialog),
           dialogItem('Error Bar…', 'graph-errorbar', actions.openDialog),
-          proc('Population Pyramid…'),
+          dialogItem('Population Pyramid…', 'graph-pyramid', actions.openDialog),
           dialogItem('Scatter/Dot…', 'graph-scatter', actions.openDialog),
           dialogItem('Histogram…', 'graph-histogram', actions.openDialog)
         ]

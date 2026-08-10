@@ -39,7 +39,7 @@ import { ReliabilityDialog } from '../dialogs/analysis/ReliabilityDialog'
 import { LinearRegressionDialog } from '../dialogs/analysis/RegressionDialog'
 import { MeansDialog } from '../dialogs/analysis/MeansDialog'
 import { ComputeDialog } from '../dialogs/analysis/ComputeDialog'
-import { HistogramDialog, BarChartDialog, PieChartDialog, ScatterDialog } from '../dialogs/analysis/GraphDialogs'
+import { HistogramDialog, BarChartDialog, PieChartDialog, ScatterDialog, BoxplotDialog, HighLowDialog, PyramidDialog, Bar3dDialog } from '../dialogs/analysis/GraphDialogs'
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
 import { ExploreDialog, PartialCorrDialog } from '../dialogs/analysis/ExploreDialog'
 import { ImportWizard } from '../dialogs/ImportWizard'
@@ -59,7 +59,9 @@ import {
   CountValuesDialog,
   ReplaceMissingDialog,
   RecodeDifferentDialog,
-  RecodeSameDialog
+  RecodeSameDialog,
+  ShiftValuesDialog,
+  RandomSeedDialog
 } from '../dialogs/analysis/TransformDialogs'
 import { TransposeDialog, AggregateDialog, AddCasesDialog, AddVariablesDialog } from '../dialogs/analysis/DataStructDialogs'
 import {
@@ -317,6 +319,14 @@ export function DataEditor(): JSX.Element {
             return <PieChartDialog {...p} />
           case 'graph-scatter':
             return <ScatterDialog {...p} />
+          case 'graph-boxplot':
+            return <BoxplotDialog {...p} />
+          case 'graph-highlow':
+            return <HighLowDialog {...p} />
+          case 'graph-pyramid':
+            return <PyramidDialog {...p} />
+          case 'graph-bar3d':
+            return <Bar3dDialog {...p} />
           case 'selectcases':
             return <SelectCasesDialog {...p} />
           case 'weight':
@@ -357,6 +367,10 @@ export function DataEditor(): JSX.Element {
             return <RecodeDifferentDialog {...p} />
           case 'recode-same':
             return <RecodeSameDialog {...p} />
+          case 'shift-values':
+            return <ShiftValuesDialog {...p} />
+          case 'random-seed':
+            return <RandomSeedDialog {...p} />
           case 'transpose':
             return <TransposeDialog {...p} />
           case 'aggregate':

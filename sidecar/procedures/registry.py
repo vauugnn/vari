@@ -29,7 +29,7 @@ from .npar import NparTests
 from .oneway import Oneway
 from .regression import Regression
 from .reliability import Reliability
-from .transforms import AutoRecode, Compute, Count, Execute, If, Rank, Recode, Rmv
+from .transforms import AutoRecode, Compute, Count, Create, Execute, If, Rank, Recode, Rmv, SetCmd
 from .ttest import TTest
 
 
@@ -67,6 +67,8 @@ def build_registry() -> Registry:
     reg.register("RANK")(Rank)
     reg.register("AUTORECODE")(AutoRecode)
     reg.register("RMV")(Rmv)
+    reg.register("CREATE")(Create)
+    reg.register("SET")(SetCmd)
     reg.register("VARIABLE")(VariableCmd)
     reg.register("VALUE")(ValueLabels)
     reg.register("ADD")(lambda: ValueLabels(add=True))

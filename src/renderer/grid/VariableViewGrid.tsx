@@ -3,6 +3,7 @@ import type { Align, DatasetSummary, Measure, Role, ValueLabel, MissingJson, Var
 import { useStore } from '../state/store'
 import { MeasureIcon } from '../common/icons'
 import { ContextMenu, type MenuItem } from './ContextMenu'
+import { Modal } from '../dialogs/Modal'
 import { VariableTypeDialog } from '../dialogs/VariableTypeDialog'
 import { ValueLabelsDialog } from '../dialogs/ValueLabelsDialog'
 import { MissingValuesDialog } from '../dialogs/MissingValuesDialog'
@@ -67,6 +68,7 @@ export function VariableViewGrid({ summary }: { summary: DatasetSummary }): JSX.
   // Row-number selection (a..b inclusive), for delete of one or many variables.
   const [rowSel, setRowSel] = useState<{ a: number; b: number } | null>(null)
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null)
+  const [info, setInfo] = useState<number | null>(null)
 
   const rowSelected = (i: number): boolean =>
     !!rowSel && i >= Math.min(rowSel.a, rowSel.b) && i <= Math.max(rowSel.a, rowSel.b)
@@ -155,10 +157,22 @@ export function VariableViewGrid({ summary }: { summary: DatasetSummary }): JSX.
         { label: 'Paste', disabled: !varClipboard.length, onClick: () => void pasteRows(sel.a, sel.b) },
         { label: count > 1 ? `Duplicate ${count} Variables` : 'Duplicate', onClick: () => void duplicateRows(sel.a, sel.b) },
         { separator: true },
+        { label: 'Variable Information…', onClick: () => setInfo(lo) },
+        { label: 'Descriptive Statistics', onClick: () => runDescriptives(sel.a, sel.b) },
+        { separator: true },
         { label: 'Insert Variable', onClick: () => void insertAt(lo) },
         { label: count > 1 ? `Clear ${count} Variables` : 'Clear', onClick: () => void deleteRange(sel.a, sel.b) }
       ]
     })
+  }
+
+  // Descriptive Statistics on the selected numeric variables (matches SPSS's
+  // Variable View context menu). Routes through syntax like every procedure.
+  const runDescriptives = (a: number, b: number): void => {
+    const lo = Math.min(a, b)
+    const hi = Math.max(a, b)
+    const names = summary.variables.slice(lo, hi + 1).filter((v) => !v.isString).map((v) => v.name)
+    if (names.length) void window.spss.execute(`DESCRIPTIVES VARIABLES=${names.join(' ')}.`)
   }
 
   const commit = async (index: number, patch: Partial<VariableMetaJson>): Promise<void> => {
@@ -315,6 +329,35 @@ export function VariableViewGrid({ summary }: { summary: DatasetSummary }): JSX.
         />
       )}
       {menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
+      {info !== null && summary.variables[info] && (
+        <Modal title="Variable Information" onOk={() => setInfo(null)} onCancel={() => setInfo(null)}>
+          {(() => {
+            const v = summary.variables[info]
+            const rows: [string, string][] = [
+              ['Name', v.name],
+              ['Label', v.label || '(none)'],
+              ['Type', v.type],
+              ['Format', v.format],
+              ['Measurement Level', v.measure],
+              ['Role', v.role],
+              ['Missing Values', missingSummary(v.missing)],
+              ['Value Labels', v.valueLabels.length ? v.valueLabels.map((l) => `${l.value} = "${l.label}"`).join(', ') : '(none)']
+            ]
+            return (
+              <table className="varinfo">
+                <tbody>
+                  {rows.map(([k, val]) => (
+                    <tr key={k}>
+                      <td style={{ fontWeight: 600, paddingRight: 12, verticalAlign: 'top', whiteSpace: 'nowrap' }}>{k}:</td>
+                      <td>{val}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )
+          })()}
+        </Modal>
+      )}
     </div>
   )
 }
