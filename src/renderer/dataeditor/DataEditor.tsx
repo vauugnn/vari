@@ -48,9 +48,11 @@ import { KaplanMeierDialog, CoxDialog, LifeTableDialog } from '../dialogs/analys
 import { ArimaDialog, SeasonDialog, SpectraDialog, CsDescriptivesDialog, CsTabulateDialog } from '../dialogs/analysis/ForecastCsDialogs'
 import { TwoStepDialog, NearestNeighborDialog, CorrespondenceDialog, ProxscalDialog, AlscalDialog, PrefscalDialog, MlpDialog, RbfDialog } from '../dialogs/analysis/Wave5Dialogs'
 import { OlapDialog, CtablesDialog, MultiResponseDialog, ControlChartDialog, ParetoDialog, BayesNormalDialog, BayesBinomialDialog, BayesPoissonDialog } from '../dialogs/analysis/Wave6Dialogs'
-import { VarsToCasesDialog, CasesToVarsDialog, VisualBinDialog } from '../dialogs/analysis/Wave7Dialogs'
+import { VarsToCasesDialog, CasesToVarsDialog, VisualBinDialog, SortVariablesDialog } from '../dialogs/analysis/Wave7Dialogs'
+import { BayesPairedDialog, BayesIndependentDialog } from '../dialogs/analysis/Wave6Dialogs'
 import { FindDialog, GoToCaseDialog, GoToVariableDialog } from '../dialogs/analysis/FindGotoDialogs'
 import { ChartBuilderDialog } from '../dialogs/analysis/ChartBuilderDialog'
+import { PowerDialog, MvaDialog, MiDialog, MediationDialog, MetaDialog } from '../dialogs/analysis/AdvancedDialogs'
 import { RunScriptDialog } from '../dialogs/RunScriptDialog'
 import { OpenDatabaseDialog } from '../dialogs/OpenDatabaseDialog'
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
@@ -154,6 +156,8 @@ export function DataEditor(): JSX.Element {
 
   useEffect(() => window.spss.onImportText(setImportPath), [])
   useEffect(() => window.spss.onNewScript(() => setScriptOpen(true)), [])
+  const [updatePct, setUpdatePct] = useState<number | null>(null)
+  useEffect(() => window.spss.onUpdateProgress((p) => setUpdatePct(p.percent >= 100 ? null : p.percent)), [])
 
   useEffect(() => window.spss.ds.onChanged(setSummary), [setSummary])
   useEffect(
@@ -161,9 +165,12 @@ export function DataEditor(): JSX.Element {
       window.spss.onOpenDialog((id) => {
         if (id === 'customize-toolbar') setCustomize(true)
         else if (id === 'opendb') setDbOpen(true)
+        else if (id === 'goto-varview') setActiveTab('variable')
+        else if (id === 'goto-dataview') setActiveTab('data')
+        else if (id === 'goto-overview') setActiveTab('overview')
         else setDialogId(id)
       }),
-    []
+    [setActiveTab]
   )
   useEffect(
     () =>
@@ -180,9 +187,18 @@ export function DataEditor(): JSX.Element {
   }, [])
 
   useEffect(() => {
+    // Main drives the initial dataset (reopen last file, else new) once the
+    // processor is ready. This is only a safety net if that broadcast is
+    // missed — hence the delay, so we don't race a reopened dataset with a
+    // blank one.
     if (status.state === 'ready' && !summary && !initedRef.current) {
       initedRef.current = true
-      void window.spss.ds.newDataset().then(setSummary).catch(() => (initedRef.current = false))
+      const t = setTimeout(() => {
+        if (!useStore.getState().summary) {
+          void window.spss.ds.newDataset().then(setSummary).catch(() => (initedRef.current = false))
+        }
+      }, 900)
+      return () => clearTimeout(t)
     }
   }, [status, summary, setSummary])
 
@@ -316,6 +332,7 @@ export function DataEditor(): JSX.Element {
         <span className="sb-seg">{summary?.weight ? `Weight On (${summary.weight})` : 'Weight Off'}</span>
         <span className="sb-seg">{summary?.split && summary.split.length ? `Split On (${summary.split.join(', ')})` : 'Split Off'}</span>
         <span className="sb-seg">{summary?.filter ? `Filter On (${summary.filter})` : 'Filter Off'}</span>
+        {updatePct !== null && <span className="sb-seg">Downloading update… {Math.round(updatePct)}%</span>}
       </div>
       )}
 
@@ -365,6 +382,16 @@ export function DataEditor(): JSX.Element {
             return <Bar3dDialog {...p} />
           case 'chartbuilder':
             return <ChartBuilderDialog {...p} />
+          case 'power':
+            return <PowerDialog {...p} />
+          case 'mva':
+            return <MvaDialog {...p} />
+          case 'mi':
+            return <MiDialog {...p} />
+          case 'mediation':
+            return <MediationDialog {...p} />
+          case 'meta':
+            return <MetaDialog {...p} />
           case 'multivariate-glm':
             return <MultivariateDialog {...p} />
           case 'distances':
@@ -443,6 +470,12 @@ export function DataEditor(): JSX.Element {
             return <CasesToVarsDialog {...p} />
           case 'visualbin':
             return <VisualBinDialog {...p} />
+          case 'sortvars':
+            return <SortVariablesDialog {...p} />
+          case 'bayes-paired':
+            return <BayesPairedDialog {...p} />
+          case 'bayes-indep':
+            return <BayesIndependentDialog {...p} />
           case 'find':
             return <FindDialog {...p} />
           case 'gotocase':

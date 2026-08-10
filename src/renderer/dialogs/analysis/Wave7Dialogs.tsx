@@ -38,6 +38,25 @@ export function CasesToVarsDialog({ variables, onClose }: Props): JSX.Element {
   )
 }
 
+export function SortVariablesDialog({ onClose }: Props): JSX.Element {
+  const [key, setKey] = useState('NAME')
+  const [dir, setDir] = useState<'A' | 'D'>('A')
+  const s = () => `SORT VARIABLES BY ${key} (${dir}).`
+  return (
+    <AnalysisFrame title="Sort Variables" onOk={() => go(s(), onClose)} onPaste={() => { window.spss.paste(s()); onClose() }} onReset={() => { setKey('NAME'); setDir('A') }} onCancel={onClose} okDisabled={false}>
+      <div className="field-row"><span>Sort by:</span>
+        <select value={key} onChange={(e) => setKey(e.target.value)}>
+          <option value="NAME">Name</option><option value="TYPE">Type</option><option value="MEASURE">Measurement Level</option>
+        </select>
+      </div>
+      <div className="field-row"><span>Order:</span>
+        <label><input type="radio" checked={dir === 'A'} onChange={() => setDir('A')} /> Ascending</label>
+        <label><input type="radio" checked={dir === 'D'} onChange={() => setDir('D')} /> Descending</label>
+      </div>
+    </AnalysisFrame>
+  )
+}
+
 export function VisualBinDialog({ variables, onClose }: Props): JSX.Element {
   const [src, setSrc] = useState<string[]>([])
   const [name, setName] = useState('')

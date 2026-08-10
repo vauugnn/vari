@@ -42,6 +42,8 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
   return {
     label: 'Analyze',
     submenu: [
+      { label: 'Power Analysis', submenu: [dialogItem('Means…', 'power', open), dialogItem('Proportions…', 'power', open), dialogItem('Correlations…', 'power', open)] },
+      { label: 'Meta Analysis', submenu: [dialogItem('Continuous Outcomes…', 'meta', open)] },
       { label: 'Reports', submenu: [dialogItem('Codebook', 'codebook', open), dialogItem('OLAP Cubes', 'olap', open), dialogItem('Case Summaries', 'summarize', open), proc('Report Summaries in Rows'), proc('Report Summaries in Columns')] },
       {
         label: 'Descriptive Statistics',
@@ -56,10 +58,10 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
           dialogItem('Q-Q Plots…', 'qqplot', open)
         ]
       },
-      { label: 'Bayesian Statistics', submenu: [dialogItem('One Sample Normal…', 'bayes-normal', open), dialogItem('One Sample Binomial…', 'bayes-binomial', open), dialogItem('One Sample Poisson…', 'bayes-poisson', open), proc('Related Sample Normal…'), proc('Independent Sample Normal…')] },
+      { label: 'Bayesian Statistics', submenu: [dialogItem('One Sample Normal…', 'bayes-normal', open), dialogItem('One Sample Binomial…', 'bayes-binomial', open), dialogItem('One Sample Poisson…', 'bayes-poisson', open), dialogItem('Related Sample Normal…', 'bayes-paired', open), dialogItem('Independent Sample Normal…', 'bayes-indep', open)] },
       { label: 'Tables', submenu: [dialogItem('Custom Tables…', 'ctables', open), proc('Multiple Response Sets…')] },
       {
-        label: 'Compare Means',
+        label: 'Compare Means and Proportions',
         submenu: [
           dialogItem('Means…', 'means', open),
           dialogItem('One-Sample T Test…', 'ttest-one', open),
@@ -127,9 +129,9 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
       {
         label: 'Nonparametric Tests',
         submenu: [
-          proc('One Sample…'),
-          proc('Independent Samples…'),
-          proc('Related Samples…'),
+          dialogItem('One Sample…', 'npar-ks', open),
+          dialogItem('Independent Samples…', 'npar-2indep', open),
+          dialogItem('Related Samples…', 'npar-2related', open),
           {
             label: 'Legacy Dialogs',
             submenu: [
@@ -148,10 +150,15 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
       { label: 'Forecasting', submenu: [dialogItem('Create Traditional Models…', 'arima', open), proc('Create Temporal Causal Models…'), proc('Apply Traditional Models…'), dialogItem('Seasonal Decomposition…', 'season', open), dialogItem('Spectral Analysis…', 'spectra', open)] },
       { label: 'Survival', submenu: [dialogItem('Life Tables…', 'lifetable', open), dialogItem('Kaplan-Meier…', 'km', open), dialogItem('Cox Regression…', 'coxreg', open), proc('Cox w/ Time-Dep Cov…')] },
       { label: 'Multiple Response', submenu: [proc('Define Variable Sets…'), dialogItem('Frequencies…', 'multiresponse', open), proc('Crosstabs…')] },
+      dialogItem('Missing Value Analysis…', 'mva', open),
+      dialogItem('Mediation Analysis…', 'mediation', open),
+      { label: 'Multiple Imputation', submenu: [dialogItem('Impute Missing Data Values…', 'mi', open), dialogItem('Analyze Patterns…', 'mva', open)] },
       { label: 'Complex Samples', submenu: [dialogItem('Descriptives…', 'csdescr', open), dialogItem('Crosstabs…', 'cstab', open)] },
       proc('Simulation…'),
       { label: 'Quality Control', submenu: [dialogItem('Control Charts…', 'spchart', open), dialogItem('Pareto Charts…', 'pareto', open)] },
-      proc('Spatial and Temporal Modeling…')
+      proc('Spatial and Temporal Modeling…'),
+      { label: 'Mapping', enabled: false, submenu: [proc('Geospatial Modeling Wizard…')] },
+      { label: 'Direct Marketing', enabled: false, submenu: [proc('RFM Analysis…'), proc('Cluster Analysis…')] }
     ]
   }
 }
@@ -226,10 +233,16 @@ export function buildMenu(actions: MenuActions): Menu {
       { type: 'separator' },
       { role: 'cut' },
       { role: 'copy' },
+      proc('Copy with Variable Names'),
+      proc('Copy with Variable Labels'),
       { role: 'paste' },
+      proc('Paste Variables…'),
       { role: 'selectAll' },
       { type: 'separator' },
       dialogItem('Find…', 'find', actions.openDialog),
+      dialogItem('Find Next', 'find', actions.openDialog),
+      dialogItem('Replace…', 'find', actions.openDialog),
+      { type: 'separator' },
       dialogItem('Go to Case…', 'gotocase', actions.openDialog),
       dialogItem('Go to Variable…', 'gotovar', actions.openDialog),
       { type: 'separator' },
@@ -245,9 +258,16 @@ export function buildMenu(actions: MenuActions): Menu {
         label: 'Toolbars',
         submenu: [{ label: 'Customize…', click: () => actions.openDialog('customize-toolbar') }]
       },
+      proc('Menu Editor…'),
       proc('Fonts…'),
       { label: 'Grid Lines', click: () => actions.viewToggle('gridlines') },
       { label: 'Value Labels', click: () => actions.viewToggle('valuelabels') },
+      proc('Mark Imputed Data'),
+      proc('Customize Variable View…'),
+      { type: 'separator' },
+      { label: 'Overview', accelerator: 'CmdOrCtrl+T', click: () => actions.openDialog('goto-overview') },
+      { label: 'Data View', accelerator: 'CmdOrCtrl+D', click: () => actions.openDialog('goto-dataview') },
+      { label: 'Variable View', click: () => actions.openDialog('goto-varview') },
       // Dev-only affordances: never expose Reload / DevTools in a packaged build.
       ...(app.isPackaged
         ? []
@@ -268,7 +288,7 @@ export function buildMenu(actions: MenuActions): Menu {
       proc('Define Multiple Response Sets…'),
       { type: 'separator' },
       dialogItem('Sort Cases…', 'sort', actions.openDialog),
-      proc('Sort Variables…'),
+      dialogItem('Sort Variables…', 'sortvars', actions.openDialog),
       dialogItem('Transpose…', 'transpose', actions.openDialog),
       {
         label: 'Merge Files',
@@ -302,9 +322,12 @@ export function buildMenu(actions: MenuActions): Menu {
       dialogItem('Recode into Different Variables…', 'recode-different', actions.openDialog),
       dialogItem('Automatic Recode…', 'autorecode', actions.openDialog),
       dialogItem('Visual Binning…', 'visualbin', actions.openDialog),
+      proc('Optimal Binning…'),
+      proc('Prepare Data for Modeling'),
       dialogItem('Rank Cases…', 'rank', actions.openDialog),
       { type: 'separator' },
       proc('Date and Time Wizard…'),
+      proc('Create Time Series…'),
       dialogItem('Replace Missing Values…', 'rmv', actions.openDialog),
       dialogItem('Random Number Generators…', 'random-seed', actions.openDialog),
       { type: 'separator' },
@@ -319,6 +342,7 @@ export function buildMenu(actions: MenuActions): Menu {
     submenu: [
       dialogItem('Chart Builder…', 'chartbuilder', actions.openDialog),
       proc('Graphboard Template Chooser…'),
+      proc('Relationship Map…'),
       proc('Weibull Plot…'),
       proc('Compare Subgroups'),
       proc('Regression Variable Plots'),
@@ -344,7 +368,7 @@ export function buildMenu(actions: MenuActions): Menu {
   template.push({
     label: 'Utilities',
     submenu: [
-      proc('Variables…'),
+      { label: 'Variables…', click: () => actions.openDialog('goto-varview') },
       proc('OMS Control Panel…'),
       proc('OMS Identifiers…'),
       proc('Scoring Wizard…'),
@@ -352,9 +376,12 @@ export function buildMenu(actions: MenuActions): Menu {
       proc('Data File Comments…'),
       proc('Define Variable Sets…'),
       proc('Use Variable Sets…'),
-      proc('Show All Variables'),
+      { label: 'Show All Variables', click: () => actions.openDialog('goto-varview') },
       { type: 'separator' },
+      proc('Spelling…'),
       { label: 'Run Script…', click: actions.newScript },
+      proc('Production Facility…'),
+      proc('Map Conversion Utility…'),
       proc('Custom Dialog Builder…')
     ]
   })

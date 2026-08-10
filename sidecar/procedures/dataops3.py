@@ -133,6 +133,35 @@ class VisualBin(Procedure):
         return []
 
 
+class SortVariables(Procedure):
+    """SORT VARIABLES BY NAME|TYPE|MEASURE (A|D) — reorder the variable list."""
+
+    def execute(self, rest: str, ctx: Context) -> list[dict[str, Any]]:
+        ds = _active(ctx)
+        key = "NAME"
+        desc = False
+        m = re.search(r"\bBY\b\s+(\w+)", rest, re.IGNORECASE)
+        if m:
+            key = m.group(1).upper()
+        if re.search(r"\(\s*D\s*\)|\bDESCENDING\b", rest, re.IGNORECASE):
+            desc = True
+
+        def sort_key(v: Any):
+            if key.startswith("TYPE"):
+                return (v.is_string, v.name.lower())
+            if key.startswith("MEAS"):
+                order = {"nominal": 0, "ordinal": 1, "scale": 2}
+                return (order.get(v.measure, 3), v.name.lower())
+            return v.name.lower()
+
+        order = sorted(ds.variables, key=sort_key, reverse=desc)
+        names = [v.name for v in order]
+        ds.variables = order
+        ds.df = ds.df[names]
+        ctx.mark_changed()
+        return []
+
+
 def _meta_for(ds: Any, name: str) -> VariableMeta:
     idx = ds._index_of(name)
     return ds.variables[idx].copy()

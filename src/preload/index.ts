@@ -90,6 +90,11 @@ const api: SpssApi = {
     ipcRenderer.on(IPC.newScript, listener)
     return () => ipcRenderer.removeListener(IPC.newScript, listener)
   },
+  onUpdateProgress: (cb) => {
+    const listener = (_e: unknown, p: { percent: number; transferred: number; total: number }) => cb(p)
+    ipcRenderer.on(IPC.updateProgress, listener)
+    return () => ipcRenderer.removeListener(IPC.updateProgress, listener)
+  },
   paste: (syntax: string) => ipcRenderer.send(IPC.syntaxPaste, syntax),
   onAppendSyntax: (cb) => {
     const listener = (_e: unknown, text: string) => cb(text)

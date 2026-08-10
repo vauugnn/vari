@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron'
 import { writeFile } from 'fs/promises'
+import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import updaterPkg from 'electron-updater'
 import { buildMenu, focusOrShow } from './menu'
@@ -116,6 +117,43 @@ function showAbout(): void {
   })
 }
 
+// Remember the last opened/saved data file so the next launch can reopen it
+// (SPSS-style auto-recovery / Recently Used Data).
+function stateFile(): string {
+  return join(app.getPath('userData'), 'vari-state.json')
+}
+
+function rememberFile(path: string): void {
+  try {
+    writeFileSync(stateFile(), JSON.stringify({ lastFile: path }), 'utf8')
+  } catch {
+    /* best effort */
+  }
+}
+
+function lastFile(): string | null {
+  try {
+    const raw = JSON.parse(readFileSync(stateFile(), 'utf8')) as { lastFile?: string }
+    if (raw.lastFile && existsSync(raw.lastFile)) return raw.lastFile
+  } catch {
+    /* none */
+  }
+  return null
+}
+
+let reopenedOnce = false
+async function reopenLastFile(): Promise<boolean> {
+  const path = lastFile()
+  if (!path) return false
+  try {
+    const summary = (await sidecar.request('dataset.open', { path })) as DatasetSummary
+    broadcastDataset(summary)
+    return true
+  } catch {
+    return false
+  }
+}
+
 function createAllWindows(): void {
   // Data Editor — main window. Closing it quits the app.
   windows.dataeditor = createWindow('dataeditor', {
@@ -177,6 +215,7 @@ async function openViaDialog(): Promise<DatasetSummary | null> {
     return null
   }
   const summary = (await sidecar.request('dataset.open', { path })) as DatasetSummary
+  rememberFile(path)
   broadcastDataset(summary)
   showWindow('dataeditor')
   return summary
@@ -206,6 +245,12 @@ function wireUpdater(): void {
   updaterWired = true
   autoUpdater.autoDownload = true
   autoUpdater.autoInstallOnAppQuit = true
+  autoUpdater.on('download-progress', (p) => {
+    const de = windows.dataeditor
+    if (de && !de.isDestroyed()) {
+      de.webContents.send(IPC.updateProgress, { percent: p.percent, transferred: p.transferred, total: p.total })
+    }
+  })
   autoUpdater.on('update-downloaded', (info) => {
     const win = windows.dataeditor ?? BrowserWindow.getAllWindows()[0]
     void dialog
@@ -296,6 +341,7 @@ async function saveViaDialog(): Promise<{ ok: boolean; path: string } | null> {
   })
   if (res.canceled || !res.filePath) return null
   const out = (await sidecar.request('dataset.save', { path: res.filePath })) as { ok: boolean; path: string }
+  if (out?.ok) rememberFile(res.filePath)
   return out
 }
 
@@ -504,6 +550,17 @@ app.whenReady().then(() => {
     if (status.state === 'down' && status.detail) {
       // Make crashes visible in the Viewer, per PHASE-0 crash handling.
       sendToViewer([{ type: 'Error', text: status.detail }])
+    }
+    // Once the processor is up, reopen the last dataset so we don't start blank
+    // (fall back to a fresh empty dataset if there is nothing to reopen).
+    if (status.state === 'ready' && !reopenedOnce) {
+      reopenedOnce = true
+      void (async () => {
+        if (!(await reopenLastFile())) {
+          const s = (await sidecar.request('dataset.new', {})) as DatasetSummary
+          broadcastDataset(s)
+        }
+      })()
     }
   })
   sidecar.start()

@@ -43,6 +43,7 @@ from .reports2 import Ctables, MultResponse, Olap
 from .qc import Pareto, SpChart
 from .bayesian import Bayes
 from .dataops3 import CasesToVars, VarsToCases, VisualBin
+from .advanced import MetaAnalysis, Mediation, MissingValue, MultipleImputation, PowerAnalysis
 from .ttest import TTest
 
 
@@ -119,6 +120,11 @@ def build_registry() -> Registry:
     reg.register("VARSTOCASES")(VarsToCases)
     reg.register("CASESTOVARS")(CasesToVars)
     reg.register("VBIN")(VisualBin)
+    reg.register("POWER")(PowerAnalysis)
+    reg.register("MVA")(MissingValue)
+    reg.register("MI")(MultipleImputation)
+    reg.register("MEDIATION")(Mediation)
+    reg.register("META")(MetaAnalysis)
     reg.register("VARIABLE")(VariableCmd)
     reg.register("VALUE")(ValueLabels)
     reg.register("ADD")(lambda: ValueLabels(add=True))

@@ -94,3 +94,29 @@ function bayesDialog(title: string, type: string) {
 export const BayesNormalDialog = bayesDialog('Bayesian One-Sample Normal', 'NORMAL')
 export const BayesBinomialDialog = bayesDialog('Bayesian One-Sample Binomial', 'BINOMIAL')
 export const BayesPoissonDialog = bayesDialog('Bayesian One-Sample Poisson', 'POISSON')
+
+export function BayesPairedDialog({ variables, onClose }: Props): JSX.Element {
+  const [a, setA] = useState<string[]>([])
+  const [b, setB] = useState<string[]>([])
+  const s = () => `BAYES ${a[0]} ${b[0]}\n  /TEST TYPE=NORMAL PAIRED.`
+  return (
+    <AnalysisFrame title="Bayesian Related-Samples Normal" onOk={() => go(s(), onClose)} onPaste={() => { window.spss.paste(s()); onClose() }} onReset={() => { setA([]); setB([]) }} onCancel={onClose} okDisabled={!a.length || !b.length}>
+      <VarMover variables={variables} value={a} onChange={(v) => setA(v.slice(-1))} label="Variable 1:" accept={num} />
+      <div style={{ height: 6 }} />
+      <VarMover variables={variables} value={b} onChange={(v) => setB(v.slice(-1))} label="Variable 2:" accept={num} />
+    </AnalysisFrame>
+  )
+}
+
+export function BayesIndependentDialog({ variables, onClose }: Props): JSX.Element {
+  const [y, setY] = useState<string[]>([])
+  const [g, setG] = useState<string[]>([])
+  const s = () => `BAYES ${y[0]} BY ${g[0]}\n  /TEST TYPE=NORMAL.`
+  return (
+    <AnalysisFrame title="Bayesian Independent-Samples Normal" onOk={() => go(s(), onClose)} onPaste={() => { window.spss.paste(s()); onClose() }} onReset={() => { setY([]); setG([]) }} onCancel={onClose} okDisabled={!y.length || !g.length}>
+      <VarMover variables={variables} value={y} onChange={(v) => setY(v.slice(-1))} label="Test Variable:" accept={num} />
+      <div style={{ height: 6 }} />
+      <VarMover variables={variables} value={g} onChange={(v) => setG(v.slice(-1))} label="Grouping Variable:" />
+    </AnalysisFrame>
+  )
+}

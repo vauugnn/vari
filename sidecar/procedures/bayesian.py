@@ -29,7 +29,9 @@ class Bayes(DataProcedure):
     def run(self, ds: Any, subs: list[tuple[str, str]]) -> list[dict[str, Any]]:
         body = " ".join(b for name, b in subs if name in ("", "VARIABLES"))
         allnames = [v.name for v in ds.variables]
-        names = expand_varlist(body, allnames)
+        by_m = re.search(r"(\w+)\s+BY\s+(\w+)", body, re.IGNORECASE)
+        group_var = by_m.group(2) if by_m else None
+        names = expand_varlist(by_m.group(1) if by_m else body, allnames)
         ttype = "NORMAL"
         paired = False
         for name, b in subs:
@@ -61,9 +63,24 @@ class Bayes(DataProcedure):
             sd = np.sqrt(a) / b
             lo, hi = sps.gamma.ppf([0.025, 0.975], a, scale=1 / b)
             param = "Rate"
+        elif group_var is not None:  # independent two-group mean difference
+            import pandas as pd
+
+            frame = pd.DataFrame({"y": ds.df[names[0]], "g": ds.df[group_var]}).dropna()
+            groups = sorted(frame["g"].unique())[:2]
+            g1 = frame.loc[frame["g"] == groups[0], "y"].to_numpy(float)
+            g2 = frame.loc[frame["g"] == groups[1], "y"].to_numpy(float)
+            diff = float(g1.mean() - g2.mean())
+            se = float(np.sqrt(g1.var(ddof=1) / len(g1) + g2.var(ddof=1) / len(g2)))
+            dfree = len(g1) + len(g2) - 2
+            tcrit = sps.t.ppf(0.975, dfree)
+            post_mean, sd = diff, se
+            lo, hi = diff - tcrit * se, diff + tcrit * se
+            param = "Mean Difference"
         else:  # NORMAL mean with reference prior -> Student-t posterior
             if paired and len(names) >= 2:
-                x = _series(ds, names[0]) - _series(ds, names[1])[: len(_series(ds, names[0]))]
+                a = _series(ds, names[0]); b2 = _series(ds, names[1])
+                x = a[: len(b2)] - b2[: len(a)]
             else:
                 x = _series(ds, names[0])
             n = len(x)

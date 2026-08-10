@@ -96,6 +96,7 @@ export const IPC = {
   importText: 'import.text',
   viewToggle: 'view.toggle',
   newScript: 'script.new',
+  updateProgress: 'update.progress',
   windowShow: 'window.show',
   datasetChanged: 'dataset.changed',
   ds: {
@@ -164,6 +165,7 @@ export interface SpssApi {
   onViewToggle: (cb: (kind: string) => void) => () => void
   runScript: (code: string) => Promise<{ output: string; error: string | null; summary?: DatasetSummary }>
   onNewScript: (cb: () => void) => () => void
+  onUpdateProgress: (cb: (p: { percent: number; transferred: number; total: number }) => void) => () => void
   paste: (syntax: string) => void
   onAppendSyntax: (cb: (syntax: string) => void) => () => void
   onImportText: (cb: (path: string) => void) => () => void

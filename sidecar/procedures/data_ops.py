@@ -20,6 +20,11 @@ from ..syntax.registry import Context, Procedure
 class SortCases(Procedure):
     def execute(self, rest: str, ctx: Context) -> list[dict[str, Any]]:
         ds = _active(ctx)
+        # SORT VARIABLES ... reorders the variable list (shares the SORT keyword).
+        if re.match(r"\s*VARIABLES\b", rest, re.IGNORECASE):
+            from .dataops3 import SortVariables
+
+            return SortVariables().execute(re.sub(r"^\s*VARIABLES\s*", "", rest, flags=re.IGNORECASE), ctx)
         body = re.sub(r"^\s*CASES\s*", "", rest, flags=re.IGNORECASE)
         body = re.sub(r"^\s*BY\s*", "", body, flags=re.IGNORECASE)
         keys, orders = [], []
