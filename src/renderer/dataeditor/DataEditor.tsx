@@ -43,6 +43,8 @@ import { HistogramDialog, BarChartDialog, PieChartDialog, ScatterDialog, Boxplot
 import { MultivariateDialog, DistancesDialog, CanonicalDialog } from '../dialogs/analysis/MultivariateDialogs'
 import { ProbitDialog, PlsDialog, TslsDialog, VarcompDialog, RepeatedDialog } from '../dialogs/analysis/Regression2Dialogs'
 import { GenlinDialog, GeeDialog, MixedDialog, GenlogDialog } from '../dialogs/analysis/Glm3Dialogs'
+import { KaplanMeierDialog, CoxDialog, LifeTableDialog } from '../dialogs/analysis/SurvivalDialogs'
+import { ArimaDialog, SeasonDialog, SpectraDialog, CsDescriptivesDialog, CsTabulateDialog } from '../dialogs/analysis/ForecastCsDialogs'
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
 import { ExploreDialog, PartialCorrDialog } from '../dialogs/analysis/ExploreDialog'
 import { ImportWizard } from '../dialogs/ImportWizard'
@@ -354,6 +356,22 @@ export function DataEditor(): JSX.Element {
             return <MixedDialog {...p} />
           case 'genlog':
             return <GenlogDialog {...p} />
+          case 'km':
+            return <KaplanMeierDialog {...p} />
+          case 'coxreg':
+            return <CoxDialog {...p} />
+          case 'lifetable':
+            return <LifeTableDialog {...p} />
+          case 'arima':
+            return <ArimaDialog {...p} />
+          case 'season':
+            return <SeasonDialog {...p} />
+          case 'spectra':
+            return <SpectraDialog {...p} />
+          case 'csdescr':
+            return <CsDescriptivesDialog {...p} />
+          case 'cstab':
+            return <CsTabulateDialog {...p} />
           case 'selectcases':
             return <SelectCasesDialog {...p} />
           case 'weight':

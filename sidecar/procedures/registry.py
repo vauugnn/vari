@@ -33,6 +33,9 @@ from .transforms import AutoRecode, Compute, Count, Create, Execute, If, Rank, R
 from .multivariate import CanCorr, Manova, Proximities
 from .regression2 import GlmRepeated, Pls, Probit, Tsls, Varcomp
 from .glm3 import Gee, Genlin, Genlog, Mixed
+from .survival import CoxReg, KaplanMeier, LifeTable
+from .forecasting import Arima, Season, Spectra
+from .complex_samples import CsDescriptives, CsTabulate
 from .ttest import TTest
 
 
@@ -84,6 +87,14 @@ def build_registry() -> Registry:
     reg.register("GEE")(Gee)
     reg.register("MIXED")(Mixed)
     reg.register("GENLOG")(Genlog)
+    reg.register("KM")(KaplanMeier)
+    reg.register("COXREG")(CoxReg)
+    reg.register("SURVIVAL")(LifeTable)
+    reg.register("TSMODEL")(Arima)
+    reg.register("SEASON")(Season)
+    reg.register("SPECTRA")(Spectra)
+    reg.register("CSDESCRIPTIVES")(CsDescriptives)
+    reg.register("CSTABULATE")(CsTabulate)
     reg.register("VARIABLE")(VariableCmd)
     reg.register("VALUE")(ValueLabels)
     reg.register("ADD")(lambda: ValueLabels(add=True))

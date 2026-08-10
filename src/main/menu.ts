@@ -143,9 +143,10 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
           }
         ]
       },
-      { label: 'Forecasting', enabled: false, submenu: [proc('Create Traditional Models…'), proc('Create Temporal Causal Models…'), proc('Apply Traditional Models…'), proc('Seasonal Decomposition…'), proc('Spectral Analysis…')] },
-      { label: 'Survival', enabled: false, submenu: [proc('Life Tables…'), proc('Kaplan-Meier…'), proc('Cox Regression…'), proc('Cox w/ Time-Dep Cov…')] },
+      { label: 'Forecasting', submenu: [dialogItem('Create Traditional Models…', 'arima', open), proc('Create Temporal Causal Models…'), proc('Apply Traditional Models…'), dialogItem('Seasonal Decomposition…', 'season', open), dialogItem('Spectral Analysis…', 'spectra', open)] },
+      { label: 'Survival', submenu: [dialogItem('Life Tables…', 'lifetable', open), dialogItem('Kaplan-Meier…', 'km', open), dialogItem('Cox Regression…', 'coxreg', open), proc('Cox w/ Time-Dep Cov…')] },
       { label: 'Multiple Response', enabled: false, submenu: [proc('Define Variable Sets…'), proc('Frequencies…'), proc('Crosstabs…')] },
+      { label: 'Complex Samples', submenu: [dialogItem('Descriptives…', 'csdescr', open), dialogItem('Crosstabs…', 'cstab', open)] },
       proc('Simulation…'),
       { label: 'Quality Control', enabled: false, submenu: [proc('Control Charts…'), proc('Pareto Charts…')] },
       proc('Spatial and Temporal Modeling…')
