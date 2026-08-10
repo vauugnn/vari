@@ -78,6 +78,13 @@ const api: SpssApi = {
     ipcRenderer.on(IPC.viewToggle, listener)
     return () => ipcRenderer.removeListener(IPC.viewToggle, listener)
   },
+  runScript: (code: string) =>
+    ipcRenderer.invoke(IPC.scriptRun, { code }) as Promise<{ output: string; error: string | null; summary?: DatasetSummary }>,
+  onNewScript: (cb) => {
+    const listener = () => cb()
+    ipcRenderer.on(IPC.newScript, listener)
+    return () => ipcRenderer.removeListener(IPC.newScript, listener)
+  },
   paste: (syntax: string) => ipcRenderer.send(IPC.syntaxPaste, syntax),
   onAppendSyntax: (cb) => {
     const listener = (_e: unknown, text: string) => cb(text)

@@ -50,6 +50,7 @@ import { TwoStepDialog, NearestNeighborDialog, CorrespondenceDialog, ProxscalDia
 import { OlapDialog, CtablesDialog, MultiResponseDialog, ControlChartDialog, ParetoDialog, BayesNormalDialog, BayesBinomialDialog, BayesPoissonDialog } from '../dialogs/analysis/Wave6Dialogs'
 import { VarsToCasesDialog, CasesToVarsDialog, VisualBinDialog } from '../dialogs/analysis/Wave7Dialogs'
 import { FindDialog, GoToCaseDialog, GoToVariableDialog } from '../dialogs/analysis/FindGotoDialogs'
+import { RunScriptDialog } from '../dialogs/RunScriptDialog'
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
 import { ExploreDialog, PartialCorrDialog } from '../dialogs/analysis/ExploreDialog'
 import { ImportWizard } from '../dialogs/ImportWizard'
@@ -144,10 +145,12 @@ export function DataEditor(): JSX.Element {
   const [status, setStatus] = useState<SidecarStatus>({ state: 'starting' })
   const [dialogId, setDialogId] = useState<string | null>(null)
   const [customize, setCustomize] = useState(false)
+  const [scriptOpen, setScriptOpen] = useState(false)
   const [importPath, setImportPath] = useState<string | null>(null)
   const initedRef = useRef(false)
 
   useEffect(() => window.spss.onImportText(setImportPath), [])
+  useEffect(() => window.spss.onNewScript(() => setScriptOpen(true)), [])
 
   useEffect(() => window.spss.ds.onChanged(setSummary), [setSummary])
   useEffect(
@@ -538,6 +541,8 @@ export function DataEditor(): JSX.Element {
       {importPath && (
         <ImportWizard path={importPath} onClose={() => setImportPath(null)} onDone={setSummary} />
       )}
+
+      {scriptOpen && <RunScriptDialog onClose={() => setScriptOpen(false)} />}
 
       {customize && (
         <Modal title="Customize Toolbar" onOk={() => setCustomize(false)} onCancel={() => setCustomize(false)}>

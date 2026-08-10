@@ -371,6 +371,16 @@ function wireIpc(): void {
 
   ipcMain.handle(IPC.sidecarStatusGet, (): SidecarStatus => sidecar.currentStatus)
 
+  ipcMain.handle(IPC.scriptRun, async (_e, p) => {
+    const res = (await sidecar.request('script.run', p)) as {
+      output: string
+      error: string | null
+      summary?: DatasetSummary
+    }
+    if (res.summary) broadcastDataset(res.summary)
+    return res
+  })
+
   ipcMain.handle(IPC.outputExportHtml, async (_e, html: string) => {
     const res = await dialog.showSaveDialog(windows.viewer as BrowserWindow, {
       title: 'Export Output as HTML',
@@ -430,6 +440,11 @@ app.whenReady().then(() => {
       filePrint: () => void printViewer(),
       fileImport: () => void importViaDialog(),
       checkUpdates: () => void checkForUpdatesManual(),
+      newScript: () => {
+        const de = windows.dataeditor
+        if (de && !de.isDestroyed()) de.webContents.send(IPC.newScript)
+        showWindow('dataeditor')
+      },
       viewToggle: (kind: string) => viewToggle(kind),
       execSyntax: (text: string) => void execSyntax(text),
       showAbout: () => showAbout(),

@@ -272,6 +272,60 @@ def m_dataset_find(p: dict[str, Any]) -> dict[str, Any]:
     return {"found": False}
 
 
+def m_script_run(p: dict[str, Any]) -> dict[str, Any]:
+    """Run a Python script with the active dataset's DataFrame in scope (`df`),
+    plus pandas as `pd` and numpy as `np`. Captured stdout is returned. If the
+    script rebinds `df`, the active dataset adopts the new frame (columns become
+    new variables). This is Vari's own scripting surface, not IBM's plugin API.
+    """
+    import contextlib
+    import io as _io
+
+    import numpy as np
+    import pandas as pd
+
+    ds = REGISTRY.active
+    code = str(p.get("code", ""))
+    buf = _io.StringIO()
+    env: dict[str, Any] = {"pd": pd, "np": np, "df": (ds.df if ds is not None else pd.DataFrame()), "ds": ds}
+    cols_before = list(ds.df.columns) if ds is not None else []
+    changed = False
+    try:
+        _push_undo()
+        with contextlib.redirect_stdout(buf):
+            exec(code, env)  # noqa: S102 — local personal scripting surface
+        new_df = env.get("df")
+        # A change means either df was rebound, or its columns changed in place.
+        cols_after = list(new_df.columns) if isinstance(new_df, pd.DataFrame) else cols_before
+        if ds is not None and isinstance(new_df, pd.DataFrame) and (new_df is not ds.df or cols_after != cols_before):
+            from .data.variable import VariableMeta
+            from .data.format import Format
+
+            ds.df = new_df.reset_index(drop=True)
+            existing = {v.name: v for v in ds.variables}
+            metas = []
+            for col in ds.df.columns:
+                if col in existing:
+                    metas.append(existing[col])
+                elif ds.df[col].dtype == object:
+                    metas.append(VariableMeta(name=str(col), print_format=Format("A", 16), measure="nominal", align="left"))
+                else:
+                    metas.append(VariableMeta(name=str(col), print_format=Format("F", 8, 2)))
+            ds.variables = metas
+            ds._sync_columns()
+            changed = True
+    except Exception as exc:  # noqa: BLE001
+        if not changed:
+            _UNDO.pop() if _UNDO else None
+        return {"output": buf.getvalue(), "error": str(exc)}
+    if not changed and _UNDO:
+        _UNDO.pop()  # nothing mutated; discard the snapshot
+    out: dict[str, Any] = {"output": buf.getvalue(), "error": None}
+    if changed:
+        out["summary"] = _dataset_summary(ds)
+    return out
+
+
 def m_variables_list(_p: Any) -> list[dict[str, Any]]:
     ds = REGISTRY.active
     if ds is None:
@@ -296,6 +350,7 @@ METHODS = {
     "dataset.undo": m_dataset_undo,
     "dataset.redo": m_dataset_redo,
     "dataset.find": m_dataset_find,
+    "script.run": m_script_run,
     "variables.list": m_variables_list,
     "output.exportExcel": m_output_export_excel,
 }

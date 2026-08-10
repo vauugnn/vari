@@ -87,11 +87,13 @@ export const IPC = {
   outputAppend: 'output.append',
   outputExportHtml: 'output.exportHtml',
   outputExportExcel: 'output.exportExcel',
+  scriptRun: 'script.run',
   dialogOpen: 'dialog.open',
   syntaxPaste: 'syntax.paste',
   syntaxAppend: 'syntax.append',
   importText: 'import.text',
   viewToggle: 'view.toggle',
+  newScript: 'script.new',
   windowShow: 'window.show',
   datasetChanged: 'dataset.changed',
   ds: {
@@ -154,6 +156,8 @@ export interface SpssApi {
   exportExcel: (items: OutputObject[]) => Promise<{ ok: boolean; path: string } | null>
   onOpenDialog: (cb: (dialogId: string) => void) => () => void
   onViewToggle: (cb: (kind: string) => void) => () => void
+  runScript: (code: string) => Promise<{ output: string; error: string | null; summary?: DatasetSummary }>
+  onNewScript: (cb: () => void) => () => void
   paste: (syntax: string) => void
   onAppendSyntax: (cb: (syntax: string) => void) => () => void
   onImportText: (cb: (path: string) => void) => () => void

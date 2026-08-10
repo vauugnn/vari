@@ -17,6 +17,7 @@ export interface MenuActions {
   filePrint: () => void
   fileImport: () => void
   checkUpdates: () => void
+  newScript: () => void
   viewToggle: (kind: string) => void
   execSyntax: (text: string) => void
   showAbout: () => void
@@ -184,7 +185,7 @@ export function buildMenu(actions: MenuActions): Menu {
           { label: 'Data', accelerator: 'CmdOrCtrl+N', click: actions.fileNew },
           { label: 'Syntax', click: () => actions.showWindow('syntax') },
           { label: 'Output', click: () => actions.showWindow('viewer') },
-          proc('Script…')
+          { label: 'Script…', click: actions.newScript }
         ]
       },
       {
@@ -352,6 +353,7 @@ export function buildMenu(actions: MenuActions): Menu {
       proc('Use Variable Sets…'),
       proc('Show All Variables'),
       { type: 'separator' },
+      { label: 'Run Script…', click: actions.newScript },
       proc('Custom Dialog Builder…')
     ]
   })
