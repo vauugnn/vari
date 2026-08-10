@@ -38,6 +38,8 @@ const ds: DatasetApi = {
   deleteCase: (index) => ipcRenderer.invoke(IPC.ds.deleteCase, { index }) as Promise<{ nRows: number }>,
   undo: () => ipcRenderer.invoke(IPC.ds.undo) as Promise<DatasetSummary & { ok: boolean }>,
   redo: () => ipcRenderer.invoke(IPC.ds.redo) as Promise<DatasetSummary & { ok: boolean }>,
+  find: (query, row, col, colIndex) =>
+    ipcRenderer.invoke(IPC.ds.find, { query, row, col, col_index: colIndex }) as Promise<{ found: boolean; row?: number; col?: number }>,
   importText: (path, options) =>
     ipcRenderer.invoke(IPC.ds.importText, { path, options }) as Promise<DatasetSummary>,
   onChanged: (cb) => {

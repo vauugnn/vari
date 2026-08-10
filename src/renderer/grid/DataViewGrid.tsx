@@ -25,6 +25,7 @@ function colWidthPx(chars: number): number {
 export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Element {
   const showValueLabels = useStore((s) => s.showValueLabels)
   const storeRev = useStore((s) => s.revision)
+  const goto = useStore((s) => s.goto)
 
   const nVars = summary.nVars
   const [nRows, setNRows] = useState(summary.nRows)
@@ -113,6 +114,18 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
   // ---- selection + editing -----------------------------------------
   const [sel, setSel] = useState<Sel | null>(null)
   const draggingRef = useRef(false)
+
+  // React to a Go-to / Find navigation target: select the cell and scroll it
+  // into view.
+  useEffect(() => {
+    if (goto.nonce === 0) return
+    const r = goto.row ?? (sel?.r1 ?? 0)
+    const c = goto.col ?? (sel?.c1 ?? 0)
+    setSel({ r0: r, c0: c, r1: r, c1: c })
+    const el = scrollRef.current
+    if (el) el.scrollTop = Math.max(0, r * ROW_H - el.clientHeight / 2)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [goto.nonce])
   const [edit, setEdit] = useState<{ r: number; c: number; value: string } | null>(null)
 
   const inSel = (r: number, c: number): boolean => {

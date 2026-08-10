@@ -227,7 +227,10 @@ export function buildMenu(actions: MenuActions): Menu {
       { role: 'paste' },
       { role: 'selectAll' },
       { type: 'separator' },
-      proc('Find…'),
+      dialogItem('Find…', 'find', actions.openDialog),
+      dialogItem('Go to Case…', 'gotocase', actions.openDialog),
+      dialogItem('Go to Variable…', 'gotovar', actions.openDialog),
+      { type: 'separator' },
       proc('Options…')
     ]
   })

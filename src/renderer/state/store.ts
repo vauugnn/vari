@@ -23,6 +23,10 @@ interface DataState {
   /** Toolbar buttons hidden via Customize (by id). */
   hiddenTools: string[]
   toggleTool: (id: string) => void
+
+  /** A pending Data View navigation target (Go to Case/Variable, Find). */
+  goto: { row: number | null; col: number | null; nonce: number }
+  gotoCell: (row: number | null, col: number | null) => void
 }
 
 export const useStore = create<DataState>((set) => ({
@@ -48,6 +52,9 @@ export const useStore = create<DataState>((set) => ({
       variables[index] = meta
       return { summary: { ...st.summary, variables }, revision: st.revision + 1 }
     }),
+
+  goto: { row: null, col: null, nonce: 0 },
+  gotoCell: (row, col) => set((st) => ({ goto: { row, col, nonce: st.goto.nonce + 1 } })),
 
   hiddenTools: [],
   toggleTool: (id) =>

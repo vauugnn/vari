@@ -248,6 +248,30 @@ def m_output_export_excel(p: dict[str, Any]) -> dict[str, Any]:
     return {"ok": True, "path": p["path"]}
 
 
+def m_dataset_find(p: dict[str, Any]) -> dict[str, Any]:
+    """Find the next cell (row-major) at/after (row,col) whose rendered text
+    contains the query. Returns {found, row, col} for the Find dialog."""
+    ds = _active()
+    query = str(p.get("query", ""))
+    start_row = int(p.get("row", 0))
+    start_col = int(p.get("col", 0))
+    col_only = p.get("col_index")  # restrict to a single column when set
+    if query == "":
+        return {"found": False}
+    q = query.lower()
+    n_rows, n_vars = ds.n_rows, ds.n_vars
+    cols = [int(col_only)] if col_only is not None else list(range(n_vars))
+    for r in range(start_row, n_rows):
+        for c in cols:
+            if r == start_row and c < start_col and col_only is None:
+                continue
+            v = ds.variables[c]
+            text = ds._render_cell(v, ds.df.iat[r, c], False)
+            if q in str(text).lower():
+                return {"found": True, "row": r, "col": c}
+    return {"found": False}
+
+
 def m_variables_list(_p: Any) -> list[dict[str, Any]]:
     ds = REGISTRY.active
     if ds is None:
@@ -271,6 +295,7 @@ METHODS = {
     "dataset.deleteCase": m_dataset_delete_case,
     "dataset.undo": m_dataset_undo,
     "dataset.redo": m_dataset_redo,
+    "dataset.find": m_dataset_find,
     "variables.list": m_variables_list,
     "output.exportExcel": m_output_export_excel,
 }

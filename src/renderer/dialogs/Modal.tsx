@@ -6,13 +6,15 @@ export function Modal({
   children,
   onOk,
   onCancel,
-  okDisabled
+  okDisabled,
+  okLabel
 }: {
   title: string
   children: ReactNode
   onOk: () => void
   onCancel: () => void
   okDisabled?: boolean
+  okLabel?: string
 }): JSX.Element {
   return (
     <div className="modal-overlay" onMouseDown={onCancel}>
@@ -21,7 +23,7 @@ export function Modal({
         <div className="modal-body">{children}</div>
         <div className="modal-footer">
           <button onClick={onOk} disabled={okDisabled}>
-            OK
+            {okLabel ?? 'OK'}
           </button>
           <button onClick={onCancel}>Cancel</button>
         </div>

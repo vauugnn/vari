@@ -49,6 +49,7 @@ import { ArimaDialog, SeasonDialog, SpectraDialog, CsDescriptivesDialog, CsTabul
 import { TwoStepDialog, NearestNeighborDialog, CorrespondenceDialog, ProxscalDialog, AlscalDialog, PrefscalDialog, MlpDialog, RbfDialog } from '../dialogs/analysis/Wave5Dialogs'
 import { OlapDialog, CtablesDialog, MultiResponseDialog, ControlChartDialog, ParetoDialog, BayesNormalDialog, BayesBinomialDialog, BayesPoissonDialog } from '../dialogs/analysis/Wave6Dialogs'
 import { VarsToCasesDialog, CasesToVarsDialog, VisualBinDialog } from '../dialogs/analysis/Wave7Dialogs'
+import { FindDialog, GoToCaseDialog, GoToVariableDialog } from '../dialogs/analysis/FindGotoDialogs'
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
 import { ExploreDialog, PartialCorrDialog } from '../dialogs/analysis/ExploreDialog'
 import { ImportWizard } from '../dialogs/ImportWizard'
@@ -224,11 +225,11 @@ export function DataEditor(): JSX.Element {
     { id: 'undo', tip: 'Undo', icon: <UndoIcon />, onClick: undo, disabled: !has },
     { id: 'redo', tip: 'Redo', icon: <RedoIcon />, onClick: redo, disabled: !has },
     'sep',
-    { id: 'gotocase', tip: 'Go to case', icon: <GotoCaseIcon />, disabled: !has },
-    { id: 'gotovar', tip: 'Go to variable', icon: <GotoVarIcon />, disabled: !has },
-    { id: 'variables', tip: 'Variables', icon: <VariablesIcon />, disabled: !has },
+    { id: 'gotocase', tip: 'Go to case', icon: <GotoCaseIcon />, onClick: () => setDialogId('gotocase'), disabled: !has },
+    { id: 'gotovar', tip: 'Go to variable', icon: <GotoVarIcon />, onClick: () => setDialogId('gotovar'), disabled: !has },
+    { id: 'variables', tip: 'Variables', icon: <VariablesIcon />, onClick: () => setActiveTab('variable'), disabled: !has },
     { id: 'descmu', tip: 'Run Descriptive Statistics', icon: <DescMuIcon />, onClick: () => setDialogId('descriptives'), disabled: !has },
-    { id: 'find', tip: 'Find', icon: <FindIcon />, disabled: !has },
+    { id: 'find', tip: 'Find', icon: <FindIcon />, onClick: () => setDialogId('find'), disabled: !has },
     'sep',
     { id: 'insertcase', tip: 'Insert Cases', icon: <InsertCaseIcon />, onClick: insertCase, disabled: !has },
     { id: 'insertvar', tip: 'Insert Variable', icon: <InsertVarIcon />, onClick: insertVar, disabled: !has },
@@ -433,6 +434,12 @@ export function DataEditor(): JSX.Element {
             return <CasesToVarsDialog {...p} />
           case 'visualbin':
             return <VisualBinDialog {...p} />
+          case 'find':
+            return <FindDialog {...p} />
+          case 'gotocase':
+            return <GoToCaseDialog {...p} />
+          case 'gotovar':
+            return <GoToVariableDialog {...p} />
           case 'selectcases':
             return <SelectCasesDialog {...p} />
           case 'weight':

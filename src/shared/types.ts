@@ -109,6 +109,7 @@ export const IPC = {
     deleteCase: 'ds.deleteCase',
     undo: 'ds.undo',
     redo: 'ds.redo',
+    find: 'ds.find',
     importText: 'ds.importText'
   }
 } as const
@@ -136,6 +137,7 @@ export interface DatasetApi {
   deleteCase: (index: number) => Promise<{ nRows: number }>
   undo: () => Promise<DatasetSummary & { ok: boolean }>
   redo: () => Promise<DatasetSummary & { ok: boolean }>
+  find: (query: string, row: number, col: number, colIndex: number | null) => Promise<{ found: boolean; row?: number; col?: number }>
   importText: (path: string, options: ImportOptions) => Promise<DatasetSummary>
   onChanged: (cb: (summary: DatasetSummary) => void) => () => void
 }
