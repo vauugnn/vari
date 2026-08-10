@@ -42,6 +42,7 @@ import { ComputeDialog } from '../dialogs/analysis/ComputeDialog'
 import { HistogramDialog, BarChartDialog, PieChartDialog, ScatterDialog, BoxplotDialog, HighLowDialog, PyramidDialog, Bar3dDialog } from '../dialogs/analysis/GraphDialogs'
 import { MultivariateDialog, DistancesDialog, CanonicalDialog } from '../dialogs/analysis/MultivariateDialogs'
 import { ProbitDialog, PlsDialog, TslsDialog, VarcompDialog, RepeatedDialog } from '../dialogs/analysis/Regression2Dialogs'
+import { GenlinDialog, GeeDialog, MixedDialog, GenlogDialog } from '../dialogs/analysis/Glm3Dialogs'
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
 import { ExploreDialog, PartialCorrDialog } from '../dialogs/analysis/ExploreDialog'
 import { ImportWizard } from '../dialogs/ImportWizard'
@@ -345,6 +346,14 @@ export function DataEditor(): JSX.Element {
             return <VarcompDialog {...p} />
           case 'glm-repeated':
             return <RepeatedDialog {...p} />
+          case 'genlin':
+            return <GenlinDialog {...p} />
+          case 'gee':
+            return <GeeDialog {...p} />
+          case 'mixed':
+            return <MixedDialog {...p} />
+          case 'genlog':
+            return <GenlogDialog {...p} />
           case 'selectcases':
             return <SelectCasesDialog {...p} />
           case 'weight':

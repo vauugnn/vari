@@ -76,8 +76,8 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
           dialogItem('Variance Components…', 'varcomp', open)
         ]
       },
-      { label: 'Generalized Linear Models', enabled: false, submenu: [proc('Generalized Linear Models…'), proc('Generalized Estimating Equations…')] },
-      { label: 'Mixed Models', enabled: false, submenu: [proc('Linear…'), proc('Generalized Linear…')] },
+      { label: 'Generalized Linear Models', submenu: [dialogItem('Generalized Linear Models…', 'genlin', open), dialogItem('Generalized Estimating Equations…', 'gee', open)] },
+      { label: 'Mixed Models', submenu: [dialogItem('Linear…', 'mixed', open), dialogItem('Generalized Linear…', 'gee', open)] },
       {
         label: 'Correlate',
         submenu: [dialogItem('Bivariate…', 'correlate', open), dialogItem('Partial…', 'partial', open), dialogItem('Distances…', 'distances', open), dialogItem('Canonical Correlation', 'cancorr', open)]
@@ -99,7 +99,7 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
           proc('Optimal Scaling (CATREG)…')
         ]
       },
-      { label: 'Loglinear', enabled: false, submenu: [proc('General…'), proc('Logit…'), proc('Model Selection…')] },
+      { label: 'Loglinear', submenu: [dialogItem('General…', 'genlog', open), dialogItem('Logit…', 'genlog', open), proc('Model Selection…')] },
       { label: 'Neural Networks', enabled: false, submenu: [proc('Multilayer Perceptron…'), proc('Radial Basis Function…')] },
       {
         label: 'Classify',

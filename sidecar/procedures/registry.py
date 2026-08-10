@@ -32,6 +32,7 @@ from .reliability import Reliability
 from .transforms import AutoRecode, Compute, Count, Create, Execute, If, Rank, Recode, Rmv, SetCmd
 from .multivariate import CanCorr, Manova, Proximities
 from .regression2 import GlmRepeated, Pls, Probit, Tsls, Varcomp
+from .glm3 import Gee, Genlin, Genlog, Mixed
 from .ttest import TTest
 
 
@@ -79,6 +80,10 @@ def build_registry() -> Registry:
     reg.register("2SLS")(Tsls)
     reg.register("VARCOMP")(Varcomp)
     reg.register("GLMRM")(GlmRepeated)
+    reg.register("GENLIN")(Genlin)
+    reg.register("GEE")(Gee)
+    reg.register("MIXED")(Mixed)
+    reg.register("GENLOG")(Genlog)
     reg.register("VARIABLE")(VariableCmd)
     reg.register("VALUE")(ValueLabels)
     reg.register("ADD")(lambda: ValueLabels(add=True))
