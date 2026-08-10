@@ -136,6 +136,22 @@ async function openViaDialog(): Promise<DatasetSummary | null> {
   return summary
 }
 
+async function importViaDialog(): Promise<void> {
+  const de = windows.dataeditor ?? undefined
+  const res = await dialog.showOpenDialog(de as BrowserWindow, {
+    title: 'Import Data',
+    properties: ['openFile'],
+    filters: [
+      { name: 'Text / CSV (*.csv, *.tsv, *.txt, *.dat)', extensions: ['csv', 'tsv', 'txt', 'dat'] },
+      { name: 'All Files', extensions: ['*'] }
+    ]
+  })
+  if (res.canceled || res.filePaths.length === 0) return
+  const de2 = windows.dataeditor
+  if (de2 && !de2.isDestroyed()) de2.webContents.send(IPC.importText, res.filePaths[0])
+  showWindow('dataeditor')
+}
+
 async function printViewer(): Promise<void> {
   const viewer = windows.viewer
   if (!viewer || viewer.isDestroyed()) return
@@ -290,6 +306,7 @@ app.whenReady().then(() => {
       },
       fileSaveAs: () => void saveViaDialog(),
       filePrint: () => void printViewer(),
+      fileImport: () => void importViaDialog(),
       openDialog: (id: string) => openDialog(id)
     })
   )

@@ -15,6 +15,7 @@ export interface MenuActions {
   fileSave: () => void
   fileSaveAs: () => void
   filePrint: () => void
+  fileImport: () => void
   openDialog: (id: string) => void
 }
 
@@ -193,7 +194,13 @@ export function buildMenu(actions: MenuActions): Menu {
         ]
       },
       proc('Open Database'),
-      proc('Import Data'),
+      {
+        label: 'Import Data',
+        submenu: [
+          { label: 'CSV Data…', click: actions.fileImport },
+          { label: 'Text Data…', click: actions.fileImport }
+        ]
+      },
       { type: 'separator' },
       proc('Close'),
       { label: 'Save', accelerator: 'CmdOrCtrl+S', click: actions.fileSave },

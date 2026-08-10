@@ -168,6 +168,12 @@
   text-align: center;
   min-width: 34px;
   color: #333;
+  cursor: default;
+  user-select: none;
+}
+
+.vv td.rownum--sel {
+  background: #cbdcf0;
 }
 
 .vv td input,

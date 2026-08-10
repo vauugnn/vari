@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Align, DatasetSummary, Measure, Role, ValueLabel, MissingJson, VariableMetaJson } from '../../shared/types'
 import { useStore } from '../state/store'
 import { MeasureIcon } from '../common/icons'
+import { ContextMenu, type MenuItem } from './ContextMenu'
 import { VariableTypeDialog } from '../dialogs/VariableTypeDialog'
 import { ValueLabelsDialog } from '../dialogs/ValueLabelsDialog'
 import { MissingValuesDialog } from '../dialogs/MissingValuesDialog'
@@ -50,6 +51,50 @@ export function VariableViewGrid({ summary }: { summary: DatasetSummary }): JSX.
   const setError = useStore((s) => s.setError)
   const [dialog, setDialog] = useState<DialogState>(null)
   const [newName, setNewName] = useState('')
+  // Row-number selection (a..b inclusive), for delete of one or many variables.
+  const [rowSel, setRowSel] = useState<{ a: number; b: number } | null>(null)
+  const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null)
+
+  const rowSelected = (i: number): boolean =>
+    !!rowSel && i >= Math.min(rowSel.a, rowSel.b) && i <= Math.max(rowSel.a, rowSel.b)
+
+  const deleteRange = async (a: number, b: number): Promise<void> => {
+    const lo = Math.max(0, Math.min(a, b))
+    const hi = Math.min(summary.variables.length - 1, Math.max(a, b))
+    try {
+      let s
+      for (let i = hi; i >= lo; i--) s = await window.spss.ds.deleteVariable(i)
+      if (s) setSummary(s)
+      setRowSel(null)
+      setError(null)
+    } catch (err) {
+      setError(String(err instanceof Error ? err.message : err))
+    }
+  }
+
+  const insertAt = async (index: number): Promise<void> => {
+    try {
+      setSummary(await window.spss.ds.insertVariable(index, null))
+    } catch (err) {
+      setError(String(err instanceof Error ? err.message : err))
+    }
+  }
+
+  const rowMenu = (i: number, e: React.MouseEvent): void => {
+    e.preventDefault()
+    const sel = rowSelected(i) ? rowSel! : { a: i, b: i }
+    setRowSel(sel)
+    const lo = Math.min(sel.a, sel.b)
+    const count = Math.abs(sel.a - sel.b) + 1
+    setMenu({
+      x: e.clientX,
+      y: e.clientY,
+      items: [
+        { label: 'Insert Variable', onClick: () => void insertAt(lo) },
+        { label: count > 1 ? `Clear ${count} Variables` : 'Clear', onClick: () => void deleteRange(sel.a, sel.b) }
+      ]
+    })
+  }
 
   const commit = async (index: number, patch: Partial<VariableMetaJson>): Promise<void> => {
     const meta = { ...summary.variables[index], ...patch }
@@ -103,7 +148,13 @@ export function VariableViewGrid({ summary }: { summary: DatasetSummary }): JSX.
         <tbody>
           {summary.variables.map((v, i) => (
             <tr key={i}>
-              <td className="rownum">{i + 1}</td>
+              <td
+                className={'rownum' + (rowSelected(i) ? ' rownum--sel' : '')}
+                onMouseDown={(e) => setRowSel(e.shiftKey && rowSel ? { a: rowSel.a, b: i } : { a: i, b: i })}
+                onContextMenu={(e) => rowMenu(i, e)}
+              >
+                {i + 1}
+              </td>
               <td>
                 <TextCell value={v.name} onCommit={(val) => commit(i, { name: val })} />
               </td>
@@ -198,6 +249,7 @@ export function VariableViewGrid({ summary }: { summary: DatasetSummary }): JSX.
           onCancel={() => setDialog(null)}
         />
       )}
+      {menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
     </div>
   )
 }

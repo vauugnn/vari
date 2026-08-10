@@ -182,18 +182,31 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
     const s = await window.spss.ds.insertVariable(index, defaultVarMeta(existingNames()))
     useStore.getState().setSummary(s)
   }
-  const deleteVarAt = async (index: number): Promise<void> => {
-    if (index >= nVars) return
-    useStore.getState().setSummary(await window.spss.ds.deleteVariable(index))
+  // Delete an inclusive column range, highest index first so earlier indices
+  // stay valid as the dataset reindexes.
+  const deleteVarRange = async (c0: number, c1: number): Promise<void> => {
+    const lo = Math.max(0, Math.min(c0, c1))
+    const hi = Math.min(nVars - 1, Math.max(c0, c1))
+    let summary: DatasetSummary | null = null
+    for (let c = hi; c >= lo; c--) summary = await window.spss.ds.deleteVariable(c)
+    if (summary) {
+      useStore.getState().setSummary(summary)
+      setSel(null)
+    }
+  }
+  const deleteCaseRange = async (r0: number, r1: number): Promise<void> => {
+    const lo = Math.max(0, Math.min(r0, r1))
+    const hi = Math.min(nRows - 1, Math.max(r0, r1))
+    let last: { nRows: number } | null = null
+    for (let r = hi; r >= lo; r--) last = await window.spss.ds.deleteCase(r)
+    if (last) {
+      setNRows(last.nRows)
+      bumpData()
+      setSel(null)
+    }
   }
   const insertCaseAt = async (index: number): Promise<void> => {
     const res = await window.spss.ds.insertCase(index)
-    setNRows(res.nRows)
-    bumpData()
-  }
-  const deleteCaseAt = async (index: number): Promise<void> => {
-    if (index >= nRows) return
-    const res = await window.spss.ds.deleteCase(index)
     setNRows(res.nRows)
     bumpData()
   }
@@ -285,27 +298,37 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
 
   const headerMenu = (c: number, e: React.MouseEvent): void => {
     e.preventDefault()
-    setSel({ r0: 0, c0: c, r1: displayRows - 1, c1: c })
+    // Keep an existing multi-column selection if the click landed inside it;
+    // otherwise select just this column.
+    const inCols = sel && c >= Math.min(sel.c0, sel.c1) && c <= Math.max(sel.c0, sel.c1)
+    const c0 = inCols ? Math.min(sel!.c0, sel!.c1) : c
+    const c1 = inCols ? Math.max(sel!.c0, sel!.c1) : c
+    setSel({ r0: 0, c0, r1: displayRows - 1, c1 })
+    const count = Math.min(c1, nVars - 1) - c0 + 1
     setMenu({
       x: e.clientX,
       y: e.clientY,
       items: [
-        { label: 'Insert Variable', onClick: () => void insertVarAt(c) },
-        { label: 'Clear', disabled: c >= nVars, onClick: () => void deleteVarAt(c) },
+        { label: 'Insert Variable', onClick: () => void insertVarAt(c0) },
+        { label: count > 1 ? `Clear ${count} Variables` : 'Clear', disabled: c0 >= nVars, onClick: () => void deleteVarRange(c0, c1) },
         { separator: true },
-        { label: 'Descriptive Statistics', disabled: c >= nVars, onClick: () => runDescriptives(c) }
+        { label: 'Descriptive Statistics', disabled: c0 >= nVars, onClick: () => runDescriptives(c0) }
       ]
     })
   }
   const gutterMenu = (r: number, e: React.MouseEvent): void => {
     e.preventDefault()
-    setSel({ r0: r, c0: 0, r1: r, c1: displayCols - 1 })
+    const inRows = sel && r >= Math.min(sel.r0, sel.r1) && r <= Math.max(sel.r0, sel.r1)
+    const r0 = inRows ? Math.min(sel!.r0, sel!.r1) : r
+    const r1 = inRows ? Math.max(sel!.r0, sel!.r1) : r
+    setSel({ r0, c0: 0, r1, c1: displayCols - 1 })
+    const count = Math.min(r1, nRows - 1) - r0 + 1
     setMenu({
       x: e.clientX,
       y: e.clientY,
       items: [
-        { label: 'Insert Case', onClick: () => void insertCaseAt(r) },
-        { label: 'Clear', disabled: r >= nRows, onClick: () => void deleteCaseAt(r) }
+        { label: 'Insert Case', onClick: () => void insertCaseAt(r0) },
+        { label: count > 1 ? `Clear ${count} Cases` : 'Clear', disabled: r0 >= nRows, onClick: () => void deleteCaseRange(r0, r1) }
       ]
     })
   }
@@ -391,7 +414,15 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
         <div
           className={'gutter-cell' + (sel && r >= Math.min(sel.r0, sel.r1) && r <= Math.max(sel.r0, sel.r1) ? ' gutter-cell--sel' : '')}
           style={{ width: gutterW }}
-          onMouseDown={() => setSel({ r0: r, c0: 0, r1: r, c1: displayCols - 1 })}
+          onMouseDown={(e) => {
+            draggingRef.current = true
+            if (e.shiftKey && sel) setSel({ r0: sel.r0, c0: 0, r1: r, c1: displayCols - 1 })
+            else setSel({ r0: r, c0: 0, r1: r, c1: displayCols - 1 })
+          }}
+          onMouseEnter={() => {
+            if (draggingRef.current && sel && sel.c0 === 0 && sel.c1 === displayCols - 1)
+              setSel({ ...sel, r1: r })
+          }}
           onContextMenu={(e) => gutterMenu(r, e)}
         >
           {r + 1}
@@ -418,7 +449,15 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
               className={'col-head' + (sel && c >= Math.min(sel.c0, sel.c1) && c <= Math.max(sel.c0, sel.c1) ? ' col-head--sel' : '')}
               style={{ width: colWidths[c] }}
               title={v.label || v.name}
-              onMouseDown={() => setSel({ r0: 0, c0: c, r1: displayRows - 1, c1: c })}
+              onMouseDown={(e) => {
+                draggingRef.current = true
+                if (e.shiftKey && sel) setSel({ r0: 0, c0: sel.c0, r1: displayRows - 1, c1: c })
+                else setSel({ r0: 0, c0: c, r1: displayRows - 1, c1: c })
+              }}
+              onMouseEnter={() => {
+                if (draggingRef.current && sel && sel.r0 === 0 && sel.r1 === displayRows - 1)
+                  setSel({ ...sel, c1: c })
+              }}
               onContextMenu={(e) => headerMenu(c, e)}
             >
               <span className="col-head-inner">
