@@ -36,6 +36,8 @@ const ds: DatasetApi = {
   deleteVariable: (index) => ipcRenderer.invoke(IPC.ds.deleteVariable, { index }) as Promise<DatasetSummary>,
   insertCase: (index) => ipcRenderer.invoke(IPC.ds.insertCase, { index }) as Promise<{ nRows: number }>,
   deleteCase: (index) => ipcRenderer.invoke(IPC.ds.deleteCase, { index }) as Promise<{ nRows: number }>,
+  undo: () => ipcRenderer.invoke(IPC.ds.undo) as Promise<DatasetSummary & { ok: boolean }>,
+  redo: () => ipcRenderer.invoke(IPC.ds.redo) as Promise<DatasetSummary & { ok: boolean }>,
   importText: (path, options) =>
     ipcRenderer.invoke(IPC.ds.importText, { path, options }) as Promise<DatasetSummary>,
   onChanged: (cb) => {

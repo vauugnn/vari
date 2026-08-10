@@ -85,6 +85,52 @@ def _active() -> Dataset:
     return ds
 
 
+# ---- undo / redo (bounded in-place snapshot history of the active dataset) ----
+_UNDO: list[Any] = []
+_REDO: list[Any] = []
+_MAX_HISTORY = 25
+
+
+def _snapshot_active() -> Any:
+    ds = REGISTRY.active
+    return ds.snapshot() if ds is not None else None
+
+
+def _push_undo() -> None:
+    snap = _snapshot_active()
+    if snap is None:
+        return
+    _UNDO.append(snap)
+    if len(_UNDO) > _MAX_HISTORY:
+        _UNDO.pop(0)
+    _REDO.clear()
+
+
+def _restore(snap: Any) -> None:
+    ds = REGISTRY.active
+    if ds is None or snap is None:
+        return
+    ds.df = snap.df
+    ds.variables = snap.variables
+    ds.name = snap.name
+
+
+def m_dataset_undo(_p: Any) -> dict[str, Any]:
+    if not _UNDO:
+        return {"ok": False, **_dataset_summary(_active())}
+    _REDO.append(_snapshot_active())
+    _restore(_UNDO.pop())
+    return {"ok": True, **_dataset_summary(_active())}
+
+
+def m_dataset_redo(_p: Any) -> dict[str, Any]:
+    if not _REDO:
+        return {"ok": False, **_dataset_summary(_active())}
+    _UNDO.append(_snapshot_active())
+    _restore(_REDO.pop())
+    return {"ok": True, **_dataset_summary(_active())}
+
+
 # ---- methods ----------------------------------------------------------
 def m_ping(_p: Any) -> dict[str, Any]:
     return {"ok": True}
@@ -93,12 +139,19 @@ def m_ping(_p: Any) -> dict[str, Any]:
 def m_syntax_execute(p: Any) -> list[dict[str, Any]]:
     text = str(p.get("text", "")) if isinstance(p, dict) else str(p or "")
     before = REGISTRY.active
+    pre = _snapshot_active()  # captured in case the command mutates in place
     ctx = Context(REGISTRY)
     outputs = execute_syntax(text, PROC_REGISTRY, ctx)
     # If a command changed the active dataset (opened one, or a transform mutated
     # it in place), tell the client so the Data Editor refreshes.
     after = REGISTRY.active
-    if after is not None and (after is not before or ctx.data_changed):
+    changed = after is not None and (after is not before or ctx.data_changed)
+    if changed:
+        if after is before and pre is not None:  # in-place mutation is undoable
+            _UNDO.append(pre)
+            if len(_UNDO) > _MAX_HISTORY:
+                _UNDO.pop(0)
+            _REDO.clear()
         outputs.append({"type": "_DatasetChanged", "summary": _dataset_summary(after)})
     return outputs
 
@@ -144,18 +197,21 @@ def m_dataset_get_rows(p: dict[str, Any]) -> dict[str, Any]:
 
 def m_dataset_set_cell(p: dict[str, Any]) -> dict[str, Any]:
     ds = _active()
+    _push_undo()
     ds.set_cell(int(p["row"]), int(p["col"]), str(p.get("value", "")))
     return {"ok": True}
 
 
 def m_dataset_set_variable_meta(p: dict[str, Any]) -> dict[str, Any]:
     ds = _active()
+    _push_undo()
     ds.set_variable_meta(int(p["index"]), _meta_from_json(p["meta"]))
     return _dataset_summary(ds)
 
 
 def m_dataset_insert_variable(p: dict[str, Any]) -> dict[str, Any]:
     ds = _active()
+    _push_undo()
     if p.get("meta"):
         meta = _meta_from_json(p["meta"])
         ds.insert_variable(int(p.get("index", ds.n_vars)), meta)
@@ -166,18 +222,21 @@ def m_dataset_insert_variable(p: dict[str, Any]) -> dict[str, Any]:
 
 def m_dataset_delete_variable(p: dict[str, Any]) -> dict[str, Any]:
     ds = _active()
+    _push_undo()
     ds.delete_variable(int(p["index"]))
     return _dataset_summary(ds)
 
 
 def m_dataset_insert_case(p: dict[str, Any]) -> dict[str, Any]:
     ds = _active()
+    _push_undo()
     ds.insert_case(int(p.get("index", ds.n_rows)))
     return {"ok": True, "nRows": ds.n_rows}
 
 
 def m_dataset_delete_case(p: dict[str, Any]) -> dict[str, Any]:
     ds = _active()
+    _push_undo()
     ds.delete_case(int(p["index"]))
     return {"ok": True, "nRows": ds.n_rows}
 
@@ -210,6 +269,8 @@ METHODS = {
     "dataset.deleteVariable": m_dataset_delete_variable,
     "dataset.insertCase": m_dataset_insert_case,
     "dataset.deleteCase": m_dataset_delete_case,
+    "dataset.undo": m_dataset_undo,
+    "dataset.redo": m_dataset_redo,
     "variables.list": m_variables_list,
     "output.exportExcel": m_output_export_excel,
 }

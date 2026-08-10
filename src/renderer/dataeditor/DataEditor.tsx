@@ -189,6 +189,20 @@ export function DataEditor(): JSX.Element {
       if (alt && 'error' in (alt as object)) setError((alt as unknown as { error: string }).error)
     }
   }
+  const undo = async (): Promise<void> => {
+    const s = await window.spss.ds.undo()
+    if (s.ok) {
+      setSummary(s)
+      bumpRevision()
+    }
+  }
+  const redo = async (): Promise<void> => {
+    const s = await window.spss.ds.redo()
+    if (s.ok) {
+      setSummary(s)
+      bumpRevision()
+    }
+  }
   const insertVar = async (): Promise<void> => setSummary(await window.spss.ds.insertVariable(null, null))
   const insertCase = async (): Promise<void> => {
     if (!summary) return
@@ -206,8 +220,8 @@ export function DataEditor(): JSX.Element {
     { id: 'print', tip: 'Print', icon: <PrintIcon />, disabled: !has },
     'sep',
     { id: 'recall', tip: 'Recall recently used dialogs', icon: <RecallIcon /> },
-    { id: 'undo', tip: 'Undo', icon: <UndoIcon />, disabled: true },
-    { id: 'redo', tip: 'Redo', icon: <RedoIcon />, disabled: true },
+    { id: 'undo', tip: 'Undo', icon: <UndoIcon />, onClick: undo, disabled: !has },
+    { id: 'redo', tip: 'Redo', icon: <RedoIcon />, onClick: redo, disabled: !has },
     'sep',
     { id: 'gotocase', tip: 'Go to case', icon: <GotoCaseIcon />, disabled: !has },
     { id: 'gotovar', tip: 'Go to variable', icon: <GotoVarIcon />, disabled: !has },

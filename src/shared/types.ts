@@ -107,6 +107,8 @@ export const IPC = {
     deleteVariable: 'ds.deleteVariable',
     insertCase: 'ds.insertCase',
     deleteCase: 'ds.deleteCase',
+    undo: 'ds.undo',
+    redo: 'ds.redo',
     importText: 'ds.importText'
   }
 } as const
@@ -132,6 +134,8 @@ export interface DatasetApi {
   deleteVariable: (index: number) => Promise<DatasetSummary>
   insertCase: (index: number | null) => Promise<{ nRows: number }>
   deleteCase: (index: number) => Promise<{ nRows: number }>
+  undo: () => Promise<DatasetSummary & { ok: boolean }>
+  redo: () => Promise<DatasetSummary & { ok: boolean }>
   importText: (path: string, options: ImportOptions) => Promise<DatasetSummary>
   onChanged: (cb: (summary: DatasetSummary) => void) => () => void
 }

@@ -329,6 +329,8 @@ function wireDatasetIpc(): void {
   ipcMain.handle(IPC.ds.deleteVariable, (_e, p) => sidecar.request('dataset.deleteVariable', p))
   ipcMain.handle(IPC.ds.insertCase, (_e, p) => sidecar.request('dataset.insertCase', p))
   ipcMain.handle(IPC.ds.deleteCase, (_e, p) => sidecar.request('dataset.deleteCase', p))
+  ipcMain.handle(IPC.ds.undo, () => sidecar.request('dataset.undo'))
+  ipcMain.handle(IPC.ds.redo, () => sidecar.request('dataset.redo'))
   ipcMain.handle(IPC.ds.importText, async (_e, p) => {
     const summary = (await sidecar.request('dataset.importText', p)) as DatasetSummary
     broadcastDataset(summary)
