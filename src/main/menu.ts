@@ -16,6 +16,7 @@ export interface MenuActions {
   fileSaveAs: () => void
   filePrint: () => void
   fileImport: () => void
+  checkUpdates: () => void
   openDialog: (id: string) => void
 }
 
@@ -358,7 +359,13 @@ export function buildMenu(actions: MenuActions): Menu {
 
   template.push({
     label: 'Help',
-    submenu: [proc('Topics'), proc('SPSS Statistics Help'), proc('About…')]
+    submenu: [
+      proc('Topics'),
+      proc('SPSS Statistics Help'),
+      { type: 'separator' },
+      { label: 'Check for Updates…', click: actions.checkUpdates },
+      proc('About…')
+    ]
   })
 
   return Menu.buildFromTemplate(template)

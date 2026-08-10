@@ -1,17 +1,21 @@
 import { resolve } from 'path'
-import { defineConfig } from 'electron-vite'
+import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 
 // Three renderer windows (Data Editor, Output Viewer, Syntax Editor) as
 // separate HTML entries. Main + preload build to out/{main,preload}.
 export default defineConfig({
   main: {
+    // Keep node_modules deps (electron-updater, …) external so their dynamic
+    // requires survive; electron-builder packs them into the asar.
+    plugins: [externalizeDepsPlugin()],
     build: {
       outDir: 'out/main',
       rollupOptions: { input: resolve(__dirname, 'src/main/index.ts') }
     }
   },
   preload: {
+    plugins: [externalizeDepsPlugin()],
     build: {
       outDir: 'out/preload',
       rollupOptions: { input: resolve(__dirname, 'src/preload/index.ts') }

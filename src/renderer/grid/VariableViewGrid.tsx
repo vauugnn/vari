@@ -40,6 +40,19 @@ function missingSummary(m: MissingJson): string {
   return `${lo}–${hi}${m.values.length ? ', ' + m.values[0] : ''}`
 }
 
+// Variable-definition clipboard, shared across remounts (Copy → Paste/Duplicate).
+let varClipboard: VariableMetaJson[] = []
+
+function uniqueName(base: string, existing: Set<string>): string {
+  let n = 1
+  let name = `${base}_${n}`
+  while (existing.has(name.toUpperCase())) {
+    n++
+    name = `${base}_${n}`
+  }
+  return name
+}
+
 type DialogState =
   | { kind: 'type'; index: number }
   | { kind: 'values'; index: number }
@@ -80,6 +93,54 @@ export function VariableViewGrid({ summary }: { summary: DatasetSummary }): JSX.
     }
   }
 
+  const copyRows = (a: number, b: number): void => {
+    const lo = Math.min(a, b)
+    const hi = Math.max(a, b)
+    varClipboard = summary.variables.slice(lo, hi + 1).map((v) => ({ ...v }))
+  }
+
+  // Paste copied variable attributes onto the selected rows, keeping each
+  // target's own name (SPSS "paste" in Variable View copies the definition).
+  const pasteRows = async (a: number, b: number): Promise<void> => {
+    if (!varClipboard.length) return
+    const lo = Math.min(a, b)
+    const hi = Math.min(summary.variables.length - 1, Math.max(a, b))
+    try {
+      let s
+      for (let i = lo; i <= hi; i++) {
+        const src = varClipboard[(i - lo) % varClipboard.length]
+        const patch = { ...src, name: summary.variables[i].name }
+        s = await window.spss.ds.setVariableMeta(i, { ...summary.variables[i], ...patch })
+      }
+      if (s) setSummary(s)
+      setError(null)
+    } catch (err) {
+      setError(String(err instanceof Error ? err.message : err))
+    }
+  }
+
+  // Duplicate the selected variables (definition only) right after them.
+  const duplicateRows = async (a: number, b: number): Promise<void> => {
+    const lo = Math.min(a, b)
+    const hi = Math.max(a, b)
+    const existing = new Set(summary.variables.map((v) => v.name.toUpperCase()))
+    try {
+      let s: DatasetSummary | null = null
+      let at = hi + 1
+      for (let i = lo; i <= hi; i++) {
+        const src = summary.variables[i]
+        const name = uniqueName(src.name, existing)
+        existing.add(name.toUpperCase())
+        s = await window.spss.ds.insertVariable(at, { ...src, name })
+        at++
+      }
+      if (s) setSummary(s)
+      setError(null)
+    } catch (err) {
+      setError(String(err instanceof Error ? err.message : err))
+    }
+  }
+
   const rowMenu = (i: number, e: React.MouseEvent): void => {
     e.preventDefault()
     const sel = rowSelected(i) ? rowSel! : { a: i, b: i }
@@ -90,6 +151,10 @@ export function VariableViewGrid({ summary }: { summary: DatasetSummary }): JSX.
       x: e.clientX,
       y: e.clientY,
       items: [
+        { label: count > 1 ? `Copy ${count} Variables` : 'Copy', onClick: () => copyRows(sel.a, sel.b) },
+        { label: 'Paste', disabled: !varClipboard.length, onClick: () => void pasteRows(sel.a, sel.b) },
+        { label: count > 1 ? `Duplicate ${count} Variables` : 'Duplicate', onClick: () => void duplicateRows(sel.a, sel.b) },
+        { separator: true },
         { label: 'Insert Variable', onClick: () => void insertAt(lo) },
         { label: count > 1 ? `Clear ${count} Variables` : 'Clear', onClick: () => void deleteRange(sel.a, sel.b) }
       ]

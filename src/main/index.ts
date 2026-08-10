@@ -1,7 +1,10 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron'
 import { writeFile } from 'fs/promises'
 import { join } from 'path'
+import updaterPkg from 'electron-updater'
 import { buildMenu, focusOrShow } from './menu'
+
+const { autoUpdater } = updaterPkg
 import { Sidecar } from './sidecar'
 import { IPC } from '../shared/types'
 import type { DatasetSummary, OutputObject, SidecarStatus, WindowName } from '../shared/types'
@@ -150,6 +153,79 @@ async function importViaDialog(): Promise<void> {
   const de2 = windows.dataeditor
   if (de2 && !de2.isDestroyed()) de2.webContents.send(IPC.importText, res.filePaths[0])
   showWindow('dataeditor')
+}
+
+// ---- auto-update (electron-updater, GitHub Releases) -----------------
+let updaterWired = false
+
+function wireUpdater(): void {
+  if (updaterWired) return
+  updaterWired = true
+  autoUpdater.autoDownload = true
+  autoUpdater.autoInstallOnAppQuit = true
+  autoUpdater.on('update-downloaded', (info) => {
+    const win = windows.dataeditor ?? BrowserWindow.getAllWindows()[0]
+    void dialog
+      .showMessageBox(win, {
+        type: 'info',
+        buttons: ['Restart Now', 'Later'],
+        defaultId: 0,
+        cancelId: 1,
+        title: 'Update Ready',
+        message: `Vari ${info.version} is ready to install.`,
+        detail: 'Restart the app to apply the update.'
+      })
+      .then((r) => {
+        if (r.response === 0) autoUpdater.quitAndInstall()
+      })
+  })
+  autoUpdater.on('error', (err) => console.error('[updater]', err))
+}
+
+// Silent background check on launch (packaged builds only).
+function checkForUpdatesOnStartup(): void {
+  if (!app.isPackaged) return
+  wireUpdater()
+  autoUpdater.checkForUpdates().catch((err) => console.error('[updater] check failed', err))
+}
+
+// Manual Help ▸ Check for Updates — reports "up to date" when nothing is found.
+async function checkForUpdatesManual(): Promise<void> {
+  const win = windows.dataeditor ?? BrowserWindow.getAllWindows()[0]
+  if (!app.isPackaged) {
+    await dialog.showMessageBox(win, {
+      type: 'info',
+      message: 'Updates are only available in the packaged app.',
+      buttons: ['OK']
+    })
+    return
+  }
+  wireUpdater()
+  try {
+    const result = await autoUpdater.checkForUpdates()
+    const latest = result?.updateInfo?.version
+    if (latest && latest !== app.getVersion()) {
+      await dialog.showMessageBox(win, {
+        type: 'info',
+        message: `Downloading Vari ${latest}…`,
+        detail: 'You will be prompted to restart when it is ready.',
+        buttons: ['OK']
+      })
+    } else {
+      await dialog.showMessageBox(win, {
+        type: 'info',
+        message: `Vari ${app.getVersion()} is up to date.`,
+        buttons: ['OK']
+      })
+    }
+  } catch (err) {
+    await dialog.showMessageBox(win, {
+      type: 'error',
+      message: 'Could not check for updates.',
+      detail: String(err instanceof Error ? err.message : err),
+      buttons: ['OK']
+    })
+  }
 }
 
 async function printViewer(): Promise<void> {
@@ -307,11 +383,13 @@ app.whenReady().then(() => {
       fileSaveAs: () => void saveViaDialog(),
       filePrint: () => void printViewer(),
       fileImport: () => void importViaDialog(),
+      checkUpdates: () => void checkForUpdatesManual(),
       openDialog: (id: string) => openDialog(id)
     })
   )
   wireIpc()
   createAllWindows()
+  checkForUpdatesOnStartup()
 
   sidecar.on('status', (status: SidecarStatus) => {
     broadcast(IPC.sidecarStatusEvent, status)

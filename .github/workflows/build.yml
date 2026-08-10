@@ -101,5 +101,7 @@ jobs:
             dist/*.zip
             dist/*.exe
             dist/*.AppImage
+            dist/*.yml
+            dist/*.blockmap
           fail_on_unmatched_files: false
           generate_release_notes: true

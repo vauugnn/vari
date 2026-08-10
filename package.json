@@ -1,7 +1,7 @@
 {
   "name": "vari",
   "productName": "Vari",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Vari — a desktop statistics application (SPSS-style workflow)",
   "private": true,
   "main": "./out/main/index.js",
@@ -17,6 +17,7 @@
     "dist": "electron-vite build && electron-builder"
   },
   "dependencies": {
+    "electron-updater": "^6.8.9",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^4.5.7"

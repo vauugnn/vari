@@ -14,6 +14,13 @@ extraResources:
   - from: packaging/dist/vari-sidecar
     to: sidecar-bin
 artifactName: ${productName}-${version}-${os}-${arch}.${ext}
+# electron-updater pulls new versions from GitHub Releases. This block makes
+# electron-builder emit the latest*.yml update manifests alongside the
+# installers; CI uploads them to the release.
+publish:
+  provider: github
+  owner: vauugnn
+  repo: vari
 mac:
   category: public.app-category.education
   icon: build/icon.png
