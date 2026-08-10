@@ -177,6 +177,14 @@ def m_dataset_import_text(p: dict[str, Any]) -> dict[str, Any]:
     return _dataset_summary(ds)
 
 
+def m_dataset_open_database(p: dict[str, Any]) -> dict[str, Any]:
+    from .io.files import open_database
+
+    ds = open_database(str(p["conn"]), str(p["query"]), name=REGISTRY.next_name())
+    REGISTRY.add(ds, activate=True)
+    return _dataset_summary(ds)
+
+
 def m_dataset_save(p: dict[str, Any]) -> dict[str, Any]:
     ds = _active()
     path = p.get("path") or ds.source_path
@@ -339,6 +347,7 @@ METHODS = {
     "dataset.new": m_dataset_new,
     "dataset.open": m_dataset_open,
     "dataset.importText": m_dataset_import_text,
+    "dataset.openDatabase": m_dataset_open_database,
     "dataset.save": m_dataset_save,
     "dataset.getRows": m_dataset_get_rows,
     "dataset.setCell": m_dataset_set_cell,

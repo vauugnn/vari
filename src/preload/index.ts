@@ -40,6 +40,8 @@ const ds: DatasetApi = {
   redo: () => ipcRenderer.invoke(IPC.ds.redo) as Promise<DatasetSummary & { ok: boolean }>,
   find: (query, row, col, colIndex) =>
     ipcRenderer.invoke(IPC.ds.find, { query, row, col, col_index: colIndex }) as Promise<{ found: boolean; row?: number; col?: number }>,
+  openDatabase: (conn, query) =>
+    ipcRenderer.invoke(IPC.ds.openDatabase, { conn, query }) as Promise<DatasetSummary>,
   importText: (path, options) =>
     ipcRenderer.invoke(IPC.ds.importText, { path, options }) as Promise<DatasetSummary>,
   onChanged: (cb) => {

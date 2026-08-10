@@ -197,7 +197,7 @@ export function buildMenu(actions: MenuActions): Menu {
           proc('Script…')
         ]
       },
-      proc('Open Database'),
+      { label: 'Open Database', submenu: [{ label: 'New Query…', click: () => actions.openDialog('opendb') }] },
       {
         label: 'Import Data',
         submenu: [

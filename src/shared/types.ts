@@ -112,6 +112,7 @@ export const IPC = {
     undo: 'ds.undo',
     redo: 'ds.redo',
     find: 'ds.find',
+    openDatabase: 'ds.openDatabase',
     importText: 'ds.importText'
   }
 } as const
@@ -140,6 +141,7 @@ export interface DatasetApi {
   undo: () => Promise<DatasetSummary & { ok: boolean }>
   redo: () => Promise<DatasetSummary & { ok: boolean }>
   find: (query: string, row: number, col: number, colIndex: number | null) => Promise<{ found: boolean; row?: number; col?: number }>
+  openDatabase: (conn: string, query: string) => Promise<DatasetSummary>
   importText: (path: string, options: ImportOptions) => Promise<DatasetSummary>
   onChanged: (cb: (summary: DatasetSummary) => void) => () => void
 }

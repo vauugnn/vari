@@ -180,6 +180,30 @@ def _open_csv(path: str, name: str) -> Dataset:
     return Dataset(df, _variables_from_dataframe(df), name=name, source_path=path)
 
 
+def open_database(conn: str, query: str, name: str = "DataSet1") -> Dataset:
+    """Read a SQL query into a dataset. `conn` is a SQLAlchemy URL
+    (e.g. sqlite:///path.db, postgresql://user:pw@host/db) or a plain path to a
+    SQLite file. Uses SQLAlchemy when available, else stdlib sqlite3."""
+    import os
+
+    df: pd.DataFrame
+    if "://" not in conn and os.path.exists(conn):
+        import sqlite3
+
+        with sqlite3.connect(conn) as cx:
+            df = pd.read_sql_query(query, cx)
+    else:
+        try:
+            from sqlalchemy import create_engine, text
+
+            engine = create_engine(conn)
+            with engine.connect() as cx:
+                df = pd.read_sql_query(text(query), cx)
+        except ImportError as exc:  # pragma: no cover
+            raise RuntimeError("SQLAlchemy is required for this connection type.") from exc
+    return Dataset(df, _variables_from_dataframe(df), name=name, source_path=None)
+
+
 def import_text(path: str, opts: dict, name: str = "DataSet1") -> Dataset:
     """Text/CSV import with user-chosen options (the Import wizard)."""
     sep = opts.get("delimiter") or ","

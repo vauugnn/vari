@@ -51,6 +51,7 @@ import { OlapDialog, CtablesDialog, MultiResponseDialog, ControlChartDialog, Par
 import { VarsToCasesDialog, CasesToVarsDialog, VisualBinDialog } from '../dialogs/analysis/Wave7Dialogs'
 import { FindDialog, GoToCaseDialog, GoToVariableDialog } from '../dialogs/analysis/FindGotoDialogs'
 import { RunScriptDialog } from '../dialogs/RunScriptDialog'
+import { OpenDatabaseDialog } from '../dialogs/OpenDatabaseDialog'
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
 import { ExploreDialog, PartialCorrDialog } from '../dialogs/analysis/ExploreDialog'
 import { ImportWizard } from '../dialogs/ImportWizard'
@@ -146,6 +147,7 @@ export function DataEditor(): JSX.Element {
   const [dialogId, setDialogId] = useState<string | null>(null)
   const [customize, setCustomize] = useState(false)
   const [scriptOpen, setScriptOpen] = useState(false)
+  const [dbOpen, setDbOpen] = useState(false)
   const [importPath, setImportPath] = useState<string | null>(null)
   const initedRef = useRef(false)
 
@@ -157,6 +159,7 @@ export function DataEditor(): JSX.Element {
     () =>
       window.spss.onOpenDialog((id) => {
         if (id === 'customize-toolbar') setCustomize(true)
+        else if (id === 'opendb') setDbOpen(true)
         else setDialogId(id)
       }),
     []
@@ -543,6 +546,7 @@ export function DataEditor(): JSX.Element {
       )}
 
       {scriptOpen && <RunScriptDialog onClose={() => setScriptOpen(false)} />}
+      {dbOpen && <OpenDatabaseDialog onClose={() => setDbOpen(false)} onDone={setSummary} />}
 
       {customize && (
         <Modal title="Customize Toolbar" onOk={() => setCustomize(false)} onCancel={() => setCustomize(false)}>

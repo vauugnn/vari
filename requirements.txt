@@ -7,3 +7,4 @@ pyreadstat
 pytest
 openpyxl
 scikit-learn
+sqlalchemy

@@ -12,7 +12,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 COLLECT_ALL = [
     "scipy", "statsmodels", "sklearn", "pandas", "numpy", "pyreadstat",
-    "matplotlib", "openpyxl", "patsy", "threadpoolctl", "joblib",
+    "matplotlib", "openpyxl", "patsy", "threadpoolctl", "joblib", "sqlalchemy",
 ]
 
 args = [
