@@ -46,6 +46,7 @@ import { GenlinDialog, GeeDialog, MixedDialog, GenlogDialog } from '../dialogs/a
 import { KaplanMeierDialog, CoxDialog, LifeTableDialog } from '../dialogs/analysis/SurvivalDialogs'
 import { ArimaDialog, SeasonDialog, SpectraDialog, CsDescriptivesDialog, CsTabulateDialog } from '../dialogs/analysis/ForecastCsDialogs'
 import { TwoStepDialog, NearestNeighborDialog, CorrespondenceDialog, ProxscalDialog, AlscalDialog, PrefscalDialog, MlpDialog, RbfDialog } from '../dialogs/analysis/Wave5Dialogs'
+import { OlapDialog, CtablesDialog, MultiResponseDialog, ControlChartDialog, ParetoDialog, BayesNormalDialog, BayesBinomialDialog, BayesPoissonDialog } from '../dialogs/analysis/Wave6Dialogs'
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
 import { ExploreDialog, PartialCorrDialog } from '../dialogs/analysis/ExploreDialog'
 import { ImportWizard } from '../dialogs/ImportWizard'
@@ -389,6 +390,22 @@ export function DataEditor(): JSX.Element {
             return <MlpDialog {...p} />
           case 'rbf':
             return <RbfDialog {...p} />
+          case 'olap':
+            return <OlapDialog {...p} />
+          case 'ctables':
+            return <CtablesDialog {...p} />
+          case 'multiresponse':
+            return <MultiResponseDialog {...p} />
+          case 'spchart':
+            return <ControlChartDialog {...p} />
+          case 'pareto':
+            return <ParetoDialog {...p} />
+          case 'bayes-normal':
+            return <BayesNormalDialog {...p} />
+          case 'bayes-binomial':
+            return <BayesBinomialDialog {...p} />
+          case 'bayes-poisson':
+            return <BayesPoissonDialog {...p} />
           case 'selectcases':
             return <SelectCasesDialog {...p} />
           case 'weight':

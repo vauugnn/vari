@@ -39,6 +39,9 @@ from .complex_samples import CsDescriptives, CsTabulate
 from .classify2 import NearestNeighbor, TwoStep
 from .dimension import Alscal, Correspondence, Mds
 from .neural import Mlp, Rbf
+from .reports2 import Ctables, MultResponse, Olap
+from .qc import Pareto, SpChart
+from .bayesian import Bayes
 from .ttest import TTest
 
 
@@ -106,6 +109,12 @@ def build_registry() -> Registry:
     reg.register("PREFSCAL")(Alscal)
     reg.register("MLP")(Mlp)
     reg.register("RBF")(Rbf)
+    reg.register("OLAP")(Olap)
+    reg.register("CTABLES")(Ctables)
+    reg.register("MULTRESPONSE")(MultResponse)
+    reg.register("SPCHART")(SpChart)
+    reg.register("PARETO")(Pareto)
+    reg.register("BAYES")(Bayes)
     reg.register("VARIABLE")(VariableCmd)
     reg.register("VALUE")(ValueLabels)
     reg.register("ADD")(lambda: ValueLabels(add=True))

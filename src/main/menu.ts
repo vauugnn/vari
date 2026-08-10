@@ -40,7 +40,7 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
   return {
     label: 'Analyze',
     submenu: [
-      { label: 'Reports', submenu: [dialogItem('Codebook', 'codebook', open), proc('OLAP Cubes'), dialogItem('Case Summaries', 'summarize', open), proc('Report Summaries in Rows'), proc('Report Summaries in Columns')] },
+      { label: 'Reports', submenu: [dialogItem('Codebook', 'codebook', open), dialogItem('OLAP Cubes', 'olap', open), dialogItem('Case Summaries', 'summarize', open), proc('Report Summaries in Rows'), proc('Report Summaries in Columns')] },
       {
         label: 'Descriptive Statistics',
         submenu: [
@@ -54,8 +54,8 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
           dialogItem('Q-Q Plots…', 'qqplot', open)
         ]
       },
-      { label: 'Bayesian Statistics', enabled: false, submenu: [proc('One Sample Normal…'), proc('One Sample Binomial…'), proc('One Sample Poisson…'), proc('Related Sample Normal…'), proc('Independent Sample Normal…')] },
-      { label: 'Tables', enabled: false, submenu: [proc('Custom Tables…'), proc('Multiple Response Sets…')] },
+      { label: 'Bayesian Statistics', submenu: [dialogItem('One Sample Normal…', 'bayes-normal', open), dialogItem('One Sample Binomial…', 'bayes-binomial', open), dialogItem('One Sample Poisson…', 'bayes-poisson', open), proc('Related Sample Normal…'), proc('Independent Sample Normal…')] },
+      { label: 'Tables', submenu: [dialogItem('Custom Tables…', 'ctables', open), proc('Multiple Response Sets…')] },
       {
         label: 'Compare Means',
         submenu: [
@@ -145,10 +145,10 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
       },
       { label: 'Forecasting', submenu: [dialogItem('Create Traditional Models…', 'arima', open), proc('Create Temporal Causal Models…'), proc('Apply Traditional Models…'), dialogItem('Seasonal Decomposition…', 'season', open), dialogItem('Spectral Analysis…', 'spectra', open)] },
       { label: 'Survival', submenu: [dialogItem('Life Tables…', 'lifetable', open), dialogItem('Kaplan-Meier…', 'km', open), dialogItem('Cox Regression…', 'coxreg', open), proc('Cox w/ Time-Dep Cov…')] },
-      { label: 'Multiple Response', enabled: false, submenu: [proc('Define Variable Sets…'), proc('Frequencies…'), proc('Crosstabs…')] },
+      { label: 'Multiple Response', submenu: [proc('Define Variable Sets…'), dialogItem('Frequencies…', 'multiresponse', open), proc('Crosstabs…')] },
       { label: 'Complex Samples', submenu: [dialogItem('Descriptives…', 'csdescr', open), dialogItem('Crosstabs…', 'cstab', open)] },
       proc('Simulation…'),
-      { label: 'Quality Control', enabled: false, submenu: [proc('Control Charts…'), proc('Pareto Charts…')] },
+      { label: 'Quality Control', submenu: [dialogItem('Control Charts…', 'spchart', open), dialogItem('Pareto Charts…', 'pareto', open)] },
       proc('Spatial and Temporal Modeling…')
     ]
   }

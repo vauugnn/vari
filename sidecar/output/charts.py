@@ -193,6 +193,40 @@ def population_pyramid(labels: Sequence[str], left: Sequence[float], right: Sequ
     return _finish(fig, title)
 
 
+def control_chart(x: Sequence[float], y: Sequence[float], center: float, ucl: float, lcl: float,
+                  title: str = "", ylabel: str = "") -> dict[str, Any]:
+    fig, ax = _plt().subplots(figsize=(5.0, 3.2))
+    ax.plot(x, y, marker="o", markersize=3, color=_BAR_COLOR, linewidth=1.0)
+    ax.axhline(center, color="#2f7f2f", linewidth=1.0)
+    ax.axhline(ucl, color="#d9433f", linewidth=1.0, linestyle="--")
+    ax.axhline(lcl, color="#d9433f", linewidth=1.0, linestyle="--")
+    for xi, yi in zip(x, y):
+        if yi > ucl or yi < lcl:
+            ax.plot([xi], [yi], marker="o", markersize=5, color="#d9433f")
+    ax.text(x[-1] if len(x) else 0, ucl, " UCL", va="center", fontsize=7, color="#d9433f")
+    ax.text(x[-1] if len(x) else 0, lcl, " LCL", va="center", fontsize=7, color="#d9433f")
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel("Sample")
+    return _finish(fig, title)
+
+
+def pareto(labels: Sequence[str], values: Sequence[float], title: str = "") -> dict[str, Any]:
+    plt = _plt()
+    fig, ax = plt.subplots(figsize=(5.0, 3.4))
+    xs = list(range(len(labels)))
+    ax.bar(xs, values, color=_BAR_COLOR, edgecolor=_EDGE, linewidth=0.5)
+    ax.set_xticks(xs)
+    ax.set_xticklabels([str(x) for x in labels], rotation=30, ha="right", fontsize=7)
+    total = float(sum(values)) or 1.0
+    cum = np.cumsum(values) / total * 100.0
+    ax2 = ax.twinx()
+    ax2.plot(xs, cum, color="#d9433f", marker="o", markersize=3, linewidth=1.2)
+    ax2.set_ylim(0, 105)
+    ax2.set_ylabel("Cumulative %")
+    ax.set_ylabel("Count")
+    return _finish(fig, title)
+
+
 def bar3d(row_labels: Sequence[str], col_labels: Sequence[str], grid: Sequence[Sequence[float]],
           title: str = "", xlabel: str = "") -> dict[str, Any]:
     plt = _plt()
