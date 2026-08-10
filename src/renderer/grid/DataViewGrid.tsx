@@ -369,14 +369,19 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
       return
     }
     if (!sel) return
-    const { r1, c1 } = sel
+    const { r0, c0, r1, c1 } = sel
+    // Shift extends from the anchor (r0,c0); a plain arrow moves and collapses.
+    const move = (nr: number, nc: number): void => {
+      if (e.shiftKey) setSel({ r0, c0, r1: nr, c1: nc })
+      else setSel({ r0: nr, c0: nc, r1: nr, c1: nc })
+    }
     if (e.key === 'Enter' || e.key === 'F2') {
       startEdit(r1, c1)
       e.preventDefault()
-    } else if (e.key === 'ArrowDown') setSel({ r0: Math.min(r1 + 1, displayRows - 1), c0: c1, r1: Math.min(r1 + 1, displayRows - 1), c1 })
-    else if (e.key === 'ArrowUp') setSel({ r0: Math.max(r1 - 1, 0), c0: c1, r1: Math.max(r1 - 1, 0), c1 })
-    else if (e.key === 'ArrowRight') setSel({ r0: r1, c0: Math.min(c1 + 1, displayCols - 1), r1, c1: Math.min(c1 + 1, displayCols - 1) })
-    else if (e.key === 'ArrowLeft') setSel({ r0: r1, c0: Math.max(c1 - 1, 0), r1, c1: Math.max(c1 - 1, 0) })
+    } else if (e.key === 'ArrowDown') { move(Math.min(r1 + 1, displayRows - 1), c1); e.preventDefault() }
+    else if (e.key === 'ArrowUp') { move(Math.max(r1 - 1, 0), c1); e.preventDefault() }
+    else if (e.key === 'ArrowRight') { move(r1, Math.min(c1 + 1, displayCols - 1)); e.preventDefault() }
+    else if (e.key === 'ArrowLeft') { move(r1, Math.max(c1 - 1, 0)); e.preventDefault() }
     else if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) startEdit(r1, c1, e.key)
   }
 
