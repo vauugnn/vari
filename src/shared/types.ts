@@ -87,6 +87,8 @@ export const IPC = {
   outputAppend: 'output.append',
   outputExportHtml: 'output.exportHtml',
   outputExportExcel: 'output.exportExcel',
+  outputExportSpv: 'output.exportSpv',
+  outputOpenSpv: 'output.openSpv',
   scriptRun: 'script.run',
   dialogOpen: 'dialog.open',
   syntaxPaste: 'syntax.paste',
@@ -156,6 +158,8 @@ export interface SpssApi {
   showWindow: (name: WindowName) => void
   exportHtml: (html: string) => Promise<{ ok: boolean; path: string } | null>
   exportExcel: (items: OutputObject[]) => Promise<{ ok: boolean; path: string } | null>
+  exportSpv: (items: OutputObject[]) => Promise<{ ok: boolean; path: string } | null>
+  openOutput: () => Promise<OutputObject[] | null>
   onOpenDialog: (cb: (dialogId: string) => void) => () => void
   onViewToggle: (cb: (kind: string) => void) => () => void
   runScript: (code: string) => Promise<{ output: string; error: string | null; summary?: DatasetSummary }>

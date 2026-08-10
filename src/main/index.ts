@@ -411,6 +411,29 @@ function wireIpc(): void {
     }
   })
 
+  ipcMain.handle(IPC.outputExportSpv, async (_e, items: OutputObject[]) => {
+    const res = await dialog.showSaveDialog(windows.viewer as BrowserWindow, {
+      title: 'Save Output',
+      defaultPath: 'output.spv',
+      filters: [{ name: 'Vari Output (*.spv)', extensions: ['spv'] }]
+    })
+    if (res.canceled || !res.filePath) return null
+    return (await sidecar.request('output.exportSpv', { items, path: res.filePath })) as { ok: boolean; path: string }
+  })
+
+  ipcMain.handle(IPC.outputOpenSpv, async () => {
+    const res = await dialog.showOpenDialog(windows.viewer ?? (windows.dataeditor as BrowserWindow), {
+      title: 'Open Output',
+      properties: ['openFile'],
+      filters: [{ name: 'Vari Output (*.spv)', extensions: ['spv'] }]
+    })
+    if (res.canceled || res.filePaths.length === 0) return null
+    const out = (await sidecar.request('output.openSpv', { path: res.filePaths[0] })) as { items: OutputObject[] }
+    sendToViewer(out.items)
+    showWindow('viewer')
+    return out.items
+  })
+
   ipcMain.on(IPC.windowShow, (_evt, name: WindowName) => showWindow(name))
 
   // Paste from a dialog: append the generated syntax to the Syntax Editor.
@@ -450,6 +473,21 @@ app.whenReady().then(() => {
         const de = windows.dataeditor
         if (de && !de.isDestroyed()) de.webContents.send(IPC.newScript)
         showWindow('dataeditor')
+      },
+      openOutput: () => {
+        void (async () => {
+          const res = await dialog.showOpenDialog(windows.dataeditor as BrowserWindow, {
+            title: 'Open Output',
+            properties: ['openFile'],
+            filters: [{ name: 'Vari Output (*.spv)', extensions: ['spv'] }]
+          })
+          if (res.canceled || res.filePaths.length === 0) return
+          const out = (await sidecar.request('output.openSpv', { path: res.filePaths[0] })) as {
+            items: OutputObject[]
+          }
+          sendToViewer(out.items)
+          showWindow('viewer')
+        })()
       },
       viewToggle: (kind: string) => viewToggle(kind),
       execSyntax: (text: string) => void execSyntax(text),

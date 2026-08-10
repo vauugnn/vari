@@ -18,6 +18,7 @@ export interface MenuActions {
   fileImport: () => void
   checkUpdates: () => void
   newScript: () => void
+  openOutput: () => void
   viewToggle: (kind: string) => void
   execSyntax: (text: string) => void
   showAbout: () => void
@@ -193,7 +194,7 @@ export function buildMenu(actions: MenuActions): Menu {
         submenu: [
           { label: 'Data…', accelerator: 'CmdOrCtrl+O', click: actions.fileOpen },
           proc('Syntax…'),
-          proc('Output…'),
+          { label: 'Output…', click: actions.openOutput },
           proc('Script…')
         ]
       },

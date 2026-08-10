@@ -42,6 +42,9 @@ export function Viewer(): JSX.Element {
         <button onClick={() => void window.spss.exportExcel(items)} disabled={items.length === 0}>
           Export Excel…
         </button>
+        <button onClick={() => void window.spss.exportSpv(items)} disabled={items.length === 0}>
+          Save Output…
+        </button>
         <button onClick={() => setItems([])} disabled={items.length === 0}>
           Clear
         </button>

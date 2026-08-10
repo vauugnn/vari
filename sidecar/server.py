@@ -256,6 +256,19 @@ def m_output_export_excel(p: dict[str, Any]) -> dict[str, Any]:
     return {"ok": True, "path": p["path"]}
 
 
+def m_output_export_spv(p: dict[str, Any]) -> dict[str, Any]:
+    from .io.spv import write_spv
+
+    write_spv(p.get("items", []), p["path"])
+    return {"ok": True, "path": p["path"]}
+
+
+def m_output_open_spv(p: dict[str, Any]) -> dict[str, Any]:
+    from .io.spv import read_spv
+
+    return {"items": read_spv(p["path"])}
+
+
 def m_dataset_find(p: dict[str, Any]) -> dict[str, Any]:
     """Find the next cell (row-major) at/after (row,col) whose rendered text
     contains the query. Returns {found, row, col} for the Find dialog."""
@@ -360,6 +373,8 @@ METHODS = {
     "dataset.redo": m_dataset_redo,
     "dataset.find": m_dataset_find,
     "script.run": m_script_run,
+    "output.exportSpv": m_output_export_spv,
+    "output.openSpv": m_output_open_spv,
     "variables.list": m_variables_list,
     "output.exportExcel": m_output_export_excel,
 }

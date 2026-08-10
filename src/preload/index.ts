@@ -70,6 +70,9 @@ const api: SpssApi = {
     ipcRenderer.invoke(IPC.outputExportHtml, html) as Promise<{ ok: boolean; path: string } | null>,
   exportExcel: (items: OutputObject[]) =>
     ipcRenderer.invoke(IPC.outputExportExcel, items) as Promise<{ ok: boolean; path: string } | null>,
+  exportSpv: (items: OutputObject[]) =>
+    ipcRenderer.invoke(IPC.outputExportSpv, items) as Promise<{ ok: boolean; path: string } | null>,
+  openOutput: () => ipcRenderer.invoke(IPC.outputOpenSpv) as Promise<OutputObject[] | null>,
   onOpenDialog: (cb) => {
     const listener = (_e: unknown, id: string) => cb(id)
     ipcRenderer.on(IPC.dialogOpen, listener)
