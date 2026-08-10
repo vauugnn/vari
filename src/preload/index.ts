@@ -69,6 +69,11 @@ const api: SpssApi = {
     ipcRenderer.on(IPC.dialogOpen, listener)
     return () => ipcRenderer.removeListener(IPC.dialogOpen, listener)
   },
+  onViewToggle: (cb) => {
+    const listener = (_e: unknown, kind: string) => cb(kind)
+    ipcRenderer.on(IPC.viewToggle, listener)
+    return () => ipcRenderer.removeListener(IPC.viewToggle, listener)
+  },
   paste: (syntax: string) => ipcRenderer.send(IPC.syntaxPaste, syntax),
   onAppendSyntax: (cb) => {
     const listener = (_e: unknown, text: string) => cb(text)

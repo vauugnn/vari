@@ -58,7 +58,8 @@ import {
   AutoRecodeDialog,
   CountValuesDialog,
   ReplaceMissingDialog,
-  RecodeDifferentDialog
+  RecodeDifferentDialog,
+  RecodeSameDialog
 } from '../dialogs/analysis/TransformDialogs'
 import { TransposeDialog, AggregateDialog, AddCasesDialog, AddVariablesDialog } from '../dialogs/analysis/DataStructDialogs'
 import {
@@ -118,6 +119,8 @@ export function DataEditor(): JSX.Element {
   const setActiveTab = useStore((s) => s.setActiveTab)
   const showValueLabels = useStore((s) => s.showValueLabels)
   const toggleValueLabels = useStore((s) => s.toggleValueLabels)
+  const showGridLines = useStore((s) => s.showGridLines)
+  const showStatusBar = useStore((s) => s.showStatusBar)
   const setSummary = useStore((s) => s.setSummary)
   const bumpRevision = useStore((s) => s.bumpRevision)
   const lastError = useStore((s) => s.lastError)
@@ -140,6 +143,15 @@ export function DataEditor(): JSX.Element {
       window.spss.onOpenDialog((id) => {
         if (id === 'customize-toolbar') setCustomize(true)
         else setDialogId(id)
+      }),
+    []
+  )
+  useEffect(
+    () =>
+      window.spss.onViewToggle((kind) => {
+        if (kind === 'valuelabels') useStore.getState().toggleValueLabels()
+        else if (kind === 'gridlines') useStore.getState().toggleGridLines()
+        else if (kind === 'statusbar') useStore.getState().toggleStatusBar()
       }),
     []
   )
@@ -233,7 +245,7 @@ export function DataEditor(): JSX.Element {
         </div>
       )}
 
-      <div className="de-body">
+      <div className={'de-body' + (showGridLines ? '' : ' de-body--nolines')}>
         {!summary ? (
           <div className="de-placeholder">No dataset open. Use File ▸ Open ▸ Data… or the Open button.</div>
         ) : activeTab === 'data' ? (
@@ -255,6 +267,7 @@ export function DataEditor(): JSX.Element {
         </button>
       </div>
 
+      {showStatusBar && (
       <div className="statusbar">
         <span className="sb-seg">
           Vari Processor is {status.state === 'ready' ? 'ready' : status.state === 'down' ? 'unavailable' : 'starting'}
@@ -266,6 +279,7 @@ export function DataEditor(): JSX.Element {
         <span className="sb-seg">{summary?.split && summary.split.length ? `Split On (${summary.split.join(', ')})` : 'Split Off'}</span>
         <span className="sb-seg">{summary?.filter ? `Filter On (${summary.filter})` : 'Filter Off'}</span>
       </div>
+      )}
 
       {(() => {
         if (!dialogId || !summary) return null
@@ -341,6 +355,8 @@ export function DataEditor(): JSX.Element {
             return <ReplaceMissingDialog {...p} />
           case 'recode-different':
             return <RecodeDifferentDialog {...p} />
+          case 'recode-same':
+            return <RecodeSameDialog {...p} />
           case 'transpose':
             return <TransposeDialog {...p} />
           case 'aggregate':

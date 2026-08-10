@@ -101,6 +101,11 @@
   background: #b9d0ea;
 }
 
+.de-body--nolines .cell {
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+}
+
 .cell {
   flex: none;
   box-sizing: border-box;

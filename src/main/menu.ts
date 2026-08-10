@@ -17,6 +17,9 @@ export interface MenuActions {
   filePrint: () => void
   fileImport: () => void
   checkUpdates: () => void
+  viewToggle: (kind: string) => void
+  execSyntax: (text: string) => void
+  showAbout: () => void
   openDialog: (id: string) => void
 }
 
@@ -162,8 +165,6 @@ export function buildMenu(actions: MenuActions): Menu {
       submenu: [
         { role: 'about' },
         { type: 'separator' },
-        { role: 'services' },
-        { type: 'separator' },
         { role: 'hide' },
         { role: 'hideOthers' },
         { role: 'unhide' },
@@ -180,8 +181,8 @@ export function buildMenu(actions: MenuActions): Menu {
         label: 'New',
         submenu: [
           { label: 'Data', accelerator: 'CmdOrCtrl+N', click: actions.fileNew },
-          proc('Syntax'),
-          proc('Output'),
+          { label: 'Syntax', click: () => actions.showWindow('syntax') },
+          { label: 'Output', click: () => actions.showWindow('viewer') },
           proc('Script…')
         ]
       },
@@ -203,7 +204,7 @@ export function buildMenu(actions: MenuActions): Menu {
         ]
       },
       { type: 'separator' },
-      proc('Close'),
+      { label: 'Close', role: 'close' },
       { label: 'Save', accelerator: 'CmdOrCtrl+S', click: actions.fileSave },
       { label: 'Save As…', accelerator: 'CmdOrCtrl+Shift+S', click: actions.fileSaveAs },
       proc('Export'),
@@ -233,17 +234,22 @@ export function buildMenu(actions: MenuActions): Menu {
   template.push({
     label: 'View',
     submenu: [
-      proc('Status Bar'),
+      { label: 'Status Bar', click: () => actions.viewToggle('statusbar') },
       {
         label: 'Toolbars',
         submenu: [{ label: 'Customize…', click: () => actions.openDialog('customize-toolbar') }]
       },
       proc('Fonts…'),
-      proc('Grid Lines'),
-      proc('Value Labels'),
-      { type: 'separator' },
-      { role: 'reload' },
-      { role: 'toggleDevTools' }
+      { label: 'Grid Lines', click: () => actions.viewToggle('gridlines') },
+      { label: 'Value Labels', click: () => actions.viewToggle('valuelabels') },
+      // Dev-only affordances: never expose Reload / DevTools in a packaged build.
+      ...(app.isPackaged
+        ? []
+        : [
+            { type: 'separator' } as MenuItemConstructorOptions,
+            { role: 'reload' } as MenuItemConstructorOptions,
+            { role: 'toggleDevTools' } as MenuItemConstructorOptions
+          ])
     ]
   })
 
@@ -280,7 +286,7 @@ export function buildMenu(actions: MenuActions): Menu {
       dialogItem('Compute Variable…', 'compute', actions.openDialog),
       dialogItem('Count Values within Cases…', 'count', actions.openDialog),
       proc('Shift Values…'),
-      proc('Recode into Same Variables…'),
+      dialogItem('Recode into Same Variables…', 'recode-same', actions.openDialog),
       dialogItem('Recode into Different Variables…', 'recode-different', actions.openDialog),
       dialogItem('Automatic Recode…', 'autorecode', actions.openDialog),
       proc('Visual Binning…'),
@@ -290,7 +296,7 @@ export function buildMenu(actions: MenuActions): Menu {
       dialogItem('Replace Missing Values…', 'rmv', actions.openDialog),
       proc('Random Number Generators…'),
       { type: 'separator' },
-      proc('Run Pending Transforms')
+      { label: 'Run Pending Transforms', accelerator: 'CmdOrCtrl+G', click: () => actions.execSyntax('EXECUTE.') }
     ]
   })
 
@@ -364,7 +370,7 @@ export function buildMenu(actions: MenuActions): Menu {
       proc('SPSS Statistics Help'),
       { type: 'separator' },
       { label: 'Check for Updates…', click: actions.checkUpdates },
-      proc('About…')
+      { label: 'About…', click: actions.showAbout }
     ]
   })
 

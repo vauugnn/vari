@@ -73,6 +73,49 @@ function sendToViewer(objects: OutputObject[]): void {
   }
 }
 
+// A menu-driven View toggle (Value Labels / Grid Lines / Status Bar): the
+// renderer owns the state, so just forward the intent.
+function viewToggle(kind: string): void {
+  const de = windows.dataeditor
+  if (de && !de.isDestroyed()) {
+    de.webContents.send(IPC.viewToggle, kind)
+    showWindow('dataeditor')
+  }
+}
+
+// Run a syntax string from a menu action (e.g. EXECUTE.), routing output to the
+// Viewer exactly like syntax.execute does.
+async function execSyntax(text: string): Promise<void> {
+  try {
+    const result = (await sidecar.request('syntax.execute', { text })) as OutputObject[]
+    const objects: OutputObject[] = []
+    for (const o of Array.isArray(result) ? result : []) {
+      if (o.type === '_DatasetChanged') broadcastDataset((o as unknown as { summary: DatasetSummary }).summary)
+      else objects.push(o)
+    }
+    if (objects.length > 0) {
+      sendToViewer(objects)
+      showWindow('viewer')
+    }
+  } catch (err) {
+    sendToViewer([{ type: 'Error', text: `Execution failed: ${String(err instanceof Error ? err.message : err)}` }])
+    showWindow('viewer')
+  }
+}
+
+function showAbout(): void {
+  const parent = windows.dataeditor ?? BrowserWindow.getAllWindows()[0]
+  void dialog.showMessageBox(parent, {
+    type: 'info',
+    title: 'About Vari',
+    message: `Vari ${app.getVersion()}`,
+    detail:
+      'An independent, open reimplementation of a statistics package.\n' +
+      'Not affiliated with or endorsed by IBM. "SPSS" is a trademark of IBM.',
+    buttons: ['OK']
+  })
+}
+
 function createAllWindows(): void {
   // Data Editor — main window. Closing it quits the app.
   windows.dataeditor = createWindow('dataeditor', {
@@ -384,6 +427,9 @@ app.whenReady().then(() => {
       filePrint: () => void printViewer(),
       fileImport: () => void importViaDialog(),
       checkUpdates: () => void checkForUpdatesManual(),
+      viewToggle: (kind: string) => viewToggle(kind),
+      execSyntax: (text: string) => void execSyntax(text),
+      showAbout: () => showAbout(),
       openDialog: (id: string) => openDialog(id)
     })
   )

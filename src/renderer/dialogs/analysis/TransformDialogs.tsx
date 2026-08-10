@@ -56,6 +56,21 @@ export function ReplaceMissingDialog({ variables, onClose }: Props): JSX.Element
   )
 }
 
+export function RecodeSameDialog({ variables, onClose }: Props): JSX.Element {
+  const [src, setSrc] = useState<string[]>([])
+  const [rules, setRules] = useState('(1 THRU 5=1)(6 THRU 10=2)(ELSE=SYSMIS)')
+  // RECODE without INTO rewrites the same variables.
+  const s = () => `RECODE ${src.join(' ')} ${rules}.`
+  return (
+    <AnalysisFrame title="Recode into Same Variables" onOk={() => run(s(), onClose)} onPaste={() => { window.spss.paste(s()); onClose() }} onReset={() => setSrc([])} onCancel={onClose} okDisabled={!src.length}>
+      <VarMover variables={variables} value={src} onChange={setSrc} label="Numeric Variables:" accept={(v) => !v.isString} />
+      <div style={{ marginTop: 6 }}>Old → New rules:</div>
+      <input value={rules} onChange={(e) => setRules(e.target.value)} style={{ width: '100%', fontFamily: 'Menlo, monospace', fontSize: 12 }} />
+      <div style={{ fontSize: 11, color: '#666', marginTop: 3 }}>e.g. (1 THRU 5=1)(6 THRU 10=2)(ELSE=SYSMIS)</div>
+    </AnalysisFrame>
+  )
+}
+
 export function RecodeDifferentDialog({ variables, onClose }: Props): JSX.Element {
   const [src, setSrc] = useState<string[]>([])
   const [target, setTarget] = useState('')
