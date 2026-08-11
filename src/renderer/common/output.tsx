@@ -3,20 +3,56 @@ import type { OutputObject } from '../../shared/types'
 import { PivotTableView, type PivotTableJson } from '../output/PivotTable'
 import './output.css'
 
-// A chart that enlarges to a lightbox on click.
+// The default bar/fill and edge colours the sidecar draws with; the editor
+// retints these in the SVG so the user can recolour bars/fills live.
+const DEFAULT_FILL = '#4e79c4'
+const DEFAULT_EDGE = '#2f4f8a'
+
+function retint(svg: string, fill: string, edge: string): string {
+  const rx = (hex: string): RegExp => new RegExp(hex.replace('#', '#?'), 'gi')
+  return svg.replace(rx(DEFAULT_FILL), fill).replace(rx(DEFAULT_EDGE), edge)
+}
+
+// A chart: click to enlarge (lightbox), double-click to open the Chart Editor
+// (recolour bars/fill).
 function ChartView({ svg }: { svg: string }): JSX.Element {
   const [big, setBig] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [fill, setFill] = useState(DEFAULT_FILL)
+  const [edge, setEdge] = useState(DEFAULT_EDGE)
+  const shown = fill === DEFAULT_FILL && edge === DEFAULT_EDGE ? svg : retint(svg, fill, edge)
   return (
     <>
       <div
         className="out-chart"
-        title="Click to enlarge"
+        title="Click to enlarge · double-click to edit"
         onClick={() => setBig(true)}
-        dangerouslySetInnerHTML={{ __html: svg }}
+        onDoubleClick={(e) => { e.stopPropagation(); setBig(false); setEditing(true) }}
+        dangerouslySetInnerHTML={{ __html: shown }}
       />
-      {big && (
+      {big && !editing && (
         <div className="out-chart-lightbox" onClick={() => setBig(false)}>
-          <div className="out-chart-lightbox-inner" dangerouslySetInnerHTML={{ __html: svg }} />
+          <div className="out-chart-lightbox-inner" dangerouslySetInnerHTML={{ __html: shown }} />
+        </div>
+      )}
+      {editing && (
+        <div className="out-chart-lightbox" onClick={() => setEditing(false)}>
+          <div className="chart-editor" onClick={(e) => e.stopPropagation()}>
+            <div className="chart-editor-head">Chart Editor</div>
+            <div className="chart-editor-body">
+              <div className="chart-editor-svg" dangerouslySetInnerHTML={{ __html: shown }} />
+              <div className="chart-editor-controls">
+                <label>Bar / fill colour
+                  <input type="color" value={fill} onChange={(e) => setFill(e.target.value)} />
+                </label>
+                <label>Border colour
+                  <input type="color" value={edge} onChange={(e) => setEdge(e.target.value)} />
+                </label>
+                <button onClick={() => { setFill(DEFAULT_FILL); setEdge(DEFAULT_EDGE) }}>Reset colours</button>
+                <button onClick={() => setEditing(false)}>Close</button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </>

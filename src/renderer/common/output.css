@@ -66,3 +66,50 @@
   font-style: italic;
   margin: 4px 0;
 }
+
+.chart-editor {
+  background: #fff;
+  border-radius: 4px;
+  max-width: 94vw;
+  max-height: 92vh;
+  overflow: auto;
+  min-width: 560px;
+}
+.chart-editor-head {
+  font-weight: 600;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #ddd;
+  background: #f2f2f2;
+}
+.chart-editor-body {
+  display: flex;
+  gap: 14px;
+  padding: 12px;
+}
+.chart-editor-svg {
+  flex: 1;
+}
+.chart-editor-svg svg {
+  width: min(66vw, 700px);
+  height: auto;
+}
+.chart-editor-controls {
+  width: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.chart-editor-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #333;
+}
+.chart-editor-controls input[type='color'] {
+  width: 100%;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #bbb;
+}
