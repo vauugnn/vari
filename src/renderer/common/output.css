@@ -29,10 +29,36 @@
 .out-chart {
   margin: 10px 14px;
   display: inline-block;
+  cursor: zoom-in;
 }
 
 .out-chart svg {
   max-width: 100%;
+}
+
+.out-chart-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  cursor: zoom-out;
+}
+
+.out-chart-lightbox-inner {
+  background: #fff;
+  padding: 12px;
+  border-radius: 3px;
+  max-width: 92vw;
+  max-height: 92vh;
+  overflow: auto;
+}
+
+.out-chart-lightbox-inner svg {
+  width: min(88vw, 900px);
+  height: auto;
 }
 
 .out-unknown {
