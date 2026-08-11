@@ -30,7 +30,19 @@ function oneVarDialog(title: string, label: string, build: (v: string) => string
   }
 }
 
-export const HistogramDialog = oneVarDialog('Histogram', 'Variable:', (v) => `GRAPH\n  /HISTOGRAM=${v}.`, (v) => !v.isString)
+export function HistogramDialog({ variables, onClose }: Props): JSX.Element {
+  const [vars, setVars] = useState<string[]>([])
+  const [normal, setNormal] = useState(false)
+  const syntax = () => `GRAPH\n  /HISTOGRAM${normal ? '(NORMAL)' : ''}=${vars[0]}.`
+  return (
+    <AnalysisFrame title="Histogram" onOk={() => { void window.spss.execute(syntax()); onClose() }} onPaste={() => { window.spss.paste(syntax()); onClose() }} onReset={() => setVars([])} onCancel={onClose} okDisabled={vars.length === 0}>
+      <VarMover variables={variables} value={vars} onChange={(v) => setVars(v.slice(-1))} label="Variable:" accept={(v) => !v.isString} />
+      <label style={{ marginTop: 8, display: 'block' }}>
+        <input type="checkbox" checked={normal} onChange={(e) => setNormal(e.target.checked)} /> Display normal curve
+      </label>
+    </AnalysisFrame>
+  )
+}
 export const BarChartDialog = oneVarDialog('Bar Charts', 'Category Axis:', (v) => `GRAPH\n  /BAR(SIMPLE)=COUNT BY ${v}.`)
 export const PieChartDialog = oneVarDialog('Pie Charts', 'Define Slices by:', (v) => `GRAPH\n  /PIE=COUNT BY ${v}.`)
 
@@ -86,7 +98,8 @@ export function Bar3dDialog({ variables, onClose }: Props): JSX.Element {
 export function ScatterDialog({ variables, onClose }: Props): JSX.Element {
   const [y, setY] = useState<string[]>([])
   const [x, setX] = useState<string[]>([])
-  const syntax = () => `GRAPH\n  /SCATTERPLOT(BIVAR)=${x[0]} WITH ${y[0]}.`
+  const [fit, setFit] = useState(false)
+  const syntax = () => `GRAPH\n  /SCATTERPLOT(BIVAR)=${x[0]} WITH ${y[0]}${fit ? '\n  /FITLINE LINEAR' : ''}.`
   return (
     <AnalysisFrame
       title="Simple Scatterplot"
@@ -108,6 +121,9 @@ export function ScatterDialog({ variables, onClose }: Props): JSX.Element {
       <VarMover variables={variables} value={y} onChange={(v) => setY(v.slice(-1))} label="Y Axis:" accept={(v) => !v.isString} />
       <div style={{ height: 8 }} />
       <VarMover variables={variables} value={x} onChange={(v) => setX(v.slice(-1))} label="X Axis:" accept={(v) => !v.isString} />
+      <label style={{ marginTop: 8, display: 'block' }}>
+        <input type="checkbox" checked={fit} onChange={(e) => setFit(e.target.checked)} /> Add linear fit line (with R²)
+      </label>
     </AnalysisFrame>
   )
 }

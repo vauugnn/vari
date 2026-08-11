@@ -17,9 +17,19 @@ class Graph(DataProcedure):
     def run(self, ds: Any, subs: list[tuple[str, str]]) -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = [{"type": "Title", "text": "Graph"}]
         allnames = [v.name for v in ds.variables]
+        # A /FITLINE subcommand (e.g. /FITLINE LINEAR) requests a scatter fit line.
+        fit_kind = ""
+        for n, b in subs:
+            if n.upper() == "FITLINE":
+                m = re.search(r"LINEAR|QUADRATIC|CUBIC", b, re.IGNORECASE)
+                fit_kind = m.group(0).upper() if m else "LINEAR"
+
         did = False
         for name, body in subs:
             key = name.upper().split("(")[0]
+            # Capture the type qualifier (NORMAL / SIMPLE / BIVAR / …) before stripping it.
+            qm = re.match(r"\s*\(([^)]*)\)", body)
+            qual = (qm.group(1) if qm else "").upper()
             body = re.sub(r"^\([^)]*\)\s*=?\s*", "", body)  # drop (SIMPLE)/(BIVAR)
             body = re.sub(r"^=\s*", "", body)
             if key == "HISTOGRAM":
@@ -27,7 +37,8 @@ class Graph(DataProcedure):
                 x = stats.valid_values(_num(ds, var))
                 title = _label(ds, var)
                 out.append(ch.histogram(x, title=f"Histogram: {title}", xlabel=title,
-                                        mean=stats.mean(x), sd=stats.std(x), n=stats.n_valid(x)))
+                                        mean=stats.mean(x), sd=stats.std(x), n=stats.n_valid(x),
+                                        normal="NORMAL" in qual))
                 did = True
             elif key in ("BAR", "PIE"):
                 mby = re.search(r"\bBY\b\s*(\w+)", body, re.IGNORECASE)
@@ -58,7 +69,7 @@ class Graph(DataProcedure):
                     x, y = m.group(1), m.group(2)
                     xv, yv = _pair(ds, x, y)
                     out.append(ch.scatter(xv, yv, title=f"{_label(ds, y)} by {_label(ds, x)}",
-                                          xlabel=_label(ds, x), ylabel=_label(ds, y)))
+                                          xlabel=_label(ds, x), ylabel=_label(ds, y), fit=fit_kind))
                     did = True
             elif key == "BOXPLOT":
                 mby = re.search(r"(\w+)\s+BY\s+(\w+)", body, re.IGNORECASE)

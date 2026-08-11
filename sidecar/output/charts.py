@@ -81,11 +81,19 @@ def _finish(fig: Any, title: str, subtitle: str = "", footnote: str = "") -> dic
 
 
 def histogram(values: Sequence[float], title: str = "", xlabel: str = "",
-              mean: Optional[float] = None, sd: Optional[float] = None, n: Optional[int] = None) -> dict[str, Any]:
+              mean: Optional[float] = None, sd: Optional[float] = None, n: Optional[int] = None,
+              normal: bool = False) -> dict[str, Any]:
     v = np.asarray([x for x in values if x == x], dtype=float)
     fig, ax = _plt().subplots(figsize=(4.4, 3.2))
     if v.size:
-        ax.hist(v, bins="auto", color=_BAR_COLOR, edgecolor=_EDGE, linewidth=0.5)
+        counts, edges, _ = ax.hist(v, bins="auto", color=_BAR_COLOR, edgecolor=_EDGE, linewidth=0.5)
+        if normal and v.size > 1:
+            m = float(v.mean())
+            s = float(v.std(ddof=1)) or 1.0
+            width = edges[1] - edges[0] if len(edges) > 1 else 1.0
+            xs = np.linspace(v.min(), v.max(), 200)
+            ys = (1.0 / (s * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((xs - m) / s) ** 2) * len(v) * width
+            ax.plot(xs, ys, color="#2f2f2f", linewidth=1.3)
     ax.set_xlabel(xlabel)
     ax.set_ylabel("Frequency")
     if mean is not None and sd:
@@ -111,9 +119,24 @@ def pie_chart(labels: Sequence[str], counts: Sequence[float], title: str = "") -
     return _finish(fig, title)
 
 
-def scatter(x: Sequence[float], y: Sequence[float], title: str = "", xlabel: str = "", ylabel: str = "") -> dict[str, Any]:
+def scatter(x: Sequence[float], y: Sequence[float], title: str = "", xlabel: str = "", ylabel: str = "",
+            fit: str = "") -> dict[str, Any]:
     fig, ax = _plt().subplots(figsize=(4.4, 3.4))
-    ax.scatter(x, y, s=16, color=_BAR_COLOR, edgecolor=_EDGE, linewidth=0.4)
+    xv = np.asarray(x, float)
+    yv = np.asarray(y, float)
+    ax.scatter(xv, yv, s=16, color=_BAR_COLOR, edgecolor=_EDGE, linewidth=0.4)
+    if fit and xv.size > 2:
+        deg = {"LINEAR": 1, "QUADRATIC": 2, "CUBIC": 3}.get(fit.upper(), 1)
+        coef = np.polyfit(xv, yv, deg)
+        xs = np.linspace(xv.min(), xv.max(), 200)
+        ax.plot(xs, np.polyval(coef, xs), color="#d9433f", linewidth=1.4)
+        # R² of the fit.
+        resid = yv - np.polyval(coef, xv)
+        ss_res = float((resid**2).sum())
+        ss_tot = float(((yv - yv.mean()) ** 2).sum()) or 1.0
+        r2 = 1 - ss_res / ss_tot
+        ax.text(0.98, 0.02, f"R² Linear = {r2:.3f}" if deg == 1 else f"R² = {r2:.3f}",
+                transform=ax.transAxes, ha="right", va="bottom", fontsize=8, color="#a33")
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     return _finish(fig, title)
