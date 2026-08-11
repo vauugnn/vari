@@ -37,6 +37,13 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.cb-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .cb-chip--placed {
   cursor: pointer;
@@ -163,13 +170,35 @@
   align-content: flex-start;
 }
 .cb2-gitem {
-  font-size: 11px;
-  padding: 4px 8px;
+  font-size: 10px;
+  padding: 4px;
   border: 1px solid #bbb;
-  background: #f4f4f4;
+  background: #fff;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 64px;
 }
 .cb2-gitem--sel {
   background: #cbdcf0;
   border-color: #5b9bd5;
+}
+.cb2-thumb {
+  width: 48px;
+  height: 34px;
+  border: 1px solid #ddd;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cb2-thumb svg {
+  width: 40px;
+  height: 30px;
+}
+.cb2-gitem-label {
+  text-align: center;
+  line-height: 1.1;
 }

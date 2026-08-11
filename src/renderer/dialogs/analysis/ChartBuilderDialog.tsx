@@ -1,7 +1,25 @@
 import { useEffect, useState } from 'react'
 import type { VariableMetaJson } from '../../../shared/types'
 import { AnalysisFrame } from './AnalysisFrame'
+import { MeasureIcon } from '../../common/icons'
 import './chartbuilder.css'
+
+// Small original chart-type glyphs for the gallery (SPSS shows thumbnails, not
+// text). Blue = fill, drawn in a 24×18 viewBox.
+const B = '#4e79c4'
+const THUMBS: Record<string, JSX.Element> = {
+  bar: (<svg viewBox="0 0 24 18"><rect x="2" y="8" width="4" height="8" fill={B} /><rect x="8" y="4" width="4" height="12" fill={B} /><rect x="14" y="10" width="4" height="6" fill={B} /><rect x="20" y="6" width="3" height="10" fill={B} /></svg>),
+  bar3d: (<svg viewBox="0 0 24 18"><rect x="3" y="7" width="5" height="9" fill={B} /><rect x="11" y="4" width="5" height="12" fill="#3a5f9e" /><rect x="18" y="9" width="4" height="7" fill={B} /></svg>),
+  line: (<svg viewBox="0 0 24 18"><polyline points="2,14 8,6 14,10 22,3" fill="none" stroke={B} strokeWidth="1.6" /></svg>),
+  area: (<svg viewBox="0 0 24 18"><polygon points="2,16 2,12 9,5 16,9 22,4 22,16" fill={B} opacity="0.6" /></svg>),
+  pie: (<svg viewBox="0 0 24 18"><circle cx="12" cy="9" r="7" fill={B} /><path d="M12 9 L12 2 A7 7 0 0 1 19 9 Z" fill="#e08a2f" /></svg>),
+  scatter: (<svg viewBox="0 0 24 18"><circle cx="5" cy="13" r="1.6" fill={B} /><circle cx="10" cy="8" r="1.6" fill={B} /><circle cx="15" cy="11" r="1.6" fill={B} /><circle cx="19" cy="5" r="1.6" fill={B} /></svg>),
+  hist: (<svg viewBox="0 0 24 18"><rect x="2" y="11" width="3" height="5" fill={B} /><rect x="6" y="6" width="3" height="10" fill={B} /><rect x="10" y="3" width="3" height="13" fill={B} /><rect x="14" y="7" width="3" height="9" fill={B} /><rect x="18" y="12" width="3" height="4" fill={B} /></svg>),
+  hilo: (<svg viewBox="0 0 24 18"><line x1="6" y1="3" x2="6" y2="15" stroke={B} strokeWidth="1.4" /><line x1="12" y1="5" x2="12" y2="13" stroke={B} strokeWidth="1.4" /><line x1="18" y1="2" x2="18" y2="16" stroke={B} strokeWidth="1.4" /></svg>),
+  box: (<svg viewBox="0 0 24 18"><line x1="12" y1="2" x2="12" y2="16" stroke={B} strokeWidth="1" /><rect x="6" y="6" width="12" height="7" fill="#cfe0f2" stroke={B} /><line x1="6" y1="9" x2="18" y2="9" stroke={B} strokeWidth="1.4" /></svg>),
+  errorbar: (<svg viewBox="0 0 24 18"><line x1="8" y1="3" x2="8" y2="15" stroke={B} strokeWidth="1.4" /><circle cx="8" cy="9" r="2" fill={B} /><line x1="16" y1="5" x2="16" y2="13" stroke={B} strokeWidth="1.4" /><circle cx="16" cy="9" r="2" fill={B} /></svg>),
+  pyramid: (<svg viewBox="0 0 24 18"><rect x="4" y="4" width="7" height="3" fill={B} /><rect x="4" y="8" width="5" height="3" fill={B} /><rect x="13" y="4" width="7" height="3" fill="#e08a2f" /><rect x="13" y="8" width="5" height="3" fill="#e08a2f" /></svg>)
+}
 
 type Props = { variables: VariableMetaJson[]; onClose: () => void }
 type Role = 'x' | 'y' | 'group' | 'series'
@@ -107,7 +125,8 @@ export function ChartBuilderDialog({ variables, onClose }: Props): JSX.Element {
             {variables.map((v) => (
               <div key={v.name} className="cb-chip" draggable title={v.label || v.name}
                 onDragStart={(e) => e.dataTransfer.setData('text/plain', v.name)}>
-                {v.label ? v.label : v.name}
+                <MeasureIcon measure={v.measure} isString={v.isString} isDate={v.type === 'Date'} size={13} />
+                <span className="cb-chip-name">{v.label ? v.label : v.name}</span>
               </div>
             ))}
           </div>
@@ -175,8 +194,9 @@ export function ChartBuilderDialog({ variables, onClose }: Props): JSX.Element {
         </div>
         <div className="cb2-gallery-items">
           {galleryItems.map((it) => (
-            <button key={it.key} className={'cb2-gitem' + (it.key === specKey ? ' cb2-gitem--sel' : '')} onClick={() => pick(it.key)}>
-              {it.label}
+            <button key={it.key} className={'cb2-gitem' + (it.key === specKey ? ' cb2-gitem--sel' : '')} onClick={() => pick(it.key)} title={it.label}>
+              <span className="cb2-thumb">{THUMBS[it.key]}</span>
+              <span className="cb2-gitem-label">{it.label}</span>
             </button>
           ))}
         </div>
