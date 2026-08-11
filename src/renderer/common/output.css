@@ -114,6 +114,16 @@
   border: 1px solid #bbb;
 }
 
+.chart-editor-hint {
+  font-size: 11px;
+  color: #3a5f8a;
+  font-style: italic;
+  background: #eef4fb;
+  border: 1px solid #cbdcf0;
+  border-radius: 3px;
+  padding: 4px 6px;
+}
+
 .chart-editor-swatches {
   display: flex;
   flex-wrap: wrap;
