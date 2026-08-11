@@ -33,6 +33,11 @@ class TTest(Procedure):
         ds = ctx.active
         if ds is None:
             raise RuntimeError("There is no active dataset.")
+        cim = re.search(r"CRITERIA\s*=?\s*CI\s*\(\s*([\d.]+)\s*\)", rest, re.IGNORECASE)
+        # Accept CI as a fraction (0.99) or a percent (99).
+        self.ci = float(cim.group(1)) if cim else 0.95
+        if self.ci > 1:
+            self.ci /= 100.0
         testval = re.search(r"TESTVAL\s*=?\s*(-?[\d.]+)", rest, re.IGNORECASE)
         groups = re.search(r"GROUPS\s*=?\s*(\w+)\s*\(([^)]*)\)", rest, re.IGNORECASE)
         pairs = re.search(r"PAIRS\s*=?\s*([^/]*)", rest, re.IGNORECASE)
@@ -57,10 +62,11 @@ class TTest(Procedure):
             return [{"type": "Error", "text": "T-TEST /TESTVAL requires /VARIABLES."}]
         stt = PivotTable("One-Sample Statistics", [Dimension("", names)],
                          [Dimension("", ["N", "Mean", "Std. Deviation", "Std. Error Mean"])])
+        pct = f"{round(self.ci * 100)}%"
         test = PivotTable(
             "One-Sample Test",
             [Dimension("", names)],
-            [Dimension("", ["t", "df", "Sig. (2-tailed)", "Mean Difference", "95% CI Lower", "95% CI Upper"])],
+            [Dimension("", ["t", "df", "Sig. (2-tailed)", "Mean Difference", f"{pct} CI Lower", f"{pct} CI Upper"])],
             caption=f"Test Value = {Format('F', 8, 0).render(testval) if testval == int(testval) else testval}",
         )
         for i, nm in enumerate(names):
@@ -78,7 +84,7 @@ class TTest(Procedure):
                 df = n - 1
                 p = float(2 * sps.t.sf(abs(tval), df))
                 diff = mean - testval
-                crit = sps.t.ppf(0.975, df)
+                crit = sps.t.ppf((1 + self.ci) / 2, df)
                 lo, hi = diff - crit * se, diff + crit * se
                 test.set([i], [0], _F3.render(tval), "num")
                 test.set([i], [1], _F0.render(df), "num")
@@ -111,7 +117,7 @@ class TTest(Procedure):
             leaves,
             [
                 [("Levene's Test for Equality of Variances", 2), ("t-test for Equality of Means", 7)],
-                [("", 2), ("", 5), ("95% Confidence Interval of the Difference", 2)],
+                [("", 2), ("", 5), (f"{round(self.ci * 100)}% Confidence Interval of the Difference", 2)],
             ],
         )
         gidx = ds._index_of(gvar)
@@ -139,8 +145,9 @@ class TTest(Procedure):
                 se_we = math.sqrt(a.var(ddof=1) / a.size + b.var(ddof=1) / b.size)
                 df_eq = a.size + b.size - 2
                 df_we = _welch_df(a, b)
-                ci_eq = float(sps.t.ppf(0.975, df_eq))
-                ci_we = float(sps.t.ppf(0.975, df_we))
+                q = (1 + self.ci) / 2
+                ci_eq = float(sps.t.ppf(q, df_eq))
+                ci_we = float(sps.t.ppf(q, df_we))
                 # equal variances assumed
                 test.set([i, 0], [0], _F3.render(float(lev.statistic)), "num")
                 test.set([i, 0], [1], _F3.render(float(lev.pvalue)), "num")
