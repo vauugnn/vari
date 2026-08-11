@@ -203,38 +203,73 @@ export function DataEditor(): JSX.Element {
     }
   }, [status, summary, setSummary])
 
-  const newDs = async (): Promise<void> => setSummary(await window.spss.ds.newDataset())
+  // Any sidecar-request failure is surfaced in the error banner instead of
+  // becoming an unhandled rejection that silently wedges the button.
+  const err = (e: unknown): void => setError(String(e instanceof Error ? e.message : e))
+  const newDs = async (): Promise<void> => {
+    try {
+      setSummary(await window.spss.ds.newDataset())
+    } catch (e) {
+      err(e)
+    }
+  }
   const open = async (): Promise<void> => {
-    const s = await window.spss.ds.openDialog()
-    if (s) setSummary(s)
+    try {
+      const s = await window.spss.ds.openDialog()
+      if (s) setSummary(s)
+    } catch (e) {
+      err(e)
+    }
   }
   const save = async (): Promise<void> => {
-    const res = await window.spss.ds.save()
-    if ('error' in res) {
-      const alt = await window.spss.ds.saveAs()
-      if (alt && 'error' in (alt as object)) setError((alt as unknown as { error: string }).error)
+    try {
+      const res = await window.spss.ds.save()
+      if ('error' in res) {
+        const alt = await window.spss.ds.saveAs()
+        if (alt && 'error' in (alt as object)) setError((alt as unknown as { error: string }).error)
+      }
+    } catch (e) {
+      err(e)
     }
   }
   const undo = async (): Promise<void> => {
-    const s = await window.spss.ds.undo()
-    if (s.ok) {
-      setSummary(s)
-      bumpRevision()
+    try {
+      const s = await window.spss.ds.undo()
+      if (s.ok) {
+        setSummary(s)
+        bumpRevision()
+      }
+    } catch (e) {
+      err(e)
     }
   }
   const redo = async (): Promise<void> => {
-    const s = await window.spss.ds.redo()
-    if (s.ok) {
-      setSummary(s)
-      bumpRevision()
+    try {
+      const s = await window.spss.ds.redo()
+      if (s.ok) {
+        setSummary(s)
+        bumpRevision()
+      }
+    } catch (e) {
+      err(e)
     }
   }
-  const insertVar = async (): Promise<void> => setSummary(await window.spss.ds.insertVariable(null, null))
+  const insertVar = async (): Promise<void> => {
+    try {
+      setSummary(await window.spss.ds.insertVariable(null, null))
+    } catch (e) {
+      err(e)
+    }
+  }
   const insertCase = async (): Promise<void> => {
     if (!summary) return
-    const res = await window.spss.ds.insertCase(null)
-    setSummary({ ...summary, nRows: res.nRows })
-    bumpRevision()
+    try {
+      const res = await window.spss.ds.insertCase(null)
+      setSummary({ ...summary, nRows: res.nRows })
+      bumpRevision()
+    } catch (e) {
+      err(e)
+    }
   }
   const has = !!summary
 

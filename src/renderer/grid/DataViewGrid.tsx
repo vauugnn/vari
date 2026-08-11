@@ -92,12 +92,18 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
       const offset = b * BLOCK
       if (offset >= nRows) continue
       loadingRef.current.add(b)
-      void window.spss.ds.getRows(offset, BLOCK, showValueLabels).then((w) => {
-        cacheRef.current.set(b, w.rows)
-        loadingRef.current.delete(b)
-        if (w.nRows !== nRows) setNRows(w.nRows)
-        forceRender()
-      })
+      void window.spss.ds
+        .getRows(offset, BLOCK, showValueLabels)
+        .then((w) => {
+          cacheRef.current.set(b, w.rows)
+          if (w.nRows !== nRows) setNRows(w.nRows)
+          forceRender()
+        })
+        .catch(() => {
+          // A sidecar hiccup shouldn't wedge the block as permanently 'loading'
+          // (that froze the grid). Allow a later scroll to retry.
+        })
+        .finally(() => loadingRef.current.delete(b))
     }
   }, [start, end, showValueLabels, storeRev, dataRev, nRows])
 
@@ -191,37 +197,57 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
 
   const existingNames = (): Set<string> => new Set(summary.variables.map((v) => v.name.toUpperCase()))
 
+  // Route any sidecar-request failure to the status bar instead of leaving an
+  // unhandled rejection (which silently wedged the action, like the Find bug).
+  const reportErr = (e: unknown): void =>
+    useStore.getState().setError(String(e instanceof Error ? e.message : e))
+
   const insertVarAt = async (index: number): Promise<void> => {
-    const s = await window.spss.ds.insertVariable(index, defaultVarMeta(existingNames()))
-    useStore.getState().setSummary(s)
+    try {
+      useStore.getState().setSummary(await window.spss.ds.insertVariable(index, defaultVarMeta(existingNames())))
+    } catch (e) {
+      reportErr(e)
+    }
   }
   // Delete an inclusive column range, highest index first so earlier indices
   // stay valid as the dataset reindexes.
   const deleteVarRange = async (c0: number, c1: number): Promise<void> => {
     const lo = Math.max(0, Math.min(c0, c1))
     const hi = Math.min(nVars - 1, Math.max(c0, c1))
-    let summary: DatasetSummary | null = null
-    for (let c = hi; c >= lo; c--) summary = await window.spss.ds.deleteVariable(c)
-    if (summary) {
-      useStore.getState().setSummary(summary)
-      setSel(null)
+    try {
+      let summary: DatasetSummary | null = null
+      for (let c = hi; c >= lo; c--) summary = await window.spss.ds.deleteVariable(c)
+      if (summary) {
+        useStore.getState().setSummary(summary)
+        setSel(null)
+      }
+    } catch (e) {
+      reportErr(e)
     }
   }
   const deleteCaseRange = async (r0: number, r1: number): Promise<void> => {
     const lo = Math.max(0, Math.min(r0, r1))
     const hi = Math.min(nRows - 1, Math.max(r0, r1))
-    let last: { nRows: number } | null = null
-    for (let r = hi; r >= lo; r--) last = await window.spss.ds.deleteCase(r)
-    if (last) {
-      setNRows(last.nRows)
-      bumpData()
-      setSel(null)
+    try {
+      let last: { nRows: number } | null = null
+      for (let r = hi; r >= lo; r--) last = await window.spss.ds.deleteCase(r)
+      if (last) {
+        setNRows(last.nRows)
+        bumpData()
+        setSel(null)
+      }
+    } catch (e) {
+      reportErr(e)
     }
   }
   const insertCaseAt = async (index: number): Promise<void> => {
-    const res = await window.spss.ds.insertCase(index)
-    setNRows(res.nRows)
-    bumpData()
+    try {
+      const res = await window.spss.ds.insertCase(index)
+      setNRows(res.nRows)
+      bumpData()
+    } catch (e) {
+      reportErr(e)
+    }
   }
   const runDescriptives = (c: number): void => {
     if (c < nVars) void window.spss.execute(`DESCRIPTIVES VARIABLES=${summary.variables[c].name}.`)
@@ -257,10 +283,15 @@ export function DataViewGrid({ summary }: { summary: DatasetSummary }): JSX.Elem
     const grid = text.replace(/\r/g, '').replace(/\n$/, '').split('\n').map((l) => l.split('\t'))
     const need = c0 + Math.max(...grid.map((g) => g.length))
     let cur = nVars
-    while (cur < need) {
-      const s = await window.spss.ds.insertVariable(null, null)
-      useStore.getState().setSummary(s)
-      cur = s.nVars
+    try {
+      while (cur < need) {
+        const s = await window.spss.ds.insertVariable(null, null)
+        useStore.getState().setSummary(s)
+        cur = s.nVars
+      }
+    } catch (e) {
+      reportErr(e)
+      return
     }
     for (let i = 0; i < grid.length; i++)
       for (let j = 0; j < grid[i].length; j++) {

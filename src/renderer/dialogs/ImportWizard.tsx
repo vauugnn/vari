@@ -15,11 +15,16 @@ export function ImportWizard({
   const [delimiter, setDelimiter] = useState('comma')
   const [firstRowNames, setFirstRowNames] = useState(true)
   const [decimal, setDecimal] = useState('.')
+  const [error, setError] = useState('')
 
   const ok = async (): Promise<void> => {
-    const s = await window.spss.ds.importText(path, { delimiter, firstRowNames, decimal })
-    onDone(s)
-    onClose()
+    try {
+      const s = await window.spss.ds.importText(path, { delimiter, firstRowNames, decimal })
+      onDone(s)
+      onClose()
+    } catch (e) {
+      setError(String(e instanceof Error ? e.message : e))
+    }
   }
   const base = path.split('/').pop()
 
@@ -47,6 +52,7 @@ export function ImportWizard({
         <input type="checkbox" checked={firstRowNames} onChange={(e) => setFirstRowNames(e.target.checked)} />
         First row contains variable names
       </label>
+      {error && <div style={{ marginTop: 6, fontSize: 11, color: '#a33' }}>{error}</div>}
     </Modal>
   )
 }
