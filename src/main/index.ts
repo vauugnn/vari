@@ -57,8 +57,13 @@ function createWindow(entry: WindowName, opts: Electron.BrowserWindowConstructor
 }
 
 function showWindow(name: WindowName): void {
-  const win = windows[name]
-  if (win && !win.isDestroyed()) focusOrShow(win)
+  if (name === 'dataeditor') {
+    const win = windows.dataeditor
+    if (win && !win.isDestroyed()) focusOrShow(win)
+    return
+  }
+  // Viewer / Syntax are recreated if the user closed them.
+  focusOrShow(ensureWindow(name))
 }
 
 function broadcast(channel: string, payload: unknown): void {
@@ -68,8 +73,14 @@ function broadcast(channel: string, payload: unknown): void {
 }
 
 function sendToViewer(objects: OutputObject[]): void {
-  const viewer = windows.viewer
-  if (viewer && !viewer.isDestroyed()) {
+  const viewer = ensureWindow('viewer')
+  // A freshly (re)created window is still loading; its renderer hasn't
+  // subscribed yet, so defer the send until the page finishes loading.
+  if (viewer.webContents.isLoading()) {
+    viewer.webContents.once('did-finish-load', () => {
+      if (!viewer.isDestroyed()) viewer.webContents.send(IPC.outputAppend, objects)
+    })
+  } else {
     viewer.webContents.send(IPC.outputAppend, objects)
   }
 }
@@ -172,6 +183,24 @@ async function reopenLastFile(): Promise<boolean> {
   }
 }
 
+// Per-window creation options, so a window closed by the user can be recreated
+// on demand instead of vanishing until the app restarts.
+const WINDOW_OPTS: Record<'viewer' | 'syntax', Parameters<typeof createWindow>[1]> = {
+  viewer: { title: 'Output1 - Vari Viewer', width: 1000, height: 720, x: 120, y: 90 },
+  syntax: { title: 'Syntax1 - Vari Syntax Editor', width: 820, height: 560, x: 200, y: 150 }
+}
+
+// Return the viewer/syntax window, recreating it if it was closed.
+function ensureWindow(name: 'viewer' | 'syntax'): BrowserWindow {
+  let win = windows[name]
+  if (!win || win.isDestroyed()) {
+    win = createWindow(name, WINDOW_OPTS[name])
+    win.on('closed', () => (windows[name] = null))
+    windows[name] = win
+  }
+  return win
+}
+
 function createAllWindows(): void {
   // Data Editor — main window. Closing it quits the app.
   windows.dataeditor = createWindow('dataeditor', {
@@ -184,23 +213,8 @@ function createAllWindows(): void {
     app.quit()
   })
 
-  windows.viewer = createWindow('viewer', {
-    title: 'Output1 - Vari Viewer',
-    width: 1000,
-    height: 720,
-    x: 120,
-    y: 90
-  })
-  windows.viewer.on('closed', () => (windows.viewer = null))
-
-  windows.syntax = createWindow('syntax', {
-    title: 'Syntax1 - Vari Syntax Editor',
-    width: 820,
-    height: 560,
-    x: 200,
-    y: 150
-  })
-  windows.syntax.on('closed', () => (windows.syntax = null))
+  ensureWindow('viewer')
+  ensureWindow('syntax')
 }
 
 function broadcastDataset(summary: DatasetSummary): void {
@@ -524,11 +538,13 @@ function wireIpc(): void {
 
   // Paste from a dialog: append the generated syntax to the Syntax Editor.
   ipcMain.on(IPC.syntaxPaste, (_evt, text: string) => {
-    const syntax = windows.syntax
-    if (syntax && !syntax.isDestroyed()) {
-      syntax.webContents.send(IPC.syntaxAppend, text)
-      showWindow('syntax')
+    const syntax = ensureWindow('syntax')
+    const deliver = (): void => {
+      if (!syntax.isDestroyed()) syntax.webContents.send(IPC.syntaxAppend, text)
     }
+    if (syntax.webContents.isLoading()) syntax.webContents.once('did-finish-load', deliver)
+    else deliver()
+    showWindow('syntax')
   })
 }
 
