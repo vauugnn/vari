@@ -75,7 +75,22 @@ function depCovDialog(title: string, cmd: (dep: string, cov: string[]) => string
   }
 }
 
-export const BinaryLogisticDialog = depCovDialog('Logistic Regression', (dep, cov) => `LOGISTIC REGRESSION VARIABLES ${dep}\n  /METHOD=ENTER ${cov.join(' ')}.`)
+export function BinaryLogisticDialog({ variables, onClose }: Props): JSX.Element {
+  const [dep, setDep] = useState<string[]>([])
+  const [cov, setCov] = useState<string[]>([])
+  const [ci, setCi] = useState(false)
+  const s = () => `LOGISTIC REGRESSION VARIABLES ${dep[0]}\n  /METHOD=ENTER ${cov.join(' ')}${ci ? '\n  /PRINT=CI(95)' : ''}.`
+  return frame('Logistic Regression', s, !dep.length || !cov.length, onClose, (
+    <>
+      <VarMover variables={variables} value={dep} onChange={(v) => setDep(v.slice(-1))} label="Dependent:" />
+      <div style={{ height: 6 }} />
+      <VarMover variables={variables} value={cov} onChange={setCov} label="Covariates:" accept={(v) => !v.isString} />
+      <label style={{ marginTop: 6, display: 'block' }}>
+        <input type="checkbox" checked={ci} onChange={(e) => setCi(e.target.checked)} /> CI for Exp(B): 95%
+      </label>
+    </>
+  ), () => { setDep([]); setCov([]) })
+}
 export const MultinomialDialog = depCovDialog('Multinomial Logistic Regression', (dep, cov) => `NOMREG ${dep} WITH ${cov.join(' ')}.`)
 export const OrdinalDialog = depCovDialog('Ordinal Regression', (dep, cov) => `PLUM ${dep} WITH ${cov.join(' ')}.`)
 

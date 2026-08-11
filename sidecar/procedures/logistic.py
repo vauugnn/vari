@@ -31,17 +31,17 @@ def _frame(ds, names):
 def _parse_dep_preds(ds, rest):
     allnames = [v.name for v in ds.variables]
     rest = re.sub(r"^\s*VARIABLES\s*=?\s*", " ", rest, flags=re.IGNORECASE)
-    mw = re.search(r"\bWITH\b(.+)", rest, re.IGNORECASE)
-    mm = re.search(r"/\s*METHOD\s*=?\s*\w*\s*(.+)", rest, re.IGNORECASE)
-    head = rest.split("/")[0]
-    head = re.split(r"\bWITH\b", head, flags=re.IGNORECASE)[0]
-    dep = expand_varlist(head, allnames)[0]
-    if mw:
-        preds = expand_varlist(mw.group(1).split("/")[0], allnames)
-    elif mm:
-        preds = expand_varlist(mm.group(1), allnames)
-    else:
-        preds = []
+    # Drop trailing subcommands (with or without a leading '/', since the
+    # dispatcher may have stripped slashes when reconstructing the command).
+    rest = re.split(r"/?\s*\b(PRINT|CRITERIA|CLASSPLOT|CASEWISE|SAVE|CONTRAST|CATEGORICAL|SELECT)\b",
+                    rest, flags=re.IGNORECASE)[0]
+    # Normalise the METHOD=ENTER form to just its predictor list.
+    rest = re.sub(r"/?\s*METHOD\s*=?\s*(?:ENTER|FSTEP|BSTEP)?\b", " WITH ", rest, flags=re.IGNORECASE)
+    parts = re.split(r"\bWITH\b", rest, flags=re.IGNORECASE)
+    dep = expand_varlist(parts[0], allnames)[0]
+    preds: list[str] = []
+    for seg in parts[1:]:
+        preds += expand_varlist(seg, allnames)
     return dep, preds
 
 
@@ -50,6 +50,7 @@ class LogisticRegression(DataProcedure):
         rest = " ".join(f"{n} {b}" if n else b for n, b in subs)
         rest = re.sub(r"^\s*REGRESSION\s*", " ", rest, flags=re.IGNORECASE)
         dep, preds = _parse_dep_preds(ds, rest)
+        want_ci = bool(re.search(r"\bCI\s*\(", rest, re.IGNORECASE))
         if not preds:
             return [{"type": "Error", "text": "LOGISTIC REGRESSION needs predictors (WITH / METHOD=ENTER)."}]
         data = _frame(ds, [dep] + preds)
@@ -75,8 +76,11 @@ class LogisticRegression(DataProcedure):
         out.append(ms.to_json())
 
         rows = preds + ["Constant"]
+        cols = ["B", "S.E.", "Wald", "df", "Sig.", "Exp(B)"]
+        if want_ci:
+            cols += ["95% CI Lower", "95% CI Upper"]
         t = PivotTable("Variables in the Equation", [Dimension("", rows)],
-                       [Dimension("", ["B", "S.E.", "Wald", "df", "Sig.", "Exp(B)"])])
+                       [Dimension("", cols)])
         params, bse = model.params, model.bse
         idx = list(range(1, len(preds) + 1)) + [0]  # predictors then const
         for r, pi in enumerate(idx):
@@ -87,6 +91,9 @@ class LogisticRegression(DataProcedure):
             t.set([r], [0], _F3.render(b)); t.set([r], [1], _F3.render(se)); t.set([r], [2], _F3.render(wald))
             t.set([r], [3], _F0.render(1)); t.set([r], [4], strip_leading_zero(_F3.render(sig)))
             t.set([r], [5], _F3.render(math.exp(b)))
+            if want_ci:
+                t.set([r], [6], _F3.render(math.exp(b - 1.96 * se)))
+                t.set([r], [7], _F3.render(math.exp(b + 1.96 * se)))
         out.append(t.to_json())
         return out
 
