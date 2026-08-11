@@ -35,9 +35,28 @@ export function UnivariateDialog({ variables, onClose }: Props): JSX.Element {
 
 export function FactorDialog({ variables, onClose }: Props): JSX.Element {
   const [vars, setVars] = useState<string[]>([])
-  const s = () => `FACTOR\n  /VARIABLES=${vars.join(' ')}\n  /EXTRACTION PC\n  /ROTATION VARIMAX.`
+  const [extract, setExtract] = useState<'eigen' | 'fixed'>('eigen')
+  const [nfac, setNfac] = useState('2')
+  const [rotation, setRotation] = useState<'VARIMAX' | 'NOROTATE'>('VARIMAX')
+  const s = () => {
+    const crit = extract === 'fixed' ? `\n  /CRITERIA FACTORS(${nfac})` : ''
+    return `FACTOR\n  /VARIABLES=${vars.join(' ')}\n  /EXTRACTION PC${crit}\n  /ROTATION ${rotation}.`
+  }
   return frame('Factor Analysis', s, vars.length < 2, onClose, (
-    <VarMover variables={variables} value={vars} onChange={setVars} label="Variables:" accept={(v) => !v.isString} />
+    <>
+      <VarMover variables={variables} value={vars} onChange={setVars} label="Variables:" accept={(v) => !v.isString} />
+      <fieldset style={{ marginTop: 8, border: '1px solid #c0c0c0', padding: '4px 8px' }}>
+        <legend>Extract</legend>
+        <label><input type="radio" checked={extract === 'eigen'} onChange={() => setExtract('eigen')} /> Eigenvalue &gt; 1</label>
+        <label><input type="radio" checked={extract === 'fixed'} onChange={() => setExtract('fixed')} /> Fixed number:</label>
+        <input value={nfac} onChange={(e) => setNfac(e.target.value)} disabled={extract !== 'fixed'} style={{ width: 44 }} />
+      </fieldset>
+      <fieldset style={{ marginTop: 6, border: '1px solid #c0c0c0', padding: '4px 8px' }}>
+        <legend>Rotation</legend>
+        <label><input type="radio" checked={rotation === 'NOROTATE'} onChange={() => setRotation('NOROTATE')} /> None</label>
+        <label><input type="radio" checked={rotation === 'VARIMAX'} onChange={() => setRotation('VARIMAX')} /> Varimax</label>
+      </fieldset>
+    </>
   ), () => setVars([]))
 }
 

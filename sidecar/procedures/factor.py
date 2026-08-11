@@ -52,11 +52,16 @@ class Factor(DataProcedure):
     def run(self, ds: Any, subs: list[tuple[str, str]]) -> list[dict[str, Any]]:
         body = ""
         rotate = False
+        fixed_factors = None
         for name, b in subs:
             if name in ("", "VARIABLES"):
                 body += " " + re.sub(r"^\s*VARIABLES\s*=?\s*", "", b, flags=re.IGNORECASE)
             elif name == "ROTATION":
                 rotate = "VARIMAX" in b.upper()
+            elif name == "CRITERIA":
+                fm = re.search(r"FACTORS\s*\(\s*(\d+)\s*\)", b, re.IGNORECASE)
+                if fm:
+                    fixed_factors = int(fm.group(1))
         names = expand_varlist(body, [v.name for v in ds.variables])
         if len(names) < 2:
             return [{"type": "Error", "text": "FACTOR requires at least two variables."}]
@@ -77,7 +82,8 @@ class Factor(DataProcedure):
         eigvals = eigvals[order]
         eigvecs = eigvecs[:, order]
         loadings = eigvecs * np.sqrt(np.clip(eigvals, 0, None))
-        retain = int((eigvals > 1).sum()) or 1
+        retain = fixed_factors if fixed_factors else (int((eigvals > 1).sum()) or 1)
+        retain = max(1, min(retain, p))
         comp = loadings[:, :retain]
         communal = (comp**2).sum(axis=1)
 
