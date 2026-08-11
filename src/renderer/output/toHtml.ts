@@ -123,10 +123,10 @@ body{font-family:Tahoma,'Segoe UI',sans-serif;font-size:12px;color:#000;backgrou
 .pt-title{font-weight:bold;margin:6px 0 4px;}
 .pt-table{border-collapse:collapse;border:1px solid #000;font-size:12px;}
 .pt-table th,.pt-table td{padding:1px 8px;line-height:17px;vertical-align:top;white-space:nowrap;}
-.pt-colhead{text-align:center;font-weight:normal;border-bottom:1px solid #000;border-left:1px solid #d9d9d9;}
+.pt-colhead{text-align:center;font-weight:normal;border-bottom:1px solid #000;border-left:1px solid #d9d9d9;background:#fbfbfb;}
 .pt-dimlabel{text-align:center;font-weight:normal;border-bottom:1px solid #d9d9d9;}
-.pt-corner{text-align:left;font-weight:normal;border-right:1px solid #000;border-bottom:1px solid #000;}
-.pt-rowhead{text-align:left;font-weight:normal;border-right:1px solid #000;}
+.pt-corner{text-align:left;font-weight:normal;border-right:1px solid #000;border-bottom:1px solid #000;background:#fbfbfb;}
+.pt-rowhead{text-align:left;font-weight:normal;border-right:1px solid #000;background:#fbfbfb;}
 .pt-cell{border-left:1px solid #eee;}
 .pt-cell--num{text-align:right;}
 .pt-caption{font-size:11px;color:#333;margin-top:3px;}
