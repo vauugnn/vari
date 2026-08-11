@@ -59,9 +59,61 @@
   background: #dce8f5;
 }
 
+.vw-outline-item--sel {
+  background: #cbdcf0;
+}
+
+.vw-caret {
+  display: inline-block;
+  width: 12px;
+  margin-left: -12px;
+  cursor: pointer;
+  color: #555;
+}
+
 .vw-content {
   background: #ffffff;
   overflow: auto;
+}
+
+.vw-item {
+  position: relative;
+}
+
+.vw-item--sel {
+  outline: 1px solid #9dc3ec;
+  background: #f5f9ff;
+}
+
+.vw-item-del,
+.vw-item-fold {
+  position: absolute;
+  top: 2px;
+  border: none;
+  background: transparent;
+  color: #999;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 2px 4px;
+  opacity: 0;
+}
+
+.vw-item-del {
+  right: 2px;
+}
+
+.vw-item-fold {
+  left: 2px;
+}
+
+.vw-item:hover .vw-item-del,
+.vw-item:hover .vw-item-fold {
+  opacity: 1;
+}
+
+.vw-item-del:hover {
+  color: #d9433f;
 }
 
 .vw-empty {
