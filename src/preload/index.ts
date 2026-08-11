@@ -53,6 +53,7 @@ const ds: DatasetApi = {
 
 const api: SpssApi = {
   window: detectWindow(),
+  appVersion: ipcRenderer.sendSync(IPC.appVersion) as string,
   execute: (text: string) => ipcRenderer.invoke(IPC.syntaxExecute, text) as Promise<OutputObject[]>,
   getSidecarStatus: () => ipcRenderer.invoke(IPC.sidecarStatusGet) as Promise<SidecarStatus>,
   onSidecarStatus: (cb) => {

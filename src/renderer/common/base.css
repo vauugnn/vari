@@ -61,3 +61,9 @@ button:disabled {
 .sb-seg:last-child {
   border-right: none;
 }
+
+.sb-seg--ver {
+  margin-left: auto;
+  border-right: none;
+  color: #666;
+}

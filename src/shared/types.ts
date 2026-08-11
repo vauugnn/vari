@@ -97,6 +97,7 @@ export const IPC = {
   viewToggle: 'view.toggle',
   newScript: 'script.new',
   updateProgress: 'update.progress',
+  appVersion: 'app.version',
   windowShow: 'window.show',
   datasetChanged: 'dataset.changed',
   ds: {
@@ -152,6 +153,7 @@ export interface DatasetApi {
 /** Shape exposed to the renderer via contextBridge as `window.spss`. */
 export interface SpssApi {
   window: WindowName
+  appVersion: string
   execute: (text: string) => Promise<OutputObject[]>
   getSidecarStatus: () => Promise<SidecarStatus>
   onSidecarStatus: (cb: (status: SidecarStatus) => void) => () => void

@@ -334,6 +334,7 @@ export function DataEditor(): JSX.Element {
         <span className="sb-seg">{summary?.split && summary.split.length ? `Split On (${summary.split.join(', ')})` : 'Split Off'}</span>
         <span className="sb-seg">{summary?.filter ? `Filter On (${summary.filter})` : 'Filter Off'}</span>
         {updatePct !== null && <span className="sb-seg">Downloading update… {Math.round(updatePct)}%</span>}
+        <span className="sb-seg sb-seg--ver">Vari {window.spss.appVersion}</span>
       </div>
       )}
 

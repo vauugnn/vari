@@ -441,6 +441,9 @@ function wireIpc(): void {
   })
 
   ipcMain.handle(IPC.sidecarStatusGet, (): SidecarStatus => sidecar.currentStatus)
+  ipcMain.on(IPC.appVersion, (e) => {
+    e.returnValue = app.getVersion()
+  })
 
   ipcMain.handle(IPC.scriptRun, async (_e, p) => {
     const res = (await sidecar.request('script.run', p)) as {
