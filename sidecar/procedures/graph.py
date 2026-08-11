@@ -44,11 +44,22 @@ class Graph(DataProcedure):
                 mby = re.search(r"\bBY\b\s*(\w+)", body, re.IGNORECASE)
                 var = mby.group(1) if mby else expand_varlist(body, allnames)[0]
                 var = expand_varlist(var, allnames)[0]
-                labels, counts = _value_counts(ds, var)
-                title = _label(ds, var)
-                out.append(ch.bar_chart(labels, counts, title=f"Bar Chart: {title}", xlabel=title)
-                           if key == "BAR" else ch.pie_chart(labels, counts, title=title))
-                did = True
+                # Statistic: COUNT (default), MEAN(dep) or SUM(dep) of a measure by category.
+                statm = re.search(r"\b(MEAN|SUM|PCT)\s*\(\s*(\w+)\s*\)", body, re.IGNORECASE)
+                if statm and key == "BAR":
+                    stat = statm.group(1).upper()
+                    dep = statm.group(2)
+                    labels, vals = _group_stat(ds, dep, var, stat)
+                    ylab = {"MEAN": "Mean", "SUM": "Sum", "PCT": "Percent"}[stat]
+                    out.append(ch.bar_chart(labels, vals, title=f"{ylab} {_label(ds, dep)} by {_label(ds, var)}",
+                                            xlabel=_label(ds, var)))
+                    did = True
+                else:
+                    labels, counts = _value_counts(ds, var)
+                    title = _label(ds, var)
+                    out.append(ch.bar_chart(labels, counts, title=f"Bar Chart: {title}", xlabel=title)
+                               if key == "BAR" else ch.pie_chart(labels, counts, title=title))
+                    did = True
             elif key in ("LINE", "AREA", "ERRORBAR"):
                 mby = re.search(r"\bBY\b\s*(\w+)", body, re.IGNORECASE)
                 depm = re.search(r"\bMEAN\s*\(\s*(\w+)\s*\)", body, re.IGNORECASE)
@@ -149,6 +160,27 @@ def _group_means(ds, dep, grp):
         means.append(float(vals.mean()))
         errs.append(float(vals.std(ddof=1) / math.sqrt(len(vals))) if len(vals) > 1 else 0.0)
     return labels, means, errs
+
+
+def _group_stat(ds, dep, grp, stat):
+    """Aggregate dep by each level of grp with the requested statistic."""
+    dmask = missing_mask(ds.df[dep], ds.variables[ds._index_of(dep)]).to_numpy()
+    gmask = missing_mask(ds.df[grp], ds.variables[ds._index_of(grp)]).to_numpy()
+    keep = ~(dmask | gmask)
+    dv = ds.df[dep].to_numpy(float)[keep]
+    gv = ds.df[grp].to_numpy(float)[keep]
+    labels, vals = [], []
+    total = dv.sum() if stat == "PCT" else 0.0
+    for lv in sorted(set(gv)):
+        sub = dv[gv == lv]
+        labels.append(value_label(ds, grp, lv))
+        if stat == "MEAN":
+            vals.append(float(sub.mean()) if sub.size else 0.0)
+        elif stat == "SUM":
+            vals.append(float(sub.sum()))
+        else:  # PCT of total
+            vals.append(float(sub.sum() / total * 100) if total else 0.0)
+    return labels, vals
 
 
 def _pair(ds, x, y):
