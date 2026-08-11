@@ -29,7 +29,8 @@ class Examine(DataProcedure):
             if name in ("", "VARIABLES"):
                 body += " " + re.sub(r"^\s*VARIABLES\s*=?\s*", "", b, flags=re.IGNORECASE)
             elif name == "PLOT":
-                want_box = "BOXPLOT" in b.upper() or "ALL" in b.upper() or want_box
+                # An explicit /PLOT selects exactly what is listed.
+                want_box = "BOXPLOT" in b.upper() or "ALL" in b.upper()
 
         m = re.search(r"(.+?)\bBY\b(.+)", body, re.IGNORECASE)
         allnames = [v.name for v in ds.variables]

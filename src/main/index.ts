@@ -325,10 +325,17 @@ async function checkForUpdatesManual(): Promise<void> {
       })
     }
   } catch (err) {
+    const raw = String(err instanceof Error ? err.message : err)
+    // A 404 on latest*.yml just means the newest release is still building /
+    // uploading its update manifest. Keep the dialog short and human — never
+    // dump the HTTP stack (it overflows the screen).
+    const friendly = /404|latest.*\.yml/i.test(raw)
+      ? 'The newest release is still being published. Try again in a few minutes.'
+      : raw.split('\n')[0].slice(0, 200)
     await dialog.showMessageBox(win, {
-      type: 'error',
-      message: 'Could not check for updates.',
-      detail: String(err instanceof Error ? err.message : err),
+      type: 'info',
+      message: 'No update available right now.',
+      detail: friendly,
       buttons: ['OK']
     })
   }

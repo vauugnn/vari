@@ -27,6 +27,8 @@ class Regression(DataProcedure):
     def run(self, ds: Any, subs: list[tuple[str, str]]) -> list[dict[str, Any]]:
         dep = None
         preds: list[str] = []
+        want_ci = False
+        want_desc = False
         allnames = [v.name for v in ds.variables]
         for name, b in subs:
             if name == "DEPENDENT":
@@ -34,6 +36,10 @@ class Regression(DataProcedure):
             elif name == "METHOD":
                 body = re.sub(r"^\s*ENTER\s*", "", b, flags=re.IGNORECASE)
                 preds += expand_varlist(body, allnames)
+            elif name == "STATISTICS":
+                up = b.upper()
+                want_ci = "CI" in up
+                want_desc = "DESCRIPTIVES" in up or "DESCRIPTIVE" in up
         if dep is None or not preds:
             return [{"type": "Error", "text": "REGRESSION needs /DEPENDENT and /METHOD=ENTER predictors."}]
 
@@ -54,6 +60,16 @@ class Regression(DataProcedure):
         k = len(preds)
         r2 = float(model.rsquared)
         out: list[dict[str, Any]] = [{"type": "Title", "text": "Regression"}]
+
+        if want_desc:
+            dt = PivotTable("Descriptive Statistics", [Dimension("", [dep] + preds)],
+                            [Dimension("", ["Mean", "Std. Deviation", "N"])])
+            for i, nm in enumerate([dep] + preds):
+                col = data[nm].to_numpy(float)
+                dt.set([i], [0], _F3.render(float(col.mean())))
+                dt.set([i], [1], _F3.render(float(col.std(ddof=1))))
+                dt.set([i], [2], _F0.render(len(col)))
+            out.append(dt.to_json())
 
         ms = PivotTable("Model Summary", [Dimension("", ["1"])],
                         [Dimension("", ["R", "R Square", "Adjusted R Square", "Std. Error of the Estimate"])])
@@ -80,17 +96,24 @@ class Regression(DataProcedure):
 
         # Coefficients with standardized Beta.
         sd_y = y.std(ddof=1)
+        cols = ["B", "Std. Error", "Beta", "t", "Sig."]
+        if want_ci:
+            cols += ["95% CI Lower", "95% CI Upper"]
         co = PivotTable(
             "Coefficients",
             [Dimension("", ["(Constant)"] + preds)],
-            [Dimension("", ["B", "Std. Error", "Beta", "t", "Sig."])],
+            [Dimension("", cols)],
         )
         params, bse, tvals, pvals = model.params, model.bse, model.tvalues, model.pvalues
+        ci = model.conf_int(0.05) if want_ci else None
         co.set([0], [0], _F3.render(float(params[0])))
         co.set([0], [1], _F3.render(float(bse[0])))
         co.set([0], [2], "")
         co.set([0], [3], _F3.render(float(tvals[0])))
         co.set([0], [4], strip_leading_zero(_F3.render(float(pvals[0]))))
+        if want_ci:
+            co.set([0], [5], _F3.render(float(ci[0][0])))
+            co.set([0], [6], _F3.render(float(ci[0][1])))
         for i, nm in enumerate(preds, start=1):
             beta = float(params[i]) * X[:, i - 1].std(ddof=1) / sd_y if sd_y else float("nan")
             co.set([i], [0], _F3.render(float(params[i])))
@@ -98,5 +121,8 @@ class Regression(DataProcedure):
             co.set([i], [2], strip_leading_zero(_F3.render(beta)))
             co.set([i], [3], _F3.render(float(tvals[i])))
             co.set([i], [4], strip_leading_zero(_F3.render(float(pvals[i]))))
+            if want_ci:
+                co.set([i], [5], _F3.render(float(ci[i][0])))
+                co.set([i], [6], _F3.render(float(ci[i][1])))
         out.append(co.to_json())
         return out
