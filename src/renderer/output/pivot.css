@@ -103,3 +103,14 @@
 .pt-footnote sup {
   font-size: 9px;
 }
+
+.pt-cell {
+  cursor: default;
+}
+.pt-cell-input {
+  width: 100%;
+  border: 1px solid #5b9bd5;
+  font: inherit;
+  padding: 0 2px;
+  box-sizing: border-box;
+}

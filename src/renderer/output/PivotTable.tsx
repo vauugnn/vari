@@ -61,6 +61,10 @@ function transposeTable(t: PivotTableJson): PivotTableJson {
 export function PivotTableView({ table: raw }: { table: PivotTableJson }): JSX.Element {
   const canTranspose = raw.colLeaves == null
   const [tposed, setTposed] = useState(false)
+  // In-place edits: user-overridden cell text keyed by "r|c", and the cell
+  // currently being edited.
+  const [edits, setEdits] = useState<Record<string, string>>({})
+  const [editing, setEditing] = useState<{ key: string; value: string } | null>(null)
   const table = tposed && canTranspose ? transposeTable(raw) : raw
   const { rowDims, colDims, corner } = table
   const rowHeaderCols = Math.max(1, rowDims.length)
@@ -164,9 +168,34 @@ export function PivotTableView({ table: raw }: { table: PivotTableJson }): JSX.E
     }
     leafCols.forEach((cTuple, cIdx) => {
       const cell = cellMap.get(`${rTuple.join(',')}|${cTuple.join(',')}`)
+      const key = `${rTuple.join(',')}|${cTuple.join(',')}`
+      const shown = key in edits ? edits[key] : cell ? cell.v : ''
+      const isEditing = editing?.key === key
       cells.push(
-        <td key={cIdx} className={'pt-cell' + (cell?.kind === 'text' ? ' pt-cell--text' : ' pt-cell--num')}>
-          {cell ? cell.v : ''}
+        <td
+          key={cIdx}
+          className={'pt-cell' + (cell?.kind === 'text' ? ' pt-cell--text' : ' pt-cell--num')}
+          title="Double-click to edit"
+          onDoubleClick={() => setEditing({ key, value: shown })}
+        >
+          {isEditing ? (
+            <input
+              className="pt-cell-input"
+              autoFocus
+              value={editing!.value}
+              onChange={(e) => setEditing({ key, value: e.target.value })}
+              onBlur={() => {
+                setEdits((m) => ({ ...m, [key]: editing!.value }))
+                setEditing(null)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                else if (e.key === 'Escape') setEditing(null)
+              }}
+            />
+          ) : (
+            shown
+          )}
         </td>
       )
     })
