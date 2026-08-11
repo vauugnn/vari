@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { VariableMetaJson } from '../../../shared/types'
 import { AnalysisFrame } from './AnalysisFrame'
 import { VarMover } from './VarMover'
@@ -36,11 +36,37 @@ const ROLE_LABEL: Record<Role, string> = { x: 'X-Axis / Category', y: 'Y-Axis / 
 export function ChartBuilderDialog({ variables, onClose }: Props): JSX.Element {
   const [typeKey, setTypeKey] = useState('bar')
   const [roles, setRoles] = useState<Record<Role, string[]>>({ x: [], y: [], group: [], series: [] })
+  const [preview, setPreview] = useState<string>('')
+  const [previewing, setPreviewing] = useState(false)
   const type = TYPES.find((t) => t.key === typeKey)!
 
   const setRole = (role: Role, v: string[]) => setRoles((r) => ({ ...r, [role]: v }))
   const ready = type.roles.every((role) => (role === 'group' ? true : roles[role].length > 0))
   const s = () => type.syntax(roles)
+
+  // Live canvas: whenever the chart spec is complete, render a preview off to
+  // the side without committing it to the Viewer (debounced).
+  useEffect(() => {
+    if (!ready) {
+      setPreview('')
+      return
+    }
+    let alive = true
+    setPreviewing(true)
+    const handle = setTimeout(() => {
+      void window.spss.preview(s()).then((objs) => {
+        if (!alive) return
+        const chart = objs.find((o) => o.type === 'Chart') as unknown as { svg?: string } | undefined
+        setPreview(chart?.svg ?? '')
+        setPreviewing(false)
+      })
+    }, 250)
+    return () => {
+      alive = false
+      clearTimeout(handle)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typeKey, JSON.stringify(roles)])
 
   return (
     <AnalysisFrame
@@ -67,7 +93,7 @@ export function ChartBuilderDialog({ variables, onClose }: Props): JSX.Element {
             </button>
           ))}
         </div>
-        <div style={{ flex: 1, minWidth: 260 }}>
+        <div style={{ flex: 1, minWidth: 240 }}>
           {type.roles.map((role) => (
             <div key={role} style={{ marginBottom: 8 }}>
               <VarMover
@@ -79,6 +105,14 @@ export function ChartBuilderDialog({ variables, onClose }: Props): JSX.Element {
               />
             </div>
           ))}
+        </div>
+        <div className="cb-canvas">
+          <div className="cb-canvas-head">Preview</div>
+          {preview ? (
+            <div className="cb-canvas-svg" dangerouslySetInnerHTML={{ __html: preview }} />
+          ) : (
+            <div className="cb-canvas-empty">{previewing ? 'Rendering…' : 'Assign variables to preview the chart.'}</div>
+          )}
         </div>
       </div>
     </AnalysisFrame>

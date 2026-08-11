@@ -55,6 +55,7 @@ const api: SpssApi = {
   window: detectWindow(),
   appVersion: ipcRenderer.sendSync(IPC.appVersion) as string,
   execute: (text: string) => ipcRenderer.invoke(IPC.syntaxExecute, text) as Promise<OutputObject[]>,
+  preview: (text: string) => ipcRenderer.invoke(IPC.syntaxPreview, text) as Promise<OutputObject[]>,
   getSidecarStatus: () => ipcRenderer.invoke(IPC.sidecarStatusGet) as Promise<SidecarStatus>,
   onSidecarStatus: (cb) => {
     const listener = (_e: unknown, status: SidecarStatus) => cb(status)

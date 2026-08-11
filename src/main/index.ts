@@ -447,6 +447,17 @@ function wireIpc(): void {
     }
   })
 
+  // Live preview: run syntax and return its output objects WITHOUT routing
+  // them to the Viewer or refreshing the grid (used by the Chart Builder canvas).
+  ipcMain.handle(IPC.syntaxPreview, async (_evt, text: string): Promise<OutputObject[]> => {
+    try {
+      const result = (await sidecar.request('syntax.execute', { text })) as OutputObject[]
+      return (Array.isArray(result) ? result : []).filter((o) => o.type !== '_DatasetChanged')
+    } catch {
+      return []
+    }
+  })
+
   ipcMain.handle(IPC.sidecarStatusGet, (): SidecarStatus => sidecar.currentStatus)
   ipcMain.on(IPC.appVersion, (e) => {
     e.returnValue = app.getVersion()

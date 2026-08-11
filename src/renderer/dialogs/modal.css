@@ -96,3 +96,35 @@
   padding: 4px;
   width: 200px;
 }
+
+.cb-canvas {
+  flex: 0 0 300px;
+  border: 1px solid #c0c0c0;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+  min-height: 220px;
+}
+.cb-canvas-head {
+  font-size: 11px;
+  font-weight: 600;
+  color: #555;
+  padding: 3px 6px;
+  border-bottom: 1px solid #ddd;
+  background: #f0f0f0;
+}
+.cb-canvas-svg {
+  padding: 6px;
+  overflow: auto;
+}
+.cb-canvas-svg svg {
+  max-width: 100%;
+  height: auto;
+}
+.cb-canvas-empty {
+  color: #999;
+  font-size: 12px;
+  padding: 20px;
+  text-align: center;
+  margin: auto;
+}

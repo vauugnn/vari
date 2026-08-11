@@ -82,6 +82,7 @@ export interface RowWindow {
 /** Renderer <-> main IPC channel names. */
 export const IPC = {
   syntaxExecute: 'syntax.execute',
+  syntaxPreview: 'syntax.preview',
   sidecarStatusGet: 'sidecar.status.get',
   sidecarStatusEvent: 'sidecar.status',
   outputAppend: 'output.append',
@@ -155,6 +156,7 @@ export interface SpssApi {
   window: WindowName
   appVersion: string
   execute: (text: string) => Promise<OutputObject[]>
+  preview: (text: string) => Promise<OutputObject[]>
   getSidecarStatus: () => Promise<SidecarStatus>
   onSidecarStatus: (cb: (status: SidecarStatus) => void) => () => void
   onOutput: (cb: (objects: OutputObject[]) => void) => () => void
