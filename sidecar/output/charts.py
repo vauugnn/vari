@@ -32,16 +32,46 @@ def _plt() -> Any:
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
-        plt.rcParams.update(
-            {"font.size": 9, "font.family": "sans-serif", "axes.edgecolor": "#7f7f7f"}
-        )
+        plt.rcParams.update({
+            "font.size": 9.5,
+            "font.family": ["Arial", "Helvetica", "DejaVu Sans", "sans-serif"],
+            "axes.edgecolor": "#8a8a8a",
+            "axes.linewidth": 0.8,
+            "xtick.direction": "out",
+            "ytick.direction": "out",
+            "xtick.major.size": 3,
+            "ytick.major.size": 3,
+        })
         _PLT = plt
     return _PLT
 
 
-def _finish(fig: Any, title: str) -> dict[str, Any]:
+# Shared categorical colour cycle (SPSS-like order: blue, green, tan, red, …).
+_PALETTE = ["#4e79c4", "#5aa552", "#d9a441", "#d9433f", "#8c66b5", "#41b2c2", "#e07b39", "#6d6e71"]
+
+
+def _style_axes(fig: Any) -> None:
+    """Apply the SPSS look to every axis: horizontal scale-grid, no top/right
+    box, axis labels below the plot."""
+    for ax in fig.axes:
+        if getattr(ax, "name", "") == "3d":
+            continue
+        ax.set_axisbelow(True)
+        ax.yaxis.grid(True, color="#d0d0d0", linewidth=0.6)
+        ax.xaxis.grid(False)
+        for side in ("top", "right"):
+            if side in ax.spines:
+                ax.spines[side].set_visible(False)
+
+
+def _finish(fig: Any, title: str, subtitle: str = "", footnote: str = "") -> dict[str, Any]:
+    _style_axes(fig)
     if title:
-        fig.suptitle(title, fontsize=11, fontweight="bold")
+        fig.suptitle(title, fontsize=11.5, fontweight="bold", y=0.99)
+    if subtitle:
+        fig.text(0.5, 0.94, subtitle, ha="center", fontsize=9.5, color="#333")
+    if footnote:
+        fig.text(0.01, 0.005, footnote, ha="left", fontsize=8, color="#555")
     buf = io.StringIO()
     fig.savefig(buf, format="svg", bbox_inches="tight")
     _plt().close(fig)
