@@ -195,15 +195,21 @@ class Recode(Procedure):
         varbody = rest[:first_paren]
         rules_s = rest[first_paren:]
         names = expand_varlist(varbody, [v.name for v in ds.variables])
-        rules = _parse_recode_rules(rules_s)
         cx = EvalContext(ds)
         for k, src in enumerate(names):
-            col = cx.get_var(src).astype("float64")
-            out = col.copy()
-            for i in range(ds.n_rows):
-                out[i] = _apply_rules(col[i], rules)
             tgt = into[k] if into else src
-            _set_column(ds, tgt, out)
+            if ds.variables[ds._index_of(src)].is_string:
+                srules = _parse_recode_rules_str(rules_s)
+                col = ds.df[src].astype(object)
+                out = np.array([_apply_rules_str(v, srules) for v in col], dtype=object)
+                _set_column(ds, tgt, out)
+            else:
+                rules = _parse_recode_rules(rules_s)
+                col = cx.get_var(src).astype("float64")
+                out = col.copy()
+                for i in range(ds.n_rows):
+                    out[i] = _apply_rules(col[i], rules)
+                _set_column(ds, tgt, out)
         ctx.mark_changed()
         return []
 
@@ -332,3 +338,35 @@ def _target_value(target: tuple, x: float) -> float:
     if target[0] == "copy":
         return x
     return target[1]
+
+
+def _unquote(s: str) -> str:
+    s = s.strip()
+    if len(s) >= 2 and s[0] in "'\"" and s[-1] == s[0]:
+        return s[1:-1].replace(s[0] * 2, s[0])
+    return s
+
+
+def _parse_recode_rules_str(s: str) -> list[tuple]:
+    """Recode rules for STRING variables: value/else with string targets."""
+    rules: list[tuple] = []
+    for m in re.finditer(r"\(([^)]*)\)", s):
+        left, _, right = m.group(1).partition("=")
+        lu = left.strip().upper()
+        rt = _unquote(right)
+        if lu == "ELSE":
+            rules.append(("else", rt))
+        else:
+            for tok in re.findall(r"'[^']*'|\"[^\"]*\"|\S+", left):
+                rules.append(("value", _unquote(tok), rt))
+    return rules
+
+
+def _apply_rules_str(x: Any, rules: list[tuple]) -> Any:
+    xs = "" if x is None else str(x)
+    for rule in rules:
+        if rule[0] == "value" and xs == rule[1]:
+            return rule[2]
+        if rule[0] == "else":
+            return rule[1]
+    return xs

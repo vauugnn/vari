@@ -8,23 +8,43 @@ interface Mapping {
   rule: string
 }
 
-type OldKind = 'value' | 'range' | 'sysmis' | 'else'
+type OldKind = 'value' | 'range' | 'lothru' | 'thruhi' | 'sysmis' | 'missing' | 'else'
 type NewKind = 'value' | 'sysmis' | 'copy'
+
+// Quote a value token that isn't purely numeric (so string recodes emit valid
+// SPSS syntax like ('A'='B') instead of (A=B)).
+function tok(v: string): string {
+  const t = v.trim()
+  if (t === '' || /^-?\d+(\.\d+)?$/.test(t) || /^(LO|LOWEST|HI|HIGHEST)$/i.test(t)) return t
+  if (/^'.*'$/.test(t) || /^".*"$/.test(t)) return t
+  return `'${t.replace(/'/g, "''")}'`
+}
 
 function buildRule(oldKind: OldKind, oldA: string, oldB: string, newKind: NewKind, newVal: string): Mapping | null {
   let oldPart = ''
   let oldDisp = ''
   if (oldKind === 'value') {
     if (oldA.trim() === '') return null
-    oldPart = oldA.trim()
+    oldPart = tok(oldA)
     oldDisp = oldA.trim()
   } else if (oldKind === 'range') {
     if (oldA.trim() === '' || oldB.trim() === '') return null
-    oldPart = `${oldA.trim()} THRU ${oldB.trim()}`
+    oldPart = `${tok(oldA)} THRU ${tok(oldB)}`
     oldDisp = `${oldA.trim()} thru ${oldB.trim()}`
+  } else if (oldKind === 'lothru') {
+    if (oldB.trim() === '') return null
+    oldPart = `LO THRU ${tok(oldB)}`
+    oldDisp = `Lowest thru ${oldB.trim()}`
+  } else if (oldKind === 'thruhi') {
+    if (oldA.trim() === '') return null
+    oldPart = `${tok(oldA)} THRU HI`
+    oldDisp = `${oldA.trim()} thru Highest`
   } else if (oldKind === 'sysmis') {
     oldPart = 'SYSMIS'
     oldDisp = 'SYSMIS'
+  } else if (oldKind === 'missing') {
+    oldPart = 'MISSING'
+    oldDisp = 'MISSING'
   } else {
     oldPart = 'ELSE'
     oldDisp = 'ELSE'
@@ -33,7 +53,7 @@ function buildRule(oldKind: OldKind, oldA: string, oldB: string, newKind: NewKin
   let newDisp = ''
   if (newKind === 'value') {
     if (newVal.trim() === '') return null
-    newPart = newVal.trim()
+    newPart = tok(newVal)
     newDisp = newVal.trim()
   } else if (newKind === 'sysmis') {
     newPart = 'SYSMIS'
@@ -107,9 +127,16 @@ export function OldNewValuesDialog({
               <input value={oldA} onChange={(e) => setOldA(e.target.value)} onFocus={() => setOldKind('value')} style={{ width: 70, marginLeft: 4 }} />
             </label>
             <label><input type="radio" checked={oldKind === 'sysmis'} onChange={() => setOldKind('sysmis')} /> System-missing</label>
+            <label><input type="radio" checked={oldKind === 'missing'} onChange={() => setOldKind('missing')} /> System- or user-missing</label>
             <label><input type="radio" checked={oldKind === 'range'} onChange={() => setOldKind('range')} /> Range:
               <input value={oldA} onChange={(e) => setOldA(e.target.value)} onFocus={() => setOldKind('range')} style={{ width: 44, margin: '0 3px' }} /> thru
               <input value={oldB} onChange={(e) => setOldB(e.target.value)} onFocus={() => setOldKind('range')} style={{ width: 44, marginLeft: 3 }} />
+            </label>
+            <label><input type="radio" checked={oldKind === 'lothru'} onChange={() => setOldKind('lothru')} /> Range, LOWEST thru:
+              <input value={oldB} onChange={(e) => setOldB(e.target.value)} onFocus={() => setOldKind('lothru')} style={{ width: 44, marginLeft: 3 }} />
+            </label>
+            <label><input type="radio" checked={oldKind === 'thruhi'} onChange={() => setOldKind('thruhi')} /> Range, value thru HIGHEST:
+              <input value={oldA} onChange={(e) => setOldA(e.target.value)} onFocus={() => setOldKind('thruhi')} style={{ width: 44, marginLeft: 3 }} />
             </label>
             <label><input type="radio" checked={oldKind === 'else'} onChange={() => setOldKind('else')} /> All other values</label>
           </fieldset>
