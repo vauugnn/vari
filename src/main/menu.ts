@@ -19,6 +19,7 @@ export interface MenuActions {
   checkUpdates: () => void
   newScript: () => void
   openOutput: () => void
+  exportSyntax: () => void
   viewToggle: (kind: string) => void
   execSyntax: (text: string) => void
   showAbout: () => void
@@ -217,7 +218,7 @@ export function buildMenu(actions: MenuActions): Menu {
       { label: 'Close', role: 'close' },
       { label: 'Save', accelerator: 'CmdOrCtrl+S', click: actions.fileSave },
       { label: 'Save As…', accelerator: 'CmdOrCtrl+Shift+S', click: actions.fileSaveAs },
-      proc('Export'),
+      { label: 'Export', submenu: [{ label: 'SPSS Syntax (.sps)…', click: actions.exportSyntax }] },
       { type: 'separator' },
       { label: 'Rename Dataset…', click: () => actions.openDialog('rename-dataset') },
       {
