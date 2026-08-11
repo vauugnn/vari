@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import './pivot.css'
 
 interface DimJson {
@@ -46,7 +47,21 @@ function repeatOfDim(dims: DimJson[], k: number): number {
   return prod(sizes(dims).slice(0, k))
 }
 
-export function PivotTableView({ table }: { table: PivotTableJson }): JSX.Element {
+// Transpose a rectangular table: swap row/column dimensions and each cell's
+// coordinates. (Ragged tables with colLeaves are left as-is.)
+function transposeTable(t: PivotTableJson): PivotTableJson {
+  return {
+    ...t,
+    rowDims: t.colDims,
+    colDims: t.rowDims,
+    cells: t.cells.map((c) => ({ ...c, r: c.c, c: c.r }))
+  }
+}
+
+export function PivotTableView({ table: raw }: { table: PivotTableJson }): JSX.Element {
+  const canTranspose = raw.colLeaves == null
+  const [tposed, setTposed] = useState(false)
+  const table = tposed && canTranspose ? transposeTable(raw) : raw
   const { rowDims, colDims, corner } = table
   const rowHeaderCols = Math.max(1, rowDims.length)
   const grouped = table.colLeaves != null
@@ -160,7 +175,18 @@ export function PivotTableView({ table }: { table: PivotTableJson }): JSX.Elemen
 
   return (
     <div className="pt-wrap">
-      <div className="pt-title">{table.title}</div>
+      <div
+        className="pt-title"
+        title={canTranspose ? 'Double-click to transpose rows and columns' : undefined}
+        onDoubleClick={() => canTranspose && setTposed((v) => !v)}
+      >
+        {table.title}
+        {canTranspose && (
+          <button className="pt-transpose" title="Transpose rows and columns" onClick={() => setTposed((v) => !v)}>
+            ⇄
+          </button>
+        )}
+      </div>
       <table className="pt-table">
         <thead>{headerTr}</thead>
         <tbody>{bodyTr}</tbody>

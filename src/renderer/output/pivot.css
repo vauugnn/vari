@@ -8,6 +8,23 @@
 .pt-title {
   font-weight: bold;
   margin: 6px 0 4px;
+  cursor: default;
+}
+
+.pt-transpose {
+  border: 1px solid #bbb;
+  background: #f2f2f2;
+  color: #444;
+  font-size: 11px;
+  line-height: 1;
+  padding: 1px 5px;
+  margin-left: 8px;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.pt-wrap:hover .pt-transpose {
+  opacity: 1;
 }
 
 .pt-table {
