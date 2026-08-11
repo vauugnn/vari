@@ -113,3 +113,17 @@
   padding: 0;
   border: 1px solid #bbb;
 }
+
+.chart-editor-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.chart-editor-swatch {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #999;
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 0;
+}

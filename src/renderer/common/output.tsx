@@ -48,6 +48,12 @@ function ChartView({ svg }: { svg: string }): JSX.Element {
                 <label>Border colour
                   <input type="color" value={edge} onChange={(e) => setEdge(e.target.value)} />
                 </label>
+                <div className="chart-editor-swatches">
+                  {['#4e79c4', '#5aa552', '#d9a441', '#d9433f', '#8c66b5', '#41b2c2', '#6d6e71', '#1192e8'].map((c) => (
+                    <button key={c} className="chart-editor-swatch" style={{ background: c }} title={c}
+                      onClick={() => { setFill(c); setEdge(c) }} />
+                  ))}
+                </div>
                 <button onClick={() => { setFill(DEFAULT_FILL); setEdge(DEFAULT_EDGE) }}>Reset colours</button>
                 <button onClick={() => setEditing(false)}>Close</button>
               </div>
