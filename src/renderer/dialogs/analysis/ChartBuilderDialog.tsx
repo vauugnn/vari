@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { VariableMetaJson } from '../../../shared/types'
 import { AnalysisFrame } from './AnalysisFrame'
-import { VarMover } from './VarMover'
 
 type Props = { variables: VariableMetaJson[]; onClose: () => void }
-const num = (v: VariableMetaJson) => !v.isString
 
 // A single builder covering the legacy chart gallery. Each type declares which
 // roles it needs; the dialog shows those slots and emits GRAPH syntax that the
@@ -93,25 +91,65 @@ export function ChartBuilderDialog({ variables, onClose }: Props): JSX.Element {
             </button>
           ))}
         </div>
-        <div style={{ flex: 1, minWidth: 240 }}>
-          {type.roles.map((role) => (
-            <div key={role} style={{ marginBottom: 8 }}>
-              <VarMover
-                variables={variables}
-                value={roles[role]}
-                onChange={(v) => setRole(role, role === 'series' ? v : v.slice(-1))}
-                label={ROLE_LABEL[role] + (role === 'group' ? ' (optional):' : ':')}
-                accept={role === 'y' || role === 'series' ? num : undefined}
-              />
-            </div>
-          ))}
+
+        {/* Draggable variable palette. */}
+        <div className="cb-palette">
+          <div className="cb-canvas-head">Variables (drag onto a zone)</div>
+          <div className="cb-palette-list">
+            {variables.map((v) => (
+              <div
+                key={v.name}
+                className="cb-chip"
+                draggable
+                onDragStart={(e) => e.dataTransfer.setData('text/plain', v.name)}
+                title={v.label || v.name}
+              >
+                {v.name}
+              </div>
+            ))}
+          </div>
         </div>
+
+        {/* Role drop-zones. */}
+        <div style={{ flex: 1, minWidth: 200 }}>
+          {type.roles.map((role) => {
+            const numeric = role === 'y' || role === 'series'
+            return (
+              <div
+                key={role}
+                className="cb-drop"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  const name = e.dataTransfer.getData('text/plain')
+                  if (!name) return
+                  if (numeric && variables.find((v) => v.name === name)?.isString) return
+                  setRole(role, role === 'series' ? [...roles.series, name] : [name])
+                }}
+              >
+                <div className="cb-drop-label">{ROLE_LABEL[role]}{role === 'group' ? ' (optional)' : ''}</div>
+                <div className="cb-drop-vals">
+                  {roles[role].length ? (
+                    roles[role].map((nm) => (
+                      <span key={nm} className="cb-chip cb-chip--placed" onClick={() => setRole(role, roles[role].filter((x) => x !== nm))}>
+                        {nm} ×
+                      </span>
+                    ))
+                  ) : (
+                    <span className="cb-drop-hint">drop a variable here</span>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
         <div className="cb-canvas">
           <div className="cb-canvas-head">Preview</div>
           {preview ? (
             <div className="cb-canvas-svg" dangerouslySetInnerHTML={{ __html: preview }} />
           ) : (
-            <div className="cb-canvas-empty">{previewing ? 'Rendering…' : 'Assign variables to preview the chart.'}</div>
+            <div className="cb-canvas-empty">{previewing ? 'Rendering…' : 'Drag variables onto the zones to preview.'}</div>
           )}
         </div>
       </div>
