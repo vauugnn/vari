@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { VariableMetaJson } from '../../../shared/types'
 import { AnalysisFrame } from './AnalysisFrame'
 import { VarMover } from './VarMover'
+import { OldNewValuesDialog } from './OldNewValues'
 
 type Props = { variables: VariableMetaJson[]; onClose: () => void }
 
@@ -91,15 +92,18 @@ export function RandomSeedDialog({ onClose }: Props): JSX.Element {
 export function RecodeSameDialog({ variables, onClose }: Props): JSX.Element {
   const [src, setSrc] = useState<string[]>([])
   const [rules, setRules] = useState('(1 THRU 5=1)(6 THRU 10=2)(ELSE=SYSMIS)')
+  const [editing, setEditing] = useState(false)
   // RECODE without INTO rewrites the same variables.
   const s = () => `RECODE ${src.join(' ')} ${rules}.`
   return (
-    <AnalysisFrame title="Recode into Same Variables" onOk={() => run(s(), onClose)} onPaste={() => { window.spss.paste(s()); onClose() }} onReset={() => setSrc([])} onCancel={onClose} okDisabled={!src.length}>
-      <VarMover variables={variables} value={src} onChange={setSrc} label="Numeric Variables:" accept={(v) => !v.isString} />
-      <div style={{ marginTop: 6 }}>Old → New rules:</div>
-      <input value={rules} onChange={(e) => setRules(e.target.value)} style={{ width: '100%', fontFamily: 'Menlo, monospace', fontSize: 12 }} />
-      <div style={{ fontSize: 11, color: '#666', marginTop: 3 }}>e.g. (1 THRU 5=1)(6 THRU 10=2)(ELSE=SYSMIS)</div>
-    </AnalysisFrame>
+    <>
+      <AnalysisFrame title="Recode into Same Variables" onOk={() => run(s(), onClose)} onPaste={() => { window.spss.paste(s()); onClose() }} onReset={() => setSrc([])} onCancel={onClose} okDisabled={!src.length || !rules}
+        subButtons={[{ label: 'Old and New Values…', onClick: () => setEditing(true) }]}>
+        <VarMover variables={variables} value={src} onChange={setSrc} label="Numeric Variables:" accept={(v) => !v.isString} />
+        <div style={{ marginTop: 6, fontSize: 12, color: '#333' }}>Old → New: <span style={{ fontFamily: 'Menlo, monospace' }}>{rules || '(none — click Old and New Values…)'}</span></div>
+      </AnalysisFrame>
+      {editing && <OldNewValuesDialog initial={rules} onOk={(r) => { setRules(r); setEditing(false) }} onCancel={() => setEditing(false)} />}
+    </>
   )
 }
 
@@ -107,14 +111,17 @@ export function RecodeDifferentDialog({ variables, onClose }: Props): JSX.Elemen
   const [src, setSrc] = useState<string[]>([])
   const [target, setTarget] = useState('')
   const [rules, setRules] = useState('(1 THRU 5=1)(6 THRU 10=2)(ELSE=SYSMIS)')
+  const [editing, setEditing] = useState(false)
   const s = () => `RECODE ${src[0]} ${rules} INTO ${target}.`
   return (
-    <AnalysisFrame title="Recode into Different Variables" onOk={() => run(s(), onClose)} onPaste={() => { window.spss.paste(s()); onClose() }} onReset={() => { setSrc([]); setTarget('') }} onCancel={onClose} okDisabled={!src.length || !target.trim()}>
-      <VarMover variables={variables} value={src} onChange={(v) => setSrc(v.slice(-1))} label="Input Variable:" accept={(v) => !v.isString} />
-      <div className="field-row" style={{ marginTop: 6 }}><span>Output Name:</span><input value={target} onChange={(e) => setTarget(e.target.value)} style={{ width: 140 }} /></div>
-      <div style={{ marginTop: 6 }}>Old → New rules:</div>
-      <input value={rules} onChange={(e) => setRules(e.target.value)} style={{ width: '100%', fontFamily: 'Menlo, monospace', fontSize: 12 }} />
-      <div style={{ fontSize: 11, color: '#666', marginTop: 3 }}>e.g. (1 THRU 5=1)(6 THRU 10=2)(ELSE=SYSMIS)</div>
-    </AnalysisFrame>
+    <>
+      <AnalysisFrame title="Recode into Different Variables" onOk={() => run(s(), onClose)} onPaste={() => { window.spss.paste(s()); onClose() }} onReset={() => { setSrc([]); setTarget('') }} onCancel={onClose} okDisabled={!src.length || !target.trim() || !rules}
+        subButtons={[{ label: 'Old and New Values…', onClick: () => setEditing(true) }]}>
+        <VarMover variables={variables} value={src} onChange={(v) => setSrc(v.slice(-1))} label="Input Variable:" accept={(v) => !v.isString} />
+        <div className="field-row" style={{ marginTop: 6 }}><span>Output Name:</span><input value={target} onChange={(e) => setTarget(e.target.value)} style={{ width: 140 }} /></div>
+        <div style={{ marginTop: 6, fontSize: 12, color: '#333' }}>Old → New: <span style={{ fontFamily: 'Menlo, monospace' }}>{rules || '(none — click Old and New Values…)'}</span></div>
+      </AnalysisFrame>
+      {editing && <OldNewValuesDialog initial={rules} onOk={(r) => { setRules(r); setEditing(false) }} onCancel={() => setEditing(false)} />}
+    </>
   )
 }

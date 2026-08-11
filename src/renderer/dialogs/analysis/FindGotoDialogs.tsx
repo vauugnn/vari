@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { VariableMetaJson } from '../../../shared/types'
 import { Modal } from '../Modal'
 import { useStore } from '../../state/store'
@@ -47,29 +47,42 @@ export function GoToVariableDialog({ variables, onClose }: Props): JSX.Element {
 export function FindDialog({ variables, onClose }: Props): JSX.Element {
   const gotoCell = useStore((s) => s.gotoCell)
   const setActiveTab = useStore((s) => s.setActiveTab)
-  const goto = useStore((s) => s.goto)
   const [query, setQuery] = useState('')
   const [scope, setScope] = useState(-1) // -1 = all columns
   const [status, setStatus] = useState('')
+  const [busy, setBusy] = useState(false)
+  // Search cursor (row, col) so repeated Find Next advances through every match,
+  // including several matches in the same row.
+  const [pos, setPos] = useState({ row: 0, col: 0 })
+
+  // Restart the cursor whenever the search term or column changes.
+  useEffect(() => setPos({ row: 0, col: 0 }), [query, scope])
 
   const findNext = async () => {
-    if (!query) return
-    const startRow = (goto.row ?? -1) + 1
-    const res = await window.spss.ds.find(query, Math.max(0, startRow), 0, scope < 0 ? null : scope)
-    if (res.found) {
-      setActiveTab('data')
-      gotoCell(res.row ?? 0, res.col ?? 0)
-      setStatus('')
-    } else {
-      // wrap to the top
-      const again = await window.spss.ds.find(query, 0, 0, scope < 0 ? null : scope)
-      if (again.found) {
+    if (!query || busy) return
+    setBusy(true)
+    setStatus('')
+    try {
+      const col = scope < 0 ? null : scope
+      let res = await window.spss.ds.find(query, pos.row, pos.col, col)
+      let wrapped = false
+      if (!res.found && (pos.row > 0 || pos.col > 0)) {
+        res = await window.spss.ds.find(query, 0, 0, col)
+        wrapped = res.found
+      }
+      if (res.found) {
         setActiveTab('data')
-        gotoCell(again.row ?? 0, again.col ?? 0)
-        setStatus('Search wrapped to the top.')
+        gotoCell(res.row ?? 0, res.col ?? 0)
+        // Advance past this cell for the next search.
+        setPos({ row: res.row ?? 0, col: (res.col ?? 0) + 1 })
+        setStatus(wrapped ? 'Search wrapped to the top.' : '')
       } else {
         setStatus('No match found.')
       }
+    } catch {
+      setStatus('Find failed — the processor may be busy. Try again.')
+    } finally {
+      setBusy(false)
     }
   }
 

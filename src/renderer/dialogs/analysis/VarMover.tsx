@@ -40,9 +40,12 @@ export function VarMover({
     set(list.includes(name) ? list.filter((n) => n !== name) : [...list, name])
 
   const item = (v: VariableMetaJson, selected: boolean, onClick: () => void, onDbl: () => void) => (
-    <div key={v.name} className={'vm-item' + (selected ? ' vm-item--sel' : '')} onClick={onClick} onDoubleClick={onDbl}>
+    <div key={v.name} className={'vm-item' + (selected ? ' vm-item--sel' : '')} onClick={onClick} onDoubleClick={onDbl} title={v.label ? `${v.label} [${v.name}]` : v.name}>
       <MeasureIcon measure={v.measure} isString={v.isString} isDate={v.type === 'Date'} size={14} />
-      <span className="vm-name">{v.label ? v.label : v.name}</span>
+      <span className="vm-name">
+        {v.label ? v.label : v.name}
+        {v.label ? <span className="vm-varname"> [{v.name}]</span> : null}
+      </span>
     </div>
   )
 

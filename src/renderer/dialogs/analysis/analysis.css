@@ -89,6 +89,10 @@
   text-overflow: ellipsis;
 }
 
+.vm-varname {
+  color: #888;
+}
+
 .vm-arrows {
   display: flex;
   flex-direction: column;
