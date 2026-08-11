@@ -20,7 +20,11 @@ export interface PivotTableJson {
   cells: CellJson[]
   colLeaves?: string[]
   colSpanners?: { label: string; span: number }[][]
+  footnotes?: string[]
 }
+
+// a, b, c, … for footnote markers (SPSS uses lowercase superscript letters).
+const footLetter = (i: number): string => String.fromCharCode(97 + (i % 26))
 
 const sizes = (dims: DimJson[]): number[] => dims.map((d) => d.categories.length)
 const prod = (xs: number[]): number => xs.reduce((a, b) => a * b, 1)
@@ -162,6 +166,15 @@ export function PivotTableView({ table }: { table: PivotTableJson }): JSX.Elemen
         <tbody>{bodyTr}</tbody>
       </table>
       {table.caption && <div className="pt-caption">{table.caption}</div>}
+      {table.footnotes && table.footnotes.length > 0 && (
+        <div className="pt-footnotes">
+          {table.footnotes.map((note, i) => (
+            <div key={i} className="pt-footnote">
+              <sup>{footLetter(i)}</sup>. {note}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

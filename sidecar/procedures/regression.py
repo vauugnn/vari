@@ -103,6 +103,7 @@ class Regression(DataProcedure):
             "Coefficients",
             [Dimension("", ["(Constant)"] + preds)],
             [Dimension("", cols)],
+            footnotes=[f"Dependent Variable: {dep}"],
         )
         params, bse, tvals, pvals = model.params, model.bse, model.tvalues, model.pvalues
         ci = model.conf_int(0.05) if want_ci else None

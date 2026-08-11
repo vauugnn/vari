@@ -84,6 +84,13 @@ function pivotHtml(t: PivotTableJson): string {
   })
   html += '</tbody></table>'
   if (t.caption) html += `<div class="pt-caption">${esc(t.caption)}</div>`
+  if (t.footnotes && t.footnotes.length) {
+    html += '<div class="pt-footnotes">'
+    t.footnotes.forEach((note, i) => {
+      html += `<div class="pt-footnote"><sup>${String.fromCharCode(97 + (i % 26))}</sup>. ${esc(note)}</div>`
+    })
+    html += '</div>'
+  }
   return `<div class="pt-wrap">${html}</div>`
 }
 

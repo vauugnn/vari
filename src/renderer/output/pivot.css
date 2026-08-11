@@ -76,3 +76,13 @@
   color: #333;
   margin-top: 3px;
 }
+
+.pt-footnotes {
+  font-size: 11px;
+  color: #333;
+  margin-top: 3px;
+}
+
+.pt-footnote sup {
+  font-size: 9px;
+}
