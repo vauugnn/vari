@@ -19,6 +19,44 @@ class Title(Procedure):
         return [{"type": "Title", "text": text}]
 
 
+class Display(Procedure):
+    """DISPLAY [DICTIONARY] — a Data File Information report: one row per
+    variable with its position, label, measurement level, and format."""
+
+    def execute(self, rest: str, ctx: Context) -> list[dict[str, Any]]:
+        ds = ctx.active
+        if ds is None:
+            return [{"type": "Error", "text": "No active dataset."}]
+        rows = [v.name for v in ds.variables]
+        t = PivotTable(
+            "Variable Information",
+            row_dims=[Dimension("Variable", rows)],
+            col_dims=[Dimension("", ["Position", "Label", "Measurement Level", "Type", "Format"])],
+        )
+        for i, v in enumerate(ds.variables):
+            t.set([i], [0], str(i + 1))
+            t.set([i], [1], v.label or "")
+            t.set([i], [2], v.measure.title())
+            t.set([i], [3], "String" if v.is_string else "Numeric")
+            t.set([i], [4], v.print_format.to_spss())
+        return [title_obj("Data File Information"), t.to_json()]
+
+
+class DatasetName(Procedure):
+    """DATASET NAME newname — rename the active dataset."""
+
+    def execute(self, rest: str, ctx: Context) -> list[dict[str, Any]]:
+        ds = ctx.active
+        if ds is None:
+            return [{"type": "Error", "text": "No active dataset."}]
+        m = re.match(r"\s*(?:NAME\s+)?([A-Za-z@#$][\w@#$.]*)", rest, re.IGNORECASE)
+        if not m:
+            return [{"type": "Error", "text": "DATASET NAME requires a name."}]
+        ds.name = m.group(1)
+        ctx.mark_changed()
+        return []
+
+
 class Get(Procedure):
     def execute(self, rest: str, ctx: Context) -> list[dict[str, Any]]:
         m = re.search(r"FILE\s*=?\s*(['\"])(.*?)\1", rest, re.IGNORECASE | re.DOTALL)

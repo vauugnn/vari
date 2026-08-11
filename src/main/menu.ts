@@ -219,6 +219,12 @@ export function buildMenu(actions: MenuActions): Menu {
       { label: 'Save As…', accelerator: 'CmdOrCtrl+Shift+S', click: actions.fileSaveAs },
       proc('Export'),
       { type: 'separator' },
+      { label: 'Rename Dataset…', click: () => actions.openDialog('rename-dataset') },
+      {
+        label: 'Display Data File Information',
+        submenu: [{ label: 'Working File', click: () => actions.execSyntax('DISPLAY DICTIONARY.') }]
+      },
+      { type: 'separator' },
       { label: 'Print…', accelerator: 'CmdOrCtrl+P', click: actions.filePrint },
       { type: 'separator' },
       isMac ? { role: 'close' } : { role: 'quit', label: 'Exit' }
@@ -246,7 +252,7 @@ export function buildMenu(actions: MenuActions): Menu {
       dialogItem('Go to Case…', 'gotocase', actions.openDialog),
       dialogItem('Go to Variable…', 'gotovar', actions.openDialog),
       { type: 'separator' },
-      proc('Options…')
+      dialogItem('Options…', 'options', actions.openDialog)
     ]
   })
 

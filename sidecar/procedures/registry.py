@@ -24,7 +24,7 @@ from .frequencies import Frequencies
 from .graph import Graph
 from .means import Means
 from .nonparcorr import NonparCorr
-from .nonproc import Get, PivotDemo, Save, Title
+from .nonproc import DatasetName, Display, Get, PivotDemo, Save, Title
 from .npar import NparTests
 from .oneway import Oneway
 from .regression import Regression
@@ -52,6 +52,8 @@ def build_registry() -> Registry:
     reg.register("TITLE")(Title)
     reg.register("GET")(Get)
     reg.register("SAVE")(Save)
+    reg.register("DISPLAY")(Display)
+    reg.register("DATASET")(DatasetName)
     reg.register("PIVOTDEMO")(PivotDemo)
     reg.register("FREQUENCIES")(Frequencies)
     reg.register("DESCRIPTIVES")(Descriptives)

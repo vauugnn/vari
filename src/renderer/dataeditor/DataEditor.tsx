@@ -55,6 +55,7 @@ import { ChartBuilderDialog } from '../dialogs/analysis/ChartBuilderDialog'
 import { PowerDialog, MvaDialog, MiDialog, MediationDialog, MetaDialog } from '../dialogs/analysis/AdvancedDialogs'
 import { RunScriptDialog } from '../dialogs/RunScriptDialog'
 import { OpenDatabaseDialog } from '../dialogs/OpenDatabaseDialog'
+import { RenameDatasetDialog, OptionsDialog } from '../dialogs/OptionsDialogs'
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
 import { ExploreDialog, PartialCorrDialog } from '../dialogs/analysis/ExploreDialog'
 import { ImportWizard } from '../dialogs/ImportWizard'
@@ -583,6 +584,8 @@ export function DataEditor(): JSX.Element {
 
       {scriptOpen && <RunScriptDialog onClose={() => setScriptOpen(false)} />}
       {dbOpen && <OpenDatabaseDialog onClose={() => setDbOpen(false)} onDone={setSummary} />}
+      {dialogId === 'rename-dataset' && <RenameDatasetDialog onClose={() => setDialogId(null)} />}
+      {dialogId === 'options' && <OptionsDialog onClose={() => setDialogId(null)} />}
 
       {customize && (
         <Modal title="Customize Toolbar" onOk={() => setCustomize(false)} onCancel={() => setCustomize(false)}>

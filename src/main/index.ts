@@ -1,6 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron'
 import { writeFile } from 'fs/promises'
-import { existsSync, readFileSync, writeFileSync } from 'fs'
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import updaterPkg from 'electron-updater'
 import { buildMenu, focusOrShow } from './menu'
@@ -87,6 +87,7 @@ function viewToggle(kind: string): void {
 // Run a syntax string from a menu action (e.g. EXECUTE.), routing output to the
 // Viewer exactly like syntax.execute does.
 async function execSyntax(text: string): Promise<void> {
+  journal(text)
   try {
     const result = (await sidecar.request('syntax.execute', { text })) as OutputObject[]
     const objects: OutputObject[] = []
@@ -121,6 +122,23 @@ function showAbout(): void {
 // (SPSS-style auto-recovery / Recently Used Data).
 function stateFile(): string {
   return join(app.getPath('userData'), 'vari-state.json')
+}
+
+// Journal: append every executed syntax command to a file (SPSS keeps a journal
+// of all commands run). Free because all execution funnels through here.
+function journalPath(): string {
+  return join(app.getPath('userData'), 'vari-journal.sps')
+}
+
+function journal(text: string): void {
+  const t = text.trim()
+  if (!t) return
+  try {
+    const line = t.endsWith('.') ? t : t + '.'
+    appendFileSync(journalPath(), line + '\n')
+  } catch {
+    /* best effort */
+  }
 }
 
 function rememberFile(path: string): void {
@@ -394,6 +412,7 @@ function wireDatasetIpc(): void {
 function wireIpc(): void {
   wireDatasetIpc()
   ipcMain.handle(IPC.syntaxExecute, async (_evt, text: string): Promise<OutputObject[]> => {
+    journal(text)
     try {
       const result = (await sidecar.request('syntax.execute', { text })) as OutputObject[]
       const all = Array.isArray(result) ? result : []
