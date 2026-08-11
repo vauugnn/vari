@@ -23,6 +23,13 @@ const sidecar = new Sidecar()
 
 app.setName('Vari')
 
+// macOS delivers double-clicked / "Open With" files via this event, which can
+// fire before the app is ready — queue and process once the sidecar is up.
+app.on('open-file', (e, path) => {
+  e.preventDefault()
+  queueOpen(path)
+})
+
 function loadEntry(win: BrowserWindow, entry: WindowName): void {
   if (RENDERER_URL) {
     void win.loadURL(`${RENDERER_URL}/${entry}/index.html`)
@@ -220,6 +227,41 @@ function createAllWindows(): void {
 function broadcastDataset(summary: DatasetSummary): void {
   const de = windows.dataeditor
   if (de && !de.isDestroyed()) de.webContents.send(IPC.datasetChanged, summary)
+}
+
+// Open a file the OS handed us (double-click / "Open With Vari"). Routes by
+// extension: .spv to the Viewer, text/CSV through the Import wizard, other data
+// files straight into the Data Editor.
+async function openPath(path: string): Promise<void> {
+  try {
+    if (/\.spv$/i.test(path)) {
+      const out = (await sidecar.request('output.openSpv', { path })) as { items: OutputObject[] }
+      sendToViewer(out.items)
+      showWindow('viewer')
+      return
+    }
+    if (/\.(csv|txt|tsv)$/i.test(path)) {
+      const de = windows.dataeditor
+      if (de && !de.isDestroyed()) de.webContents.send(IPC.importText, path)
+      showWindow('dataeditor')
+      return
+    }
+    const summary = (await sidecar.request('dataset.open', { path })) as DatasetSummary
+    rememberFile(path)
+    broadcastDataset(summary)
+    showWindow('dataeditor')
+  } catch (err) {
+    sendToViewer([{ type: 'Error', text: `Could not open ${path}: ${String(err instanceof Error ? err.message : err)}` }])
+    showWindow('viewer')
+  }
+}
+
+// Files passed on launch or via macOS open-file, queued until the sidecar is up.
+const pendingOpen: string[] = []
+function queueOpen(path: string): void {
+  if (!path) return
+  if (sidecar.currentStatus.state === 'ready') void openPath(path)
+  else pendingOpen.push(path)
 }
 
 async function openViaDialog(): Promise<DatasetSummary | null> {
@@ -598,6 +640,13 @@ app.whenReady().then(() => {
     })
   )
   wireIpc()
+  // Windows/Linux pass a double-clicked file as an argv; queue it to open once
+  // the sidecar is ready (macOS uses the open-file event instead).
+  if (process.platform !== 'darwin') {
+    for (const arg of process.argv.slice(1)) {
+      if (/\.(sav|por|dta|csv|txt|tsv|spv)$/i.test(arg) && existsSync(arg)) queueOpen(arg)
+    }
+  }
   createAllWindows()
   checkForUpdatesOnStartup()
 
@@ -607,12 +656,15 @@ app.whenReady().then(() => {
       // Make crashes visible in the Viewer, per PHASE-0 crash handling.
       sendToViewer([{ type: 'Error', text: status.detail }])
     }
-    // Once the processor is up, reopen the last dataset so we don't start blank
-    // (fall back to a fresh empty dataset if there is nothing to reopen).
+    // Once the processor is up: open any files the OS/launch handed us; else
+    // reopen the last dataset so we don't start blank (falling back to a fresh
+    // empty dataset).
     if (status.state === 'ready' && !reopenedOnce) {
       reopenedOnce = true
       void (async () => {
-        if (!(await reopenLastFile())) {
+        if (pendingOpen.length) {
+          for (const p of pendingOpen.splice(0)) await openPath(p)
+        } else if (!(await reopenLastFile())) {
           const s = (await sidecar.request('dataset.new', {})) as DatasetSummary
           broadcastDataset(s)
         }
