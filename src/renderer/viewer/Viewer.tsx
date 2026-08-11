@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { OutputObject } from '../../shared/types'
 import { OutputItem } from '../common/output'
 import { documentHtml } from '../output/toHtml'
+import { ContextMenu, type MenuItem } from '../grid/ContextMenu'
 import './viewer.css'
 
 interface OutlineEntry {
@@ -63,6 +64,27 @@ export function Viewer(): JSX.Element {
     itemRefs.current[i]?.scrollIntoView({ block: 'start', behavior: 'smooth' })
   }
 
+  const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null)
+
+  const itemMenu = (i: number, e: React.MouseEvent): void => {
+    e.preventDefault()
+    setSelected(i)
+    setMenu({
+      x: e.clientX,
+      y: e.clientY,
+      items: [
+        {
+          label: 'Copy',
+          onClick: () => {
+            const text = itemRefs.current[i]?.innerText ?? ''
+            void navigator.clipboard.writeText(text).catch(() => undefined)
+          }
+        },
+        { label: 'Delete', onClick: () => deleteItem(i) }
+      ]
+    })
+  }
+
   return (
     <div className="vw-shell">
       <div className="vw-toolbar">
@@ -116,6 +138,7 @@ export function Viewer(): JSX.Element {
                   ref={(el) => (itemRefs.current[i] = el)}
                   className={'vw-item' + (selected === i ? ' vw-item--sel' : '')}
                   onClick={() => setSelected(i)}
+                  onContextMenu={(e) => itemMenu(i, e)}
                 >
                   <button className="vw-item-del" title="Delete" onClick={(ev) => { ev.stopPropagation(); deleteItem(i) }}>
                     ×
@@ -132,6 +155,7 @@ export function Viewer(): JSX.Element {
           )}
         </div>
       </div>
+      {menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
     </div>
   )
 }
