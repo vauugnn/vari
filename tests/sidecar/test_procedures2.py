@@ -38,9 +38,9 @@ def test_correlations_matches_scipy():
     t = tables(out)[0]
     c = cells(t)
     r_expected, p_expected = sps.pearsonr(x, y)
-    # row [0=x, 0=Pearson], col [1=y]
-    assert abs(float(c[((0, 0), (1,))]) - r_expected) < 0.001
-    assert float(c[((0, 0), (0,))]) == 1.0  # diagonal
+    # row [0=x, 0=Pearson], col [1=y]. Strip SPSS significance stars (* / **).
+    assert abs(float(c[((0, 0), (1,))].rstrip("*")) - r_expected) < 0.001
+    assert float(c[((0, 0), (0,))].rstrip("*")) == 1.0  # diagonal
     assert abs(float("0" + c[((0, 1), (1,))]) - p_expected) < 0.001  # sig, leading zero stripped
 
 

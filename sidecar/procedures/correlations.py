@@ -44,6 +44,8 @@ class Correlations(DataProcedure):
             row_dims=[Dimension("", list(names)), Dimension("", stat_cats)],
             col_dims=[Dimension("", list(names))],
         )
+        any_01 = False
+        any_05 = False
         for i, a in enumerate(names):
             for j, b in enumerate(names):
                 pair = mdf[[a, b]].dropna()
@@ -56,7 +58,21 @@ class Correlations(DataProcedure):
                     p = float(2 * sps.t.sf(abs(tval), n - 2))
                 else:
                     r, p = float("nan"), None
-                t.set([i, 0], [j], strip_leading_zero(_F3.render(r)) if r == r else ".", "num")
+                # SPSS flags significant correlations with * (.05) and ** (.01).
+                star = ""
+                if p is not None and a != b:
+                    if p < 0.01:
+                        star, any_01 = "**", True
+                    elif p < 0.05:
+                        star, any_05 = "*", True
+                cell = (strip_leading_zero(_F3.render(r)) + star) if r == r else "."
+                t.set([i, 0], [j], cell, "num")
                 t.set([i, 1], [j], "" if p is None else strip_leading_zero(_F3.render(p)), "num")
                 t.set([i, 2], [j], _F0.render(n), "num")
+        notes = []
+        if any_01:
+            notes.append("**. Correlation is significant at the 0.01 level (2-tailed).")
+        if any_05:
+            notes.append("*. Correlation is significant at the 0.05 level (2-tailed).")
+        t.footnotes = notes
         return [t.to_json()]
