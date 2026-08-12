@@ -86,7 +86,11 @@ def histogram(values: Sequence[float], title: str = "", xlabel: str = "",
     v = np.asarray([x for x in values if x == x], dtype=float)
     fig, ax = _plt().subplots(figsize=(4.4, 3.2))
     if v.size:
-        counts, edges, _ = ax.hist(v, bins="auto", color=_BAR_COLOR, edgecolor=_EDGE, linewidth=0.5)
+        edges = _hist_bins(v)
+        counts, edges, _ = ax.hist(v, bins=edges, color=_BAR_COLOR, edgecolor=_EDGE, linewidth=0.5)
+        # SPSS labels the x-axis at the bin centres for integer data.
+        if len(edges) > 1 and np.allclose(np.diff(edges), 1.0):
+            ax.set_xticks((edges[:-1] + edges[1:]) / 2.0)
         if normal and v.size > 1:
             m = float(v.mean())
             s = float(v.std(ddof=1)) or 1.0
@@ -97,9 +101,27 @@ def histogram(values: Sequence[float], title: str = "", xlabel: str = "",
     ax.set_xlabel(xlabel)
     ax.set_ylabel("Frequency")
     if mean is not None and sd:
-        txt = f"Mean = {mean:.2f}\nStd. Dev. = {sd:.3f}" + (f"\nN = {n}" if n else "")
+        txt = f"Mean = {mean:.2f}\nStd. Dev. = {sd:.3f}" + (f"\nN = {n:,}" if n else "")
         ax.text(0.98, 0.97, txt, transform=ax.transAxes, ha="right", va="top", fontsize=8)
     return _finish(fig, title)
+
+
+def _hist_bins(v: Any) -> Any:
+    """Bin edges the SPSS way: bars touch, never separated by empty gaps.
+
+    For (near-)integer data over a modest range — age, Likert scales, counts,
+    the common survey case — SPSS puts one contiguous width-1 bar per integer,
+    centred on the value. Otherwise fall back to a Sturges-like count of equal
+    contiguous bins (bars still touch)."""
+    lo, hi = float(v.min()), float(v.max())
+    span = hi - lo
+    is_int = bool(np.allclose(v, np.round(v)))
+    if is_int and 0 < span <= 30:
+        return np.arange(np.floor(lo) - 0.5, np.ceil(hi) + 1.5, 1.0)
+    if span <= 0:
+        return np.array([lo - 0.5, lo + 0.5])
+    k = max(1, int(np.ceil(np.log2(v.size) + 1)))  # Sturges
+    return np.linspace(lo, hi, k + 1)
 
 
 def bar_chart(labels: Sequence[str], counts: Sequence[float], title: str = "", xlabel: str = "") -> dict[str, Any]:

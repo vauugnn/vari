@@ -1,7 +1,7 @@
 {
   "name": "vari",
   "productName": "Vari",
-  "version": "1.0.48",
+  "version": "1.0.49",
   "description": "Vari — a desktop statistics application (SPSS-style workflow)",
   "private": true,
   "main": "./out/main/index.js",
