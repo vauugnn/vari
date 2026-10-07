@@ -140,7 +140,25 @@ def _active() -> Dataset:
 # ---- undo / redo (bounded in-place snapshot history of the active dataset) ----
 _UNDO: list[Any] = []
 _REDO: list[Any] = []
-_MAX_HISTORY = 25
+_MAX_HISTORY = 200
+_MAX_UNDO_BYTES = 400 * 1024 * 1024  # total memory the undo stack may hold
+
+
+def _snap_bytes(snap: Any) -> int:
+    try:
+        return int(snap.df.memory_usage(deep=False).sum())
+    except Exception:  # noqa: BLE001
+        return 0
+
+
+def _trim_undo() -> None:
+    """Keep the undo stack within the step limit and the memory budget (oldest steps go first,
+    but the most recent step is always kept)."""
+    while len(_UNDO) > _MAX_HISTORY:
+        _UNDO.pop(0)
+    total = sum(_snap_bytes(s) for s in _UNDO)
+    while len(_UNDO) > 1 and total > _MAX_UNDO_BYTES:
+        total -= _snap_bytes(_UNDO.pop(0))
 
 
 def _snapshot_active() -> Any:
@@ -153,8 +171,7 @@ def _push_undo() -> None:
     if snap is None:
         return
     _UNDO.append(snap)
-    if len(_UNDO) > _MAX_HISTORY:
-        _UNDO.pop(0)
+    _trim_undo()
     _REDO.clear()
 
 
@@ -203,8 +220,7 @@ def m_syntax_execute(p: Any) -> list[dict[str, Any]]:
     if changed:
         if after is before and pre is not None:  # in-place mutation is undoable
             _UNDO.append(pre)
-            if len(_UNDO) > _MAX_HISTORY:
-                _UNDO.pop(0)
+            _trim_undo()
             _REDO.clear()
         outputs.append({"type": "_DatasetChanged", "summary": _dataset_summary(after)})
     return outputs

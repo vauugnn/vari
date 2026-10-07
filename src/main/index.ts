@@ -132,8 +132,11 @@ function showAbout(): void {
     title: 'About Vari',
     message: `Vari ${app.getVersion()}`,
     detail:
-      'An independent, open reimplementation of a statistics package.\n' +
-      'Not affiliated with or endorsed by IBM. "SPSS" is a trademark of IBM.',
+      'A free statistics package for students: no licence, no trial, no account. ' +
+      'Works on Mac and Windows, opens and saves .sav data and .spv output files, and keeps a ' +
+      'version history of your work on your own computer.\n\n' +
+      'An independent, open reimplementation; not affiliated with or endorsed by IBM. ' +
+      '"SPSS" is a trademark of IBM.',
     buttons: ['OK']
   })
 }

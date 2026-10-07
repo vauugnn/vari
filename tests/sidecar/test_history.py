@@ -242,3 +242,19 @@ def test_recover_finds_the_newest_version_and_opens_it_as_a_new_dataset(server_d
     out = _rpc("history.openVersion", {"docId": rec["docId"], "id": rec["version"]["id"]})
     assert out["syntax"] == "SYN2" and server.REGISTRY.active.df["x"].tolist()[0] == 77.0
     assert server.REGISTRY.active.name != before and server.REGISTRY.get(before) is not None
+
+
+def test_undo_goes_far_back_and_respects_the_memory_budget(server_ds, monkeypatch):
+    server = server_ds
+    for i in range(60):                                   # more than the old 25-step limit
+        _rpc("dataset.setCell", {"row": 0, "col": 0, "value": str(100 + i)})
+    assert len(server._UNDO) == 60
+    for _ in range(60):
+        assert _rpc("dataset.undo")["ok"]
+    assert server.REGISTRY.active.df["x"].tolist()[0] == 1.0   # all the way back to the start
+
+    monkeypatch.setattr(server, "_MAX_UNDO_BYTES", 1)     # budget too small for more than the newest step
+    for i in range(5):
+        _rpc("dataset.setCell", {"row": 0, "col": 0, "value": str(200 + i)})
+    assert len(server._UNDO) == 1                         # newest step is always kept
+    assert _rpc("dataset.undo")["ok"]
