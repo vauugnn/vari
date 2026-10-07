@@ -126,6 +126,8 @@ const api: SpssApi = {
       ipcRenderer.send(IPC.docCollected, { requestId, window: detectWindow(), state: provider() })
     })
   },
+  searchMenu: (query) => ipcRenderer.invoke(IPC.menuSearch, query),
+  invokeMenu: (indexPath) => ipcRenderer.invoke(IPC.menuInvoke, indexPath),
   exportChart: (format, svg, png) => ipcRenderer.invoke(IPC.chartExport, { format, svg, png }) as Promise<string | null>,
   onOutputReplace: (cb) => {
     const listener = (_e: unknown, items: OutputObject[]) => cb(items)

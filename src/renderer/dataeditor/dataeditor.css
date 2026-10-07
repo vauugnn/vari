@@ -20,77 +20,6 @@
   padding: 3px 10px;
 }
 
-.icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px 5px !important;
-  min-width: 0;
-  background: transparent !important;
-  border: 1px solid transparent !important;
-  border-radius: var(--r);
-  box-shadow: none !important;
-}
-
-.icon-btn:hover:not(:disabled) {
-  border-color: var(--line-strong) !important;
-  background: #e9edf3 !important;
-}
-
-.icon-btn:active:not(:disabled) {
-  background: #dde3ec !important;
-}
-
-.icon-btn--on {
-  border-color: var(--accent) !important;
-  background: var(--accent-soft) !important;
-}
-
-.icon-btn:disabled {
-  opacity: 0.35;
-  pointer-events: none;
-}
-
-/* Hover tooltips (work even over disabled buttons — the wrapper gets hover). */
-.tt {
-  position: relative;
-  display: inline-flex;
-}
-
-.tt::after {
-  content: attr(data-tip);
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-top: 4px;
-  background: #2b313b;
-  border-radius: 4px;
-  color: #fff;
-  font-size: 11px;
-  line-height: 1.4;
-  padding: 3px 8px;
-  box-shadow: var(--shadow-md);
-  white-space: nowrap;
-  z-index: 300;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.05s linear 0.5s, visibility 0s linear 0.5s;
-}
-
-.tt:hover::after {
-  opacity: 1;
-  visibility: visible;
-}
-
-.de-sep {
-  width: 1px;
-  height: 18px;
-  background: var(--line);
-  margin: 0 6px;
-}
-
 .toggle--on {
   background: var(--accent-soft);
   border-color: var(--accent);
@@ -149,4 +78,13 @@
   font-weight: 600;
   border-color: var(--line);
   box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.de-infobar {
+  padding: 2px 12px;
+  text-align: right;
+  font-size: 11.5px;
+  color: var(--text-2);
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
 }

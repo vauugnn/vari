@@ -587,6 +587,39 @@ function wireDatasetIpc(): void {
     }
   })
   ipcMain.handle(IPC.ds.saveAs, () => saveViaDialog())
+  // Toolbar "Search application": search the real menu, so results always match what the menu can do.
+  ipcMain.handle(IPC.menuSearch, (_e, query: string) => {
+    const q = String(query ?? '').trim().toLowerCase()
+    if (!q) return []
+    const hits: { path: string; label: string; indexPath: number[]; rank: number }[] = []
+    const walk = (items: Electron.MenuItem[], trail: string[], idx: number[]): void => {
+      items.forEach((item, i) => {
+        if (item.type === 'separator' || !item.visible) return
+        const label = (item.label || '').replace(/&/g, '')
+        const here = [...idx, i]
+        if (item.submenu) walk(item.submenu.items, [...trail, label], here)
+        else if (item.enabled && label && !item.role) {
+          const clean = label.replace(/…$/, '')
+          const hay = clean.toLowerCase()
+          if (hay.includes(q) || trail.join(' ').toLowerCase().includes(q)) {
+            hits.push({ path: [...trail, clean].join(' › '), label: clean, indexPath: here, rank: hay.startsWith(q) ? 0 : hay.includes(q) ? 1 : 2 })
+          }
+        }
+      })
+    }
+    const menu = Menu.getApplicationMenu()
+    if (menu) walk(menu.items, [], [])
+    return hits.sort((a, b) => a.rank - b.rank || a.label.localeCompare(b.label)).slice(0, 12).map(({ path, label, indexPath }) => ({ path, label, indexPath }))
+  })
+  ipcMain.handle(IPC.menuInvoke, (_e, indexPath: number[]) => {
+    let items = Menu.getApplicationMenu()?.items ?? []
+    let item: Electron.MenuItem | undefined
+    for (const i of indexPath) {
+      item = items[i]
+      items = item?.submenu?.items ?? []
+    }
+    if (item && item.enabled && item.click) item.click(item, windows.dataeditor ?? undefined, undefined as unknown as Electron.KeyboardEvent)
+  })
   ipcMain.handle(IPC.chartExport, async (_e, p: { format: 'png' | 'svg' | 'pdf'; svg: string; png?: string }) => {
     const win = BrowserWindow.getFocusedWindow() ?? (windows.viewer as BrowserWindow)
     // VARI_TEST_SAVE_DIR lets automated checks skip the native save dialog.

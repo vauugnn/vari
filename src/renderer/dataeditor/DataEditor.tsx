@@ -56,6 +56,8 @@ import { PowerDialog, MvaDialog, MiDialog, MediationDialog, MetaDialog } from '.
 import { RunScriptDialog } from '../dialogs/RunScriptDialog'
 import { OpenDatabaseDialog } from '../dialogs/OpenDatabaseDialog'
 import { RenameDatasetDialog, OptionsDialog } from '../dialogs/OptionsDialogs'
+import { AppSearch } from '../common/AppSearch'
+import { TB } from '../common/TB'
 import { VersionHistoryDialog } from '../dialogs/VersionHistoryDialog'
 import { TestChooserDialog } from '../dialogs/TestChooserDialog'
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
@@ -106,32 +108,6 @@ import {
   KappaDialog
 } from '../dialogs/analysis/MoreDialogs'
 import './dataeditor.css'
-
-function TB({
-  title,
-  onClick,
-  active,
-  disabled,
-  children
-}: {
-  title: string
-  onClick?: () => void
-  active?: boolean
-  disabled?: boolean
-  children: ReactNode
-}): JSX.Element {
-  return (
-    <span className="tt" data-tip={title}>
-      <button
-        className={'icon-btn' + (active ? ' icon-btn--on' : '')}
-        disabled={disabled}
-        onClick={onClick}
-      >
-        {children}
-      </button>
-    </span>
-  )
-}
 
 export function DataEditor(): JSX.Element {
   const summary = useStore((s) => s.summary)
@@ -282,13 +258,15 @@ export function DataEditor(): JSX.Element {
   const has = !!summary
 
   type Tool = { id: string; tip: string; icon: ReactNode; onClick?: () => void; disabled?: boolean; active?: boolean }
+  // The button order of the SPSS 32 Data Editor toolbar. New, Weight Cases and the window
+  // shortcuts exist but are off by default (Customize toolbar brings them back).
   const tools: (Tool | 'sep')[] = [
-    { id: 'new', tip: 'New', icon: <NewIcon />, onClick: newDs },
     { id: 'open', tip: 'Open', icon: <OpenIcon />, onClick: open },
     { id: 'save', tip: 'Save', icon: <SaveIcon />, onClick: save, disabled: !has },
     { id: 'print', tip: 'Print', icon: <PrintIcon />, disabled: !has },
     'sep',
     { id: 'recall', tip: 'Recall recently used dialogs', icon: <RecallIcon /> },
+    'sep',
     { id: 'undo', tip: 'Undo', icon: <UndoIcon />, onClick: undo, disabled: !has },
     { id: 'redo', tip: 'Redo', icon: <RedoIcon />, onClick: redo, disabled: !has },
     'sep',
@@ -301,14 +279,14 @@ export function DataEditor(): JSX.Element {
     { id: 'insertcase', tip: 'Insert Cases', icon: <InsertCaseIcon />, onClick: insertCase, disabled: !has },
     { id: 'insertvar', tip: 'Insert Variable', icon: <InsertVarIcon />, onClick: insertVar, disabled: !has },
     'sep',
-    { id: 'split', tip: 'Split File', icon: <SplitFileIcon />, onClick: () => setDialogId('splitfile'), disabled: !has },
-    { id: 'weight', tip: 'Weight Cases', icon: <WeightIcon />, onClick: () => setDialogId('weight'), disabled: !has },
-    { id: 'select', tip: 'Select Cases', icon: <SelectCasesIcon />, onClick: () => setDialogId('selectcases'), disabled: !has },
-    'sep',
     { id: 'valuelabels', tip: 'Value Labels', icon: <ValueLabelsIcon />, onClick: toggleValueLabels, active: showValueLabels, disabled: !has },
+    { id: 'split', tip: 'Split File', icon: <SplitFileIcon />, onClick: () => setDialogId('splitfile'), disabled: !has },
+    { id: 'select', tip: 'Select Cases', icon: <SelectCasesIcon />, onClick: () => setDialogId('selectcases'), disabled: !has },
     { id: 'varsets', tip: 'Use Variable Sets', icon: <VarSetsIcon />, disabled: !has },
     { id: 'showall', tip: 'Show All Variables', icon: <ShowAllVarsIcon />, disabled: !has },
-    'sep',
+    // Not on the SPSS 32 toolbar; hidden by default.
+    { id: 'new', tip: 'New', icon: <NewIcon />, onClick: newDs },
+    { id: 'weight', tip: 'Weight Cases', icon: <WeightIcon />, onClick: () => setDialogId('weight'), disabled: !has },
     { id: 'syntax', tip: 'Go to Syntax Editor', icon: <SyntaxWinIcon />, onClick: () => window.spss.showWindow('syntax') },
     { id: 'viewer', tip: 'Go to Output Viewer', icon: <ViewerWinIcon />, onClick: () => window.spss.showWindow('viewer') }
   ]
@@ -326,11 +304,16 @@ export function DataEditor(): JSX.Element {
             </TB>
           )
         )}
-        <span className="de-sep" />
         <TB title="Customize toolbar" onClick={() => setCustomize(true)}>
           <GearIcon />
         </TB>
+        <AppSearch />
       </div>
+      {has && activeTab !== 'overview' && (
+        <div className="de-infobar">
+          Visible: {summary!.nVars} of {summary!.nVars} Variables
+        </div>
+      )}
 
       {lastError && (
         <div className="de-error" onClick={() => setError(null)}>

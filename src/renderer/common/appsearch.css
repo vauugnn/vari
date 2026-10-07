@@ -1,0 +1,57 @@
+.as {
+  position: relative;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  width: 230px;
+}
+
+.as-icon {
+  position: absolute;
+  left: 8px;
+  pointer-events: none;
+}
+
+.as input {
+  width: 100%;
+  padding: 4px 8px 4px 28px;
+  border-radius: 6px;
+}
+
+.as-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 380px;
+  max-height: 360px;
+  overflow: auto;
+  z-index: 250;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md);
+  padding: 4px;
+}
+
+.as-hit {
+  display: flex;
+  flex-direction: column;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: default;
+}
+
+.as-hit--on {
+  background: var(--accent);
+  color: #fff;
+}
+
+.as-path {
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.as-none {
+  padding: 8px 10px;
+  color: var(--text-3);
+}

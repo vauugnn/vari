@@ -103,6 +103,8 @@ export const IPC = {
   datasetChanged: 'dataset.changed',
   // Version history. Main asks the Viewer and Syntax windows for their state before a snapshot.
   chartExport: 'chart.export',
+  menuSearch: 'menu.search',
+  menuInvoke: 'menu.invoke',
   docCollect: 'doc.collect',
   docCollected: 'doc.collected',
   outputReplace: 'output.replace',
@@ -234,4 +236,13 @@ export interface SpssApi {
   onSetSyntax: (cb: (text: string) => void) => () => void
   /** Save a chart as PNG, SVG or PDF through a save dialog. Returns the path, or null if cancelled. */
   exportChart: (format: 'png' | 'svg' | 'pdf', svg: string, png?: string) => Promise<string | null>
+  /** Search the application menu (the toolbar's "Search application" box). */
+  searchMenu: (query: string) => Promise<MenuHit[]>
+  invokeMenu: (indexPath: number[]) => Promise<void>
+}
+
+export interface MenuHit {
+  path: string // e.g. "Analyze › Compare Means › Independent-Samples T Test"
+  label: string
+  indexPath: number[]
 }

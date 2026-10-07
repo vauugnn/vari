@@ -6,17 +6,12 @@
 
 .vw-toolbar {
   display: flex;
-  gap: 6px;
+  gap: 1px;
   align-items: center;
-  height: 38px;
+  min-height: 42px;
   padding: 0 10px;
   border-bottom: 1px solid var(--line);
   background: linear-gradient(#ffffff, #f3f4f7);
-}
-
-.vw-toolbar button {
-  min-width: 0;
-  padding: 3px 11px;
 }
 
 .vw-root {

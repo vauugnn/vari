@@ -3,6 +3,9 @@ import type { OutputObject } from '../../shared/types'
 import { OutputItem } from '../common/output'
 import { documentHtml } from '../output/toHtml'
 import { ContextMenu, type MenuItem } from '../grid/ContextMenu'
+import { AppSearch } from '../common/AppSearch'
+import { TB } from '../common/TB'
+import { ClearOutputIcon, DataWinIcon, ExportIcon, OpenIcon, PrintIcon, SaveIcon, SyntaxWinIcon } from '../common/icons'
 import './viewer.css'
 
 interface OutlineEntry {
@@ -26,6 +29,7 @@ export function Viewer(): JSX.Element {
   // Titles whose following block is collapsed (folded), keyed by item index.
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set())
   const itemRefs = useRef<(HTMLDivElement | null)[]>([])
+  const exportBtn = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
     return window.spss.onOutput((objects) => setItems((prev) => [...prev, ...objects]))
@@ -100,18 +104,46 @@ export function Viewer(): JSX.Element {
   return (
     <div className="vw-shell">
       <div className="vw-toolbar">
-        <button onClick={exportHtml} disabled={items.length === 0}>
-          Export HTML…
-        </button>
-        <button onClick={() => void window.spss.exportExcel(items)} disabled={items.length === 0}>
-          Export Excel…
-        </button>
-        <button onClick={() => void window.spss.exportSpv(items)} disabled={items.length === 0}>
-          Save Output…
-        </button>
-        <button onClick={() => setItems([])} disabled={items.length === 0}>
-          Clear
-        </button>
+        <TB title="Open output" onClick={() => void window.spss.openOutput()}>
+          <OpenIcon />
+        </TB>
+        <TB title="Save output" onClick={() => void window.spss.exportSpv(items)} disabled={items.length === 0}>
+          <SaveIcon />
+        </TB>
+        <TB title="Print" onClick={() => window.print()} disabled={items.length === 0}>
+          <PrintIcon />
+        </TB>
+        <TB
+          title="Export (HTML or Excel)"
+          disabled={items.length === 0}
+          onClick={() => {
+            const r = exportBtn.current?.getBoundingClientRect()
+            setMenu({
+              x: r ? r.left : 8,
+              y: r ? r.bottom : 40,
+              items: [
+                { label: 'HTML…', onClick: () => void exportHtml() },
+                { label: 'Excel…', onClick: () => void window.spss.exportExcel(items) }
+              ]
+            })
+          }}
+        >
+          <span ref={exportBtn} style={{ display: 'inline-flex' }}>
+            <ExportIcon />
+          </span>
+        </TB>
+        <span className="de-sep" />
+        <TB title="Go to Data Editor" onClick={() => window.spss.showWindow('dataeditor')}>
+          <DataWinIcon />
+        </TB>
+        <TB title="Go to Syntax Editor" onClick={() => window.spss.showWindow('syntax')}>
+          <SyntaxWinIcon />
+        </TB>
+        <span className="de-sep" />
+        <TB title="Delete all output" onClick={() => setItems([])} disabled={items.length === 0}>
+          <ClearOutputIcon />
+        </TB>
+        <AppSearch />
       </div>
       <div className="vw-root">
         <div className="vw-outline">

@@ -56,7 +56,7 @@ export const useStore = create<DataState>((set) => ({
   goto: { row: null, col: null, nonce: 0 },
   gotoCell: (row, col) => set((st) => ({ goto: { row, col, nonce: st.goto.nonce + 1 } })),
 
-  hiddenTools: [],
+  hiddenTools: ['new', 'weight', 'syntax', 'viewer'],
   toggleTool: (id) =>
     set((st) => ({
       hiddenTools: st.hiddenTools.includes(id)
