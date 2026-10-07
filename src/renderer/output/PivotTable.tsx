@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { copyApa } from './apa'
 import './pivot.css'
 
 interface DimJson {
@@ -26,12 +27,12 @@ export interface PivotTableJson {
   // (with row/col spans) and a text grid, so nested category groups render as SPSS draws them.
   flat?: FlatJson
 }
-interface HeaderCell {
+export interface HeaderCell {
   t: string
   cs: number
   rs: number
 }
-interface FlatJson {
+export interface FlatJson {
   rowHeaderCols: number
   colHeaders: HeaderCell[][]
   rowHeaders: HeaderCell[][]
@@ -77,12 +78,35 @@ export function PivotTableView({ table }: { table: PivotTableJson }): JSX.Elemen
   return table.flat ? <FlatPivot table={table} flat={table.flat} /> : <CrossPivot table={table} />
 }
 
+// Copies the table as an APA-style table (Word) and as tab-separated text (spreadsheets).
+function ApaButton({ table }: { table: PivotTableJson }): JSX.Element {
+  const [done, setDone] = useState(false)
+  return (
+    <button
+      className="pt-transpose"
+      title="Copy as an APA-style table (pastes into Word; plain text pastes into a spreadsheet)"
+      onClick={(e) => {
+        e.stopPropagation()
+        void copyApa(table).then(() => {
+          setDone(true)
+          setTimeout(() => setDone(false), 1400)
+        })
+      }}
+    >
+      {done ? 'Copied' : 'Copy as APA'}
+    </button>
+  )
+}
+
 function FlatPivot({ table, flat }: { table: PivotTableJson; flat: FlatJson }): JSX.Element {
   const [edits, setEdits] = useState<Record<string, string>>({})
   const [editing, setEditing] = useState<{ key: string; value: string } | null>(null)
   return (
     <div className="pt-wrap">
-      <div className="pt-title">{table.title}</div>
+      <div className="pt-title">
+        {table.title}
+        <ApaButton table={table} />
+      </div>
       <table className="pt-table">
         <thead>
           {flat.colHeaders.map((row, ri) => (
@@ -314,6 +338,7 @@ function CrossPivot({ table: raw }: { table: PivotTableJson }): JSX.Element {
             ⇄
           </button>
         )}
+        <ApaButton table={table} />
       </div>
       <table className="pt-table">
         <thead>{headerTr}</thead>
