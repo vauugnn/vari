@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { copyApa } from './apa'
+import { interpret } from './interpret'
 import './pivot.css'
 
 interface DimJson {
@@ -98,14 +99,42 @@ function ApaButton({ table }: { table: PivotTableJson }): JSX.Element {
   )
 }
 
+// Shows a one-sentence plain-English reading of the test (see interpret.ts).
+function InterpretButton({ text, open, onToggle }: { text: string | null; open: boolean; onToggle: () => void }): JSX.Element | null {
+  if (!text) return null
+  return (
+    <button className="pt-transpose" title="Explain this result in plain English" onClick={(e) => { e.stopPropagation(); onToggle() }}>
+      {open ? 'Hide explanation' : 'Interpret'}
+    </button>
+  )
+}
+
+function InterpretNote({ text }: { text: string }): JSX.Element {
+  const [done, setDone] = useState(false)
+  return (
+    <div className="pt-interp">
+      <span>{text}</span>
+      <button
+        className="pt-transpose pt-interp-copy"
+        onClick={() => void navigator.clipboard.writeText(text).then(() => { setDone(true); setTimeout(() => setDone(false), 1400) })}
+      >
+        {done ? 'Copied' : 'Copy'}
+      </button>
+    </div>
+  )
+}
+
 function FlatPivot({ table, flat }: { table: PivotTableJson; flat: FlatJson }): JSX.Element {
   const [edits, setEdits] = useState<Record<string, string>>({})
   const [editing, setEditing] = useState<{ key: string; value: string } | null>(null)
+  const note = useMemo(() => interpret(table), [table])
+  const [showNote, setShowNote] = useState(false)
   return (
     <div className="pt-wrap">
       <div className="pt-title">
         {table.title}
         <ApaButton table={table} />
+        <InterpretButton text={note} open={showNote} onToggle={() => setShowNote((v) => !v)} />
       </div>
       <table className="pt-table">
         <thead>
@@ -170,13 +199,14 @@ function FlatPivot({ table, flat }: { table: PivotTableJson; flat: FlatJson }): 
       {table.caption && <div className="pt-caption">{table.caption}</div>}
       {table.footnotes && table.footnotes.length > 0 && (
         <div className="pt-footnotes">
-          {table.footnotes.map((note, i) => (
+          {table.footnotes.map((fn, i) => (
             <div key={i} className="pt-footnote">
-              <sup>{footLetter(i)}</sup>. {note}
+              <sup>{footLetter(i)}</sup>. {fn}
             </div>
           ))}
         </div>
       )}
+      {showNote && note && <InterpretNote text={note} />}
     </div>
   )
 }
@@ -184,6 +214,8 @@ function FlatPivot({ table, flat }: { table: PivotTableJson; flat: FlatJson }): 
 function CrossPivot({ table: raw }: { table: PivotTableJson }): JSX.Element {
   const canTranspose = raw.colLeaves == null
   const [tposed, setTposed] = useState(false)
+  const readout = useMemo(() => interpret(raw), [raw]) // always read in the original orientation
+  const [showReadout, setShowReadout] = useState(false)
   // In-place edits: user-overridden cell text keyed by "r|c", and the cell
   // currently being edited.
   const [edits, setEdits] = useState<Record<string, string>>({})
@@ -339,6 +371,7 @@ function CrossPivot({ table: raw }: { table: PivotTableJson }): JSX.Element {
           </button>
         )}
         <ApaButton table={table} />
+        <InterpretButton text={readout} open={showReadout} onToggle={() => setShowReadout((v) => !v)} />
       </div>
       <table className="pt-table">
         <thead>{headerTr}</thead>
@@ -354,6 +387,7 @@ function CrossPivot({ table: raw }: { table: PivotTableJson }): JSX.Element {
           ))}
         </div>
       )}
+      {showReadout && readout && <InterpretNote text={readout} />}
     </div>
   )
 }
