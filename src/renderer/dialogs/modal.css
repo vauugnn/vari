@@ -1,38 +1,43 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(20, 28, 40, 0.32);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100;
+  animation: fade-in 120ms ease-out;
 }
 
 .modal {
-  background: #f0f0f0;
-  border: 1px solid #808080;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
   min-width: 340px;
   max-width: 560px;
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: pop-in 150ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 .modal-title {
-  background: #dfe6ef;
-  border-bottom: 1px solid #b0b0b0;
-  padding: 4px 8px;
-  font-weight: bold;
+  background: linear-gradient(#fbfcfd, var(--head));
+  border-bottom: 1px solid var(--line);
+  padding: 7px 12px;
+  font-weight: 600;
 }
 
 .modal-body {
-  padding: 10px 12px;
+  padding: 12px 14px;
 }
 
 .modal-footer {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   justify-content: flex-end;
-  padding: 8px 12px;
-  border-top: 1px solid #cccccc;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-2);
 }
 
 .modal-body label {
@@ -49,11 +54,6 @@
   margin: 4px 0;
 }
 
-.field-row input[type='text'],
-.field-row input[type='number'] {
-  padding: 1px 4px;
-  border: 1px solid #7f9db9;
-}
 
 .radio-block {
   display: flex;
@@ -71,27 +71,33 @@
 }
 
 .vl-list {
-  border: 1px solid #7f9db9;
+  border: 1px solid var(--line-strong);
   background: #fff;
+  border-radius: var(--r);
   height: 120px;
   overflow: auto;
   margin: 4px 0;
 }
 
 .vl-item {
-  padding: 1px 6px;
+  padding: 2px 8px;
   cursor: default;
+  border-radius: 3px;
+  margin: 0 2px;
+}
+.vl-item:hover {
+  background: var(--accent-faint);
 }
 
 .vl-item--sel {
-  background: #cbdcf0;
+  background: var(--accent-soft);
 }
 
 .type-list {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  border: 1px solid #7f9db9;
+  border: 1px solid var(--line-strong);
   background: #fff;
   padding: 4px;
   width: 200px;

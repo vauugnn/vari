@@ -8,26 +8,33 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  height: 30px;
-  padding: 0 6px;
-  border-bottom: 1px solid #a0a0a0;
-  background: #f0f0f0;
+  height: 38px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(#ffffff, #f3f4f7);
 }
 
 .sx-status {
   font-size: 11px;
-  color: #333;
+  color: var(--text-2);
+}
+
+.sx-editor,
+.sx-editor:focus {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .sx-editor {
   flex: 1;
-  border: none;
   outline: none;
   margin: 0;
-  padding: 6px 8px;
+  padding: 10px 14px;
   resize: none;
-  font-family: 'Consolas', 'Menlo', 'DejaVu Sans Mono', monospace;
+  font-family: var(--mono);
   font-size: 13px;
+  line-height: 1.55;
   color: #000;
   background: #ffffff;
   -webkit-user-select: text;

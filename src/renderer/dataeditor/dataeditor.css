@@ -8,37 +8,42 @@
   display: flex;
   align-items: center;
   gap: 1px;
-  min-height: 40px;
-  padding: 3px 6px;
-  border-bottom: 1px solid #a0a0a0;
-  background: linear-gradient(#f7f7f7, #ececec);
+  min-height: 42px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(#ffffff, #f3f4f7);
   flex-wrap: wrap;
 }
 
 .de-toolbar button {
   min-width: 0;
-  padding: 2px 10px;
+  padding: 3px 10px;
 }
 
 .icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 3px 4px !important;
+  padding: 4px 5px !important;
   min-width: 0;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 2px;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--r);
+  box-shadow: none !important;
 }
 
 .icon-btn:hover:not(:disabled) {
-  border-color: #7f9db9;
-  background: #e8eef6;
+  border-color: var(--line-strong) !important;
+  background: #e9edf3 !important;
+}
+
+.icon-btn:active:not(:disabled) {
+  background: #dde3ec !important;
 }
 
 .icon-btn--on {
-  border-color: #5b9bd5;
-  background: #cfe0f2;
+  border-color: var(--accent) !important;
+  background: var(--accent-soft) !important;
 }
 
 .icon-btn:disabled {
@@ -59,12 +64,13 @@
   left: 50%;
   transform: translateX(-50%);
   margin-top: 4px;
-  background: #ffffe1;
-  border: 1px solid #808080;
-  color: #000;
+  background: #2b313b;
+  border-radius: 4px;
+  color: #fff;
   font-size: 11px;
   line-height: 1.4;
-  padding: 2px 6px;
+  padding: 3px 8px;
+  box-shadow: var(--shadow-md);
   white-space: nowrap;
   z-index: 300;
   pointer-events: none;
@@ -81,20 +87,20 @@
 .de-sep {
   width: 1px;
   height: 18px;
-  background: #b0b0b0;
-  margin: 0 4px;
+  background: var(--line);
+  margin: 0 6px;
 }
 
 .toggle--on {
-  background: #cfe0f2;
-  border-color: #5b9bd5;
+  background: var(--accent-soft);
+  border-color: var(--accent);
 }
 
 .de-error {
-  background: #ffe8e8;
-  border-bottom: 1px solid #e0a0a0;
-  color: #a00000;
-  padding: 3px 8px;
+  background: var(--danger-soft);
+  border-bottom: 1px solid #efb4b2;
+  color: #a3201d;
+  padding: 5px 12px;
   cursor: pointer;
   white-space: pre-wrap;
 }
@@ -103,35 +109,44 @@
   flex: 1;
   min-height: 0;
   background: #ffffff;
-  border-bottom: 1px solid #a0a0a0;
+  border-bottom: 1px solid var(--line);
   overflow: hidden;
 }
 
 .de-placeholder {
-  color: #808080;
+  color: var(--text-3);
   padding: 20px;
 }
 
 /* Tabs at bottom left, SPSS style. */
 .de-tabs {
   display: flex;
-  background: #f0f0f0;
-  padding: 0 4px;
-  height: 24px;
+  background: var(--bg);
+  padding: 0 8px;
+  height: 28px;
+  gap: 2px;
 }
 
 .de-tab {
   min-width: 0;
-  padding: 3px 12px;
-  border: 1px solid #a0a0a0;
-  border-bottom: none;
-  background: #dcdcdc;
-  color: #000;
-  margin-top: 2px;
+  padding: 4px 14px;
+  border: 1px solid var(--line);
+  border-top: none;
+  border-radius: 0 0 var(--r) var(--r);
+  background: #e6e9ee;
+  color: var(--text-2);
+  box-shadow: none;
+  margin-top: 0;
+}
+
+.de-tab:hover:not(:disabled) {
+  background: #eef0f4;
 }
 
 .de-tab--active {
-  background: #f0f0f0;
-  margin-top: 0;
-  font-weight: bold;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  border-color: var(--line);
+  box-shadow: inset 0 -2px 0 var(--accent);
 }

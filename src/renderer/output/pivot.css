@@ -6,21 +6,26 @@
 }
 
 .pt-title {
-  font-weight: bold;
-  margin: 6px 0 4px;
+  font-weight: 600;
+  font-size: 13px;
+  margin: 8px 0 5px;
   cursor: default;
+  color: var(--text);
 }
 
 .pt-transpose {
-  border: 1px solid #bbb;
-  background: #f2f2f2;
-  color: #444;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--text-2);
   font-size: 11px;
   line-height: 1;
-  padding: 1px 5px;
+  padding: 2px 6px;
+  min-width: 0;
   margin-left: 8px;
   cursor: pointer;
   opacity: 0;
+  transition: opacity var(--ease);
 }
 
 .pt-wrap:hover .pt-transpose {
@@ -29,14 +34,14 @@
 
 .pt-table {
   border-collapse: collapse;
-  border: 1px solid #000000;
-  font-size: 12px;
+  border: 1px solid #2b313b;
+  font-size: 12.5px;
   background: #ffffff;
 }
 
 .pt-table th,
 .pt-table td {
-  padding: 1px 8px;
+  padding: 2px 10px;
   line-height: 17px;
   vertical-align: top;
   white-space: nowrap;
@@ -46,9 +51,9 @@
 .pt-colhead {
   text-align: center;
   font-weight: normal;
-  border-bottom: 1px solid #000000;
-  border-left: 1px solid #d9d9d9;
-  background: #fbfbfb;
+  border-bottom: 1px solid #2b313b;
+  border-left: 1px solid #dfe3e9;
+  background: #f6f7f9;
 }
 
 .pt-dimlabel {
@@ -67,20 +72,25 @@
 .pt-corner {
   text-align: left;
   font-weight: normal;
-  border-right: 1px solid #000000;
-  border-bottom: 1px solid #000000;
-  background: #fbfbfb;
+  border-right: 1px solid #2b313b;
+  border-bottom: 1px solid #2b313b;
+  background: #f6f7f9;
 }
 
 .pt-rowhead {
   text-align: left;
   font-weight: normal;
-  border-right: 1px solid #000000;
-  background: #fbfbfb;
+  border-right: 1px solid #2b313b;
+  background: #f6f7f9;
 }
 
 .pt-cell {
-  border-left: 1px solid #eeeeee;
+  border-left: 1px solid #eef0f3;
+  transition: background var(--ease);
+}
+
+.pt-table tbody tr:hover .pt-cell {
+  background: var(--accent-faint);
 }
 
 .pt-cell--num {
@@ -93,8 +103,8 @@
 
 .pt-caption {
   font-size: 11px;
-  color: #333;
-  margin-top: 3px;
+  color: var(--text-2);
+  margin-top: 4px;
 }
 
 .pt-footnotes {
@@ -112,8 +122,9 @@
 }
 .pt-cell-input {
   width: 100%;
-  border: 1px solid #5b9bd5;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
   font: inherit;
-  padding: 0 2px;
+  padding: 0 3px;
   box-sizing: border-box;
 }

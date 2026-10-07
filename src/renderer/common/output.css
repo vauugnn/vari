@@ -10,7 +10,7 @@
 }
 
 .out-error {
-  color: #a00000;
+  color: var(--danger);
   margin: 4px 0;
   white-space: pre-wrap;
 }
@@ -21,7 +21,7 @@
 }
 
 .out-warning {
-  color: #8a6d00;
+  color: #946a00;
   margin: 4px 0;
   white-space: pre-wrap;
 }
@@ -39,7 +39,8 @@
 .out-chart-lightbox {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(20, 28, 40, 0.5);
+  animation: fade-in 120ms ease-out;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -69,7 +70,9 @@
 
 .chart-editor {
   background: #fff;
-  border-radius: 4px;
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  animation: pop-in 150ms cubic-bezier(0.2, 0, 0, 1);
   max-width: 94vw;
   max-height: 92vh;
   overflow: auto;
@@ -78,9 +81,9 @@
 .chart-editor-head {
   font-weight: 600;
   font-size: 13px;
-  padding: 8px 12px;
-  border-bottom: 1px solid #ddd;
-  background: #f2f2f2;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(#fbfcfd, var(--head));
 }
 .chart-editor-body {
   display: flex;
@@ -116,12 +119,12 @@
 
 .chart-editor-hint {
   font-size: 11px;
-  color: #3a5f8a;
+  color: var(--accent);
   font-style: italic;
-  background: #eef4fb;
-  border: 1px solid #cbdcf0;
-  border-radius: 3px;
-  padding: 4px 6px;
+  background: var(--accent-faint);
+  border: 1px solid var(--accent-soft);
+  border-radius: var(--r);
+  padding: 5px 8px;
 }
 
 .chart-editor-swatches {
@@ -129,13 +132,19 @@
   flex-wrap: wrap;
   gap: 4px;
 }
+.chart-editor-swatch:hover {
+  transform: scale(1.12);
+}
+
 .chart-editor-swatch {
   width: 20px;
   height: 20px;
-  border: 1px solid #999;
-  border-radius: 3px;
+  border: 1px solid rgba(20, 28, 40, 0.25);
+  border-radius: 5px;
   cursor: pointer;
   padding: 0;
+  min-width: 0;
+  transition: transform var(--ease);
 }
 
 .chart-editor-toolbar {
@@ -143,8 +152,8 @@
   gap: 6px;
   align-items: center;
   padding: 4px 12px;
-  border-bottom: 1px solid #ddd;
-  background: #f7f7f7;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
 }
 .chart-editor-tip {
   margin-left: auto;
@@ -159,8 +168,11 @@
 }
 .chart-editor-sel {
   position: absolute;
-  border: 2px dashed #222;
+  border: 2px solid var(--accent);
+  border-radius: 3px;
+  box-shadow: 0 0 0 3px rgba(47, 111, 208, 0.18);
   pointer-events: none;
+  transition: left 80ms ease-out, top 80ms ease-out, width 80ms ease-out, height 80ms ease-out;
 }
 .chart-editor-check {
   flex-direction: row !important;

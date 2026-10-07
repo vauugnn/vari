@@ -70,10 +70,13 @@ pytest               # sidecar + parity tests
 
 ## Visual target
 
-This app should be visually indistinguishable from SPSS Statistics. Do not
-improve the design. Do not modernize the layout. Do not add rounded corners,
-shadows, animations, or a dark theme. If a choice is between "looks better"
-and "looks like SPSS," pick SPSS every time.
+Keep SPSS's layout, menus, dialogs and workflow so it feels familiar, but the
+look is a refined version of it (owner's call: "close but better looking").
+All colours, radii, shadows and motion come from the tokens at the top of
+`src/renderer/common/base.css`; use those, never hard-coded values. Pivot
+tables keep the SPSS TableLook structure because that is what gets submitted.
+Icons are original SVG redrawn to match SPSS's symbols; never copy IBM
+artwork.
 
 ## Things that are out of scope, permanently
 
