@@ -96,6 +96,7 @@ class Frequencies(DataProcedure):
     def _statistics_table(self, ds: Any, names: list[str], stat_keys: list[str]) -> dict[str, Any]:
         rows = ["Valid", "Missing"] + [_STAT_ROWS[k][0] for k in stat_keys]
         t = PivotTable("Statistics", [Dimension("N", rows)], [Dimension("", list(names))], corner="")
+        t.row_groups = [("N", 0, 2)]  # Valid and Missing sit under "N", as in SPSS
         f0 = Format("F", 8, 0)
         w = get_weights(ds)
         for j, nm in enumerate(names):
@@ -140,7 +141,10 @@ class Frequencies(DataProcedure):
         # Valid subtotal
         row_labels.append("Total")
         rows_data.append((valid_n, 100.0 * valid_n / total_n if total_n else 0.0, 100.0, None))
-        # Missing user values
+        groups = [("Valid", 0, len(row_labels))]
+        # Missing values (user-defined, then system). SPSS shows the Missing group and the
+        # grand Total only when some case is actually missing.
+        first_missing = len(row_labels)
         for val, cnt in missing_counts:
             pct = 100.0 * cnt / total_n if total_n else 0.0
             row_labels.append(value_label(ds, name, val))
@@ -148,13 +152,15 @@ class Frequencies(DataProcedure):
         if sysmis_n:
             row_labels.append("System")
             rows_data.append((sysmis_n, 100.0 * sysmis_n / total_n if total_n else 0.0, None, None))
-        # Grand total
-        row_labels.append("Total")
-        rows_data.append((total_n, 100.0, None, None))
+        if len(row_labels) > first_missing:
+            groups.append(("Missing", first_missing, len(row_labels) - first_missing))
+            row_labels.append("Total")
+            rows_data.append((total_n, 100.0, None, None))
 
         cols = ["Frequency", "Percent", "Valid Percent", "Cumulative Percent"]
         title = meta.label or name
         t = PivotTable(title, [Dimension("", row_labels)], [Dimension("", cols)])
+        t.row_groups = groups
         f0 = Format("F", 8, 0)
         f1 = Format("F", 8, 1)
         for i, (freq, pct, vpct, cumv) in enumerate(rows_data):

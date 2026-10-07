@@ -173,3 +173,63 @@ def test_damaged_files_fail_cleanly_never_crash(tmp_path):
         open(bad, "wb").write(blob)
         with pytest.raises(ValueError):
             read_spv(bad)
+
+
+def test_vari_chart_roundtrips_as_picture(tmp_path):
+    import zipfile
+
+    from sidecar.io.spv import read_spv, write_spv
+    from sidecar.output import charts as ch
+
+    chart = ch.bar_chart(["A", "B"], [3, 5], title="Demo", xlabel="Grp")
+    p = str(tmp_path / "c.spv")
+    write_spv([{"type": "Title", "text": "Graph"}, chart], p)
+    z = zipfile.ZipFile(p)
+    assert any(n.endswith("_Imagegeneric.png") for n in z.namelist())
+    xml = z.read("outputViewer0000000000_heading.xml").decode()
+    assert '<object commandName="Graph" type="unknown" uri="' in xml  # the form PSPP/SPSS use
+    back = [i for i in read_spv(p) if i["type"] == "Chart"]
+    assert len(back) == 1 and "data:image/png;base64" in back[0]["svg"]
+
+
+def _freq_flat(values):
+    import numpy as np
+    import pandas as pd
+
+    from sidecar.data.dataset import Dataset, DatasetRegistry
+    from sidecar.data.format import Format
+    from sidecar.data.variable import VariableMeta
+    from sidecar.procedures.registry import build_registry
+    from sidecar.syntax.registry import Context, execute_syntax
+
+    reg = DatasetRegistry()
+    reg.add(Dataset(pd.DataFrame({"a": np.array(values, float)}), [VariableMeta(name="a", print_format=Format("F", 8, 0))]))
+    out = execute_syntax("FREQUENCIES VARIABLES=a.", build_registry(), Context(reg))
+    return [o for o in out if o["type"] == "PivotTable"][-1]
+
+
+def test_frequency_table_matches_spss_layout_without_missing():
+    t = _freq_flat([11, 12, 12, 13])["flat"]
+    labels = [[h["t"] for h in hs] for hs in t["rowHeaders"]]
+    assert labels[0] == ["Valid", "11"]            # the Valid group spans the values
+    assert labels[-1] == ["Total"] and len(labels) == 4  # a single Total, nothing else
+    assert t["rowHeaders"][0][0]["rs"] == 4        # Valid covers values + its Total
+    assert t["grid"][-1] == ["4", "100.0", "100.0", ""]
+
+
+def test_frequency_table_adds_missing_group_and_grand_total():
+    t = _freq_flat([11, 12, 12, float("nan")])["flat"]
+    labels = [[h["t"] for h in hs] for hs in t["rowHeaders"]]
+    assert labels == [["Valid", "11"], ["12"], ["Total"], ["Missing", "System"], ["Total"]]
+    assert t["rowHeaders"][-1][0]["cs"] == 2       # grand Total spans both header columns
+
+
+def test_grouped_frequency_table_keeps_its_groups_in_an_ibm_file(tmp_path):
+    from sidecar.io.spv import read_spv, write_spv
+
+    tbl = _freq_flat([11, 12, 12, float("nan")])
+    p = str(tmp_path / "f.spv")
+    write_spv([{"type": "Title", "text": "Frequencies"}, tbl], p)
+    back = next(i for i in read_spv(p) if i["type"] == "PivotTable")
+    assert back["flat"]["rowHeaders"] == tbl["flat"]["rowHeaders"]
+    assert back["flat"]["grid"] == tbl["flat"]["grid"]

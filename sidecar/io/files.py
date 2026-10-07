@@ -140,7 +140,7 @@ def _save_sav(ds: Dataset, path: str) -> None:
     names = [v.name for v in ds.variables]
     column_labels = [v.label or None for v in ds.variables]
     variable_value_labels = {v.name: v.value_labels for v in ds.variables if v.value_labels}
-    variable_format = {v.name: v.print_format.to_spss() for v in ds.variables}
+    variable_format = {v.name: _sav_format(ds, v) for v in ds.variables}
     variable_measure = {v.name: v.measure for v in ds.variables}
     variable_display_width = {v.name: int(v.columns) for v in ds.variables}
     missing_ranges = {}
@@ -161,6 +161,16 @@ def _save_sav(ds: Dataset, path: str) -> None:
         variable_display_width=variable_display_width,
         missing_ranges=missing_ranges or None,
     )
+
+
+def _sav_format(ds: Dataset, v: Any) -> str:
+    """Print format to write. A string's width must equal its storage width, which
+    pyreadstat takes from the longest value in bytes, so write A<that> (never a wider
+    A8 over 5-byte data, which SPSS-compatible readers reject as invalid)."""
+    if not v.is_string:
+        return v.print_format.to_spss()
+    longest = max((len(str(x).encode("utf-8")) for x in ds.df[v.name] if x is not None and x == x), default=1)
+    return f"A{max(longest, 1)}"
 
 
 def _missing_to_ranges(spec: MissingSpec) -> list[dict[str, Any]]:

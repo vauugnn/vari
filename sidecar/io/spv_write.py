@@ -15,6 +15,7 @@ from __future__ import annotations
 import base64
 import re
 import struct
+import time
 import zipfile
 from datetime import datetime
 from typing import Any, Optional
@@ -22,7 +23,9 @@ from xml.sax.saxutils import escape, quoteattr
 
 from .spv_light import Category, Dimension, LightTable, Val, fmt_number
 
-CREATOR_VERSION = "29000000"
+# Claim the oldest viewer version that has light members (what PSPP writes), so a file is not
+# presented as coming from a newer SPSS than the one opening it.
+CREATOR_VERSION = "21"
 _F40 = (5 << 16) | (40 << 8)  # F format, width 40 ("show as-is"), decimals OR'd in
 
 
@@ -133,14 +136,16 @@ def _y0() -> bytes:
 
 
 def _y1(command: str) -> bytes:
-    return (_s(command) + _s("") + _s("en") + _s("ISO_8859-1:1987") + _s("en_US.ISO_8859-1:1987")
+    # Strings are written as UTF-8, so say so (as PSPP does) rather than a Latin-1 charset.
+    return (_s(command) + _s("") + _s("en") + _s("UTF-8") + _s("en_US.UTF-8")
             + bytes([0, 0, 1, 1]) + _y0())
 
 
 def _formats(command: str) -> bytes:
     x1 = (bytes([0, 1, 0, 0, 2, 2]) + _i32(-1) + _i32(-1) + b"\x00" * 17 + bytes([0, 1]))
     x2 = _i32(0) + _i32(0) + _i32(0) + _count(b"\x00" * 8)
-    x3 = (b"\x01\x00\x06\x00\x00\x00" + _y1(command) + struct.pack("<d", 0.0001) + b"\x01"
+    x3 = (b"\x01\x00\x04\x00\x00\x00" + _y1(command) + struct.pack("<d", 0.0001) + b"\x01"
+          + _s("DataSet1") + _s("") + _i32(0) + struct.pack("<I", int(time.time()) & 0xFFFFFFFF) + _i32(0)
           + _CCS + b".\x00")
     inner = _count(x1 + _count(x2)) + _count(x3)
     out = _i32(0) + _s("en_US.ISO_8859-1:1987") + _i32(0) + bytes([0, 0, 1]) + _y0() + _CCS
@@ -279,14 +284,14 @@ def _root(body: str) -> str:
     stamp = datetime.now().strftime("%A, %d %B %Y at %I:%M:%S %p")
     return ('<?xml version="1.0" encoding="UTF-8" standalone="no"?>'
             f'<heading {_NS} creation-date-time={quoteattr(stamp)} creator="Vari" '
-            f'creator-version="{CREATOR_VERSION}" lockReader="false" {_SCHEMA}>'
+            f'creator-version="{CREATOR_VERSION}" {_SCHEMA}>'
             f"<label>Output</label>{body}</heading>")
 
 
 def _text_container(label: str, text: str, kind: str, command: str) -> str:
     if kind == "title":
         style = "p{color:0;font-family:SansSerif;font-size:14pt;font-style:normal;font-weight:bold;text-decoration:none}"
-        cmd = f' commandName={quoteattr(command)} creator-version="{CREATOR_VERSION}"'
+        cmd = f' commandName={quoteattr(command)}'
     else:
         style = "p{color:0;font-family:Monospaced;font-size:14pt;font-style:normal;font-weight:normal;text-decoration:none}"
         cmd = ' commandName="log"'
@@ -332,13 +337,13 @@ class _Writer:
             # Came from an IBM file and not rebuilt: keep the original bytes.
             data = base64.b64decode(raw["data"])
         else:
-            tj = item if not item.get("flat") else _unflatten(item)
-            data = write_light(table_to_light(tj), tid, command)
+            light = flat_to_light(item) if item.get("flat") else table_to_light(item)
+            data = write_light(light, tid, command)
         self.z.writestr(name, data)
         title = escape(str(item.get("title") or "Table"))
         sub = quoteattr(str(item.get("title") or "Table"))
         return (f'<container text-align="left" visibility="visible"><label>{title}</label>'
-                f'<vtb:table commandName={quoteattr(command)} creator-version="{CREATOR_VERSION}" '
+                f'<vtb:table commandName={quoteattr(command)} '
                 f'subType={sub} tableId="{tid}" type="table"><vtb:tableStructure>'
                 f"<vtb:dataPath>{name}</vtb:dataPath></vtb:tableStructure></vtb:table></container>")
 
@@ -351,7 +356,7 @@ class _Writer:
             self.z.writestr(xml_name, base64.b64decode(raw["xml"]))
             self.z.writestr(data_name, base64.b64decode(raw["data"]))
             return ('<container text-align="left" visibility="visible"><label>Graph</label>'
-                    f'<vgr:graph commandName={quoteattr(command)} creator-version="{CREATOR_VERSION}" '
+                    f'<vgr:graph commandName={quoteattr(command)} '
                     'editor="ChartEditor"><vtb:dataPath>' + data_name + "</vtb:dataPath><vtb:path>"
                     + xml_name + "</vtb:path></vgr:graph></container>")
         png = item.get("png")
@@ -360,21 +365,87 @@ class _Writer:
         name = f"{self.member()}_Imagegeneric.png"
         self.z.writestr(name, base64.b64decode(png))
         return ('<container text-align="left" visibility="visible"><label>Graph</label>'
-                f'<vtb:image commandName={quoteattr(command)}><vtb:dataPath>{name}</vtb:dataPath>'
-                "</vtb:image></container>")
+                f'<object commandName={quoteattr(command)} type="unknown" uri="{name}"/></container>')
 
 
-def _unflatten(item: dict[str, Any]) -> dict[str, Any]:
-    """A flat (IBM-read) table whose raw bytes are gone: rebuild a simple grid."""
+def _tree_from_paths(paths: list[list[tuple[int, str]]]) -> list[Category]:
+    """Category tree from per-leaf header paths. Consecutive leaves sharing a path prefix
+    (same header-cell identity) share a group; the last element of a path is the leaf."""
+    roots: list[Category] = []
+    stack: list[tuple[int, Category]] = []  # open groups: (cell identity, group)
+    for leaf_index, path in enumerate(paths):
+        # keep the open groups that this path still belongs to
+        keep = 0
+        while keep < len(stack) and keep < len(path) - 1 and stack[keep][0] == path[keep][0]:
+            keep += 1
+        del stack[keep:]
+        for ident, label in path[keep:-1]:
+            group = Category(text_val(label), children=[])
+            (stack[-1][1].children if stack else roots).append(group)
+            stack.append((ident, group))
+        leaf = Category(text_val(path[-1][1]), leaf_index=leaf_index)
+        (stack[-1][1].children if stack else roots).append(leaf)
+    return roots
+
+
+def flat_to_light(item: dict[str, Any]) -> LightTable:
+    """Rebuild a LightTable from a flat (header-cells-with-spans) table, keeping row groups
+    and column spanners as category groups."""
     f = item["flat"]
-    ncols = len(f["grid"][0]) if f["grid"] else 0
-    labels = [" / ".join(h["t"] for h in hs) or str(i + 1) for i, hs in enumerate(f["rowHeaders"])]
-    leaves = [(f["colHeaders"][-1][i]["t"] if i < len(f["colHeaders"][-1]) else str(i + 1)) for i in range(ncols)]
-    cells = [{"r": [r], "c": [c], "v": v, "kind": "text"}
-             for r, row in enumerate(f["grid"]) for c, v in enumerate(row)]
-    return {"type": "PivotTable", "title": item.get("title"), "corner": item.get("corner", ""),
-            "rowDims": [{"label": "", "categories": labels}], "colDims": [{"label": "", "categories": leaves}],
-            "cells": cells}
+    grid = f["grid"]
+    nr = len(grid)
+    nc = len(grid[0]) if grid else 0
+    width = f["rowHeaderCols"]
+
+    # Row header paths: place each body row's cells into the first free header column.
+    ident = 0
+    busy: list[tuple[int, str, int] | None] = [None] * width  # (identity, label, rows left)
+    row_paths: list[list[tuple[int, str]]] = []
+    for r in range(nr):
+        for c in f["rowHeaders"][r] if r < len(f["rowHeaders"]) else []:
+            col = next((i for i in range(width) if busy[i] is None), 0)
+            ident += 1
+            for i in range(col, min(col + c["cs"], width)):
+                busy[i] = (ident, c["t"], c["rs"])
+        path: list[tuple[int, str]] = []
+        for slot in busy:
+            if slot and (not path or path[-1][0] != slot[0]):
+                path.append((slot[0], slot[1]))
+        row_paths.append(path or [(-r - 1, str(r + 1))])
+        busy = [(b[0], b[1], b[2] - 1) if b and b[2] > 1 else None for b in busy]
+
+    # Column header paths: header rows top to bottom, cells placed left to right.
+    col_busy: list[list[tuple[int, str] | None]] = [[None] * nc for _ in f["colHeaders"]]
+    col_paths: list[list[tuple[int, str]]] = [[] for _ in range(nc)]
+    for k, row in enumerate(f["colHeaders"]):
+        pos = 0
+        for c in row:
+            while pos < nc and col_busy[k][pos] is not None:
+                pos += 1
+            ident += 1
+            for j in range(pos, min(pos + c["cs"], nc)):
+                for kk in range(k, min(k + c["rs"], len(f["colHeaders"]))):
+                    col_busy[kk][j] = (ident, c["t"])
+            pos += c["cs"]
+    for j in range(nc):
+        for k in range(len(f["colHeaders"])):
+            slot = col_busy[k][j]
+            if slot and (not col_paths[j] or col_paths[j][-1][0] != slot[0]):
+                col_paths[j].append(slot)
+        if not col_paths[j]:
+            col_paths[j] = [(-j - 1, str(j + 1))]
+
+    row_dim = Dimension(text_val(""), True, False, _tree_from_paths(row_paths), nr)
+    col_dim = Dimension(text_val(""), True, False, _tree_from_paths(col_paths), nc)
+    cells = {r * nc + c: cell_val(grid[r][c]) for r in range(nr) for c in range(nc) if grid[r][c] != ""}
+    title = item.get("title") or "Table"
+    caption = item.get("caption") or ""
+    foot = item.get("footnotes") or []
+    if foot:
+        caption = "\n".join(([caption] if caption else []) + [f"{chr(97 + i % 26)}. {t}" for i, t in enumerate(foot)])
+    return LightTable(3, text_val(title), text_val(title), text_val(title),
+                      text_val(item["corner"]) if item.get("corner") else None,
+                      text_val(caption) if caption else None, [], [row_dim, col_dim], [], [0], [1], cells)
 
 
 def _command_of(group: list[dict[str, Any]]) -> str:
@@ -412,7 +483,7 @@ def write_ibm_spv(items: list[dict[str, Any]], path: str) -> None:
                     body += _text_container("Title", str(it.get("text", "")), "title", command)
                 else:
                     body += w.container(it, command)
-            inner = (f'<heading commandName={quoteattr(command)} creator-version="{CREATOR_VERSION}" '
+            inner = (f'<heading commandName={quoteattr(command)} '
                      f'locale="en-US" olang="en"><label>{escape(command)}</label>{body}</heading>')
             z.writestr(f"outputViewer{gi:010d}_heading.xml", _root(inner))
         z.writestr("META-INF/MANIFEST.MF", "allowPivoting=true")

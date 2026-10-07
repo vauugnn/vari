@@ -34,6 +34,10 @@ class PivotTable:
     # (SPSS "Levene's Test" | "t-test for Equality of Means" | "95% CI").
     col_leaves: Optional[list[str]] = None
     col_spanners: list[list[tuple[str, int]]] = field(default_factory=list)
+    # Row groups for a single row dimension: (label, first row, row count). Rows in a
+    # group get the group's label in an outer header column, as SPSS does ("Valid" over
+    # the values and their Total); rows outside any group span both header columns.
+    row_groups: list[tuple[str, int, int]] = field(default_factory=list)
 
     def set(self, rkey: list[int], ckey: list[int], value: str, kind: str = "num") -> None:
         self.cells[(tuple(rkey), tuple(ckey))] = (value, kind)
@@ -41,6 +45,37 @@ class PivotTable:
     def set_columns(self, leaves: list[str], spanners: Optional[list[list[tuple[str, int]]]] = None) -> None:
         self.col_leaves = leaves
         self.col_spanners = spanners or []
+
+    def _flat_with_groups(self) -> Optional[dict[str, Any]]:
+        """Header cells with spans for a single row dimension carrying row groups."""
+        if self.col_leaves is not None:
+            leaves = self.col_leaves
+            col_headers = [[{"t": lbl, "cs": sp, "rs": 1} for lbl, sp in row] for row in self.col_spanners]
+            col_headers.append([{"t": lab, "cs": 1, "rs": 1} for lab in leaves])
+            ncols = len(leaves)
+        elif len(self.col_dims) == 1:
+            d = self.col_dims[0]
+            ncols = len(d.categories)
+            col_headers = []
+            if d.label:
+                col_headers.append([{"t": d.label, "cs": ncols, "rs": 1}])
+            col_headers.append([{"t": c, "cs": 1, "rs": 1} for c in d.categories])
+        else:
+            return None
+        labels = self.row_dims[0].categories
+        group_of = {start: (name, n) for name, start, n in self.row_groups}
+        inside = {i for _, start, n in self.row_groups for i in range(start, start + n)}
+        row_headers: list[list[dict[str, Any]]] = []
+        for i, lab in enumerate(labels):
+            cells: list[dict[str, Any]] = []
+            if i in group_of:
+                name, n = group_of[i]
+                cells.append({"t": name, "rs": n, "cs": 1})
+            cells.append({"t": lab, "rs": 1, "cs": 1 if i in inside else 2})
+            row_headers.append(cells)
+        grid = [[self.cells.get(((i,), (j,)), ("", "text"))[0] for j in range(ncols)] for i in range(len(labels))]
+        kinds = [[self.cells.get(((i,), (j,)), ("", "text"))[1] for j in range(ncols)] for i in range(len(labels))]
+        return {"rowHeaderCols": 2, "colHeaders": col_headers, "rowHeaders": row_headers, "grid": grid, "kinds": kinds}
 
     def to_json(self) -> dict[str, Any]:
         out: dict[str, Any] = {
@@ -57,6 +92,10 @@ class PivotTable:
         }
         if self.footnotes:
             out["footnotes"] = self.footnotes
+        if self.row_groups and len(self.row_dims) == 1:
+            flat = self._flat_with_groups()
+            if flat is not None:
+                out["flat"] = flat
         if self.col_leaves is not None:
             out["colLeaves"] = self.col_leaves
             out["colSpanners"] = [[{"label": lbl, "span": sp} for lbl, sp in row] for row in self.col_spanners]
