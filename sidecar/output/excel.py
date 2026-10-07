@@ -31,7 +31,35 @@ def _row_tuples(t: dict[str, Any]) -> tuple[list[str], list[tuple]]:
     return labels, keys
 
 
+def _flat_rows(t: dict[str, Any]) -> list[list[str]]:
+    """Rows of a table read from an SPSS .spv (header cells carry spans)."""
+    f = t["flat"]
+    width = f["rowHeaderCols"]
+    out: list[list[str]] = []
+    for ri, hdr in enumerate(f["colHeaders"]):
+        line = [(t.get("corner", "") or "") if ri == 0 else ""] + [""] * (width - 1)
+        for h in hdr:
+            line += [h["t"]] + [""] * (h["cs"] - 1)
+        out.append(line)
+    busy = [0] * width  # rows each header column is still covered by a rowspan
+    for hdrs, cells in zip(f["rowHeaders"], f["grid"]):
+        line = [""] * width
+        col = 0
+        for h in hdrs:
+            while col < width and busy[col] > 0:
+                col += 1
+            line[col] = h["t"]
+            for c in range(col, min(col + h["cs"], width)):
+                busy[c] = h["rs"]  # decremented once at the end of this row
+            col += h["cs"]
+        busy = [max(b - 1, 0) for b in busy]
+        out.append(line + cells)
+    return out
+
+
 def flatten_table(t: dict[str, Any]) -> list[list[str]]:
+    if t.get("flat"):
+        return _flat_rows(t)
     cellmap = {(tuple(c["r"]), tuple(c["c"])): c["v"] for c in t["cells"]}
     col_labels, col_keys = _leaf_cols(t)
     row_labels, row_keys = _row_tuples(t)

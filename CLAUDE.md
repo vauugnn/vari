@@ -77,7 +77,9 @@ and "looks like SPSS," pick SPSS every time.
 
 ## Things that are out of scope, permanently
 
-Chart Builder (legacy chart dialogs only), the `.spv` format, server mode,
+(Chart Builder and the IBM `.spv` format were moved in scope at the owner's request; see `sidecar/io/spv*.py`.)
+
+Server mode,
 database connectivity, the Python/R plugin system, and all add-on modules
 (Complex Samples, Forecasting, Decision Trees, Neural Networks, Conjoint,
 Amos).

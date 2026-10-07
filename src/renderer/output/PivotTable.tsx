@@ -22,6 +22,21 @@ export interface PivotTableJson {
   colLeaves?: string[]
   colSpanners?: { label: string; span: number }[][]
   footnotes?: string[]
+  // Present on tables read from SPSS .spv files: pre-flattened header cells
+  // (with row/col spans) and a text grid, so nested category groups render as SPSS draws them.
+  flat?: FlatJson
+}
+interface HeaderCell {
+  t: string
+  cs: number
+  rs: number
+}
+interface FlatJson {
+  rowHeaderCols: number
+  colHeaders: HeaderCell[][]
+  rowHeaders: HeaderCell[][]
+  grid: string[][]
+  kinds: string[][]
 }
 
 // a, b, c, … for footnote markers (SPSS uses lowercase superscript letters).
@@ -58,7 +73,91 @@ function transposeTable(t: PivotTableJson): PivotTableJson {
   }
 }
 
-export function PivotTableView({ table: raw }: { table: PivotTableJson }): JSX.Element {
+export function PivotTableView({ table }: { table: PivotTableJson }): JSX.Element {
+  return table.flat ? <FlatPivot table={table} flat={table.flat} /> : <CrossPivot table={table} />
+}
+
+function FlatPivot({ table, flat }: { table: PivotTableJson; flat: FlatJson }): JSX.Element {
+  const [edits, setEdits] = useState<Record<string, string>>({})
+  const [editing, setEditing] = useState<{ key: string; value: string } | null>(null)
+  return (
+    <div className="pt-wrap">
+      <div className="pt-title">{table.title}</div>
+      <table className="pt-table">
+        <thead>
+          {flat.colHeaders.map((row, ri) => (
+            <tr key={ri}>
+              {ri === 0 && (
+                <th className="pt-corner" rowSpan={flat.colHeaders.length} colSpan={flat.rowHeaderCols}>
+                  {table.corner || ''}
+                </th>
+              )}
+              {row.map((h, hi) => (
+                <th key={hi} className="pt-colhead" colSpan={h.cs} rowSpan={h.rs}>
+                  {h.t}
+                </th>
+              ))}
+            </tr>
+          ))}
+        </thead>
+        <tbody>
+          {flat.grid.map((cells, ri) => (
+            <tr key={ri}>
+              {(flat.rowHeaders[ri] ?? []).map((h, hi) => (
+                <th key={hi} className="pt-rowhead" rowSpan={h.rs} colSpan={h.cs}>
+                  {h.t}
+                </th>
+              ))}
+              {cells.map((v, ci) => {
+                const key = `${ri}|${ci}`
+                const shown = key in edits ? edits[key] : v
+                return (
+                  <td
+                    key={ci}
+                    className={'pt-cell' + (flat.kinds[ri][ci] === 'text' ? ' pt-cell--text' : ' pt-cell--num')}
+                    title="Double-click to edit"
+                    onDoubleClick={() => setEditing({ key, value: shown })}
+                  >
+                    {editing?.key === key ? (
+                      <input
+                        className="pt-cell-input"
+                        autoFocus
+                        value={editing.value}
+                        onChange={(e) => setEditing({ key, value: e.target.value })}
+                        onBlur={() => {
+                          setEdits((m) => ({ ...m, [key]: editing.value }))
+                          setEditing(null)
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                          else if (e.key === 'Escape') setEditing(null)
+                        }}
+                      />
+                    ) : (
+                      shown
+                    )}
+                  </td>
+                )
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {table.caption && <div className="pt-caption">{table.caption}</div>}
+      {table.footnotes && table.footnotes.length > 0 && (
+        <div className="pt-footnotes">
+          {table.footnotes.map((note, i) => (
+            <div key={i} className="pt-footnote">
+              <sup>{footLetter(i)}</sup>. {note}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CrossPivot({ table: raw }: { table: PivotTableJson }): JSX.Element {
   const canTranspose = raw.colLeaves == null
   const [tposed, setTposed] = useState(false)
   // In-place edits: user-overridden cell text keyed by "r|c", and the cell

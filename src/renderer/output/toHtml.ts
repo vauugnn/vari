@@ -17,7 +17,31 @@ function leafTuples(dims: { categories: string[] }[]): number[][] {
   return out
 }
 
+function flatHtml(t: PivotTableJson): string {
+  const f = t.flat!
+  const th = (cls: string, h: { t: string; cs: number; rs: number }): string =>
+    `<th class="${cls}" rowspan="${h.rs}" colspan="${h.cs}">${esc(h.t)}</th>`
+  let html = `<div class="pt-wrap"><div class="pt-title">${esc(t.title)}</div><table class="pt-table"><thead>`
+  f.colHeaders.forEach((row, ri) => {
+    html += '<tr>'
+    if (ri === 0) html += `<th class="pt-corner" rowspan="${f.colHeaders.length}" colspan="${f.rowHeaderCols}">${esc(t.corner || '')}</th>`
+    html += row.map((h) => th('pt-colhead', h)).join('') + '</tr>'
+  })
+  html += '</thead><tbody>'
+  f.grid.forEach((cells, ri) => {
+    html += '<tr>' + (f.rowHeaders[ri] ?? []).map((h) => th('pt-rowhead', h)).join('')
+    cells.forEach((v, ci) => {
+      html += `<td class="pt-cell ${f.kinds[ri][ci] === 'text' ? 'pt-cell--text' : 'pt-cell--num'}">${esc(v)}</td>`
+    })
+    html += '</tr>'
+  })
+  html += '</tbody></table>'
+  if (t.caption) html += `<div class="pt-caption">${esc(t.caption)}</div>`
+  return html + '</div>'
+}
+
 function pivotHtml(t: PivotTableJson): string {
+  if (t.flat) return flatHtml(t)
   const rowHeaderCols = Math.max(1, t.rowDims.length)
   const grouped = t.colLeaves != null
   const cornerCell = (rs: number): string =>
