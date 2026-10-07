@@ -583,7 +583,18 @@ function wireIpc(): void {
       filters: [{ name: 'Vari Output (*.spv)', extensions: ['spv'] }]
     })
     if (res.canceled || !res.filePath) return null
-    return (await sidecar.request('output.exportSpv', { items, path: res.filePath })) as { ok: boolean; path: string }
+    const saved = (await sidecar.request('output.exportSpv', { items, path: res.filePath })) as { ok: boolean; path: string }
+    // The IBM-format writer is new; it is checked against SPSS's documented format
+    // but not yet in every SPSS version, so say so before anyone submits the file.
+    await dialog.showMessageBox(windows.viewer as BrowserWindow, {
+      type: 'info',
+      message: 'Output saved',
+      detail:
+        'This .spv uses IBM SPSS format, but the writer is new. Open it in SPSS to confirm it ' +
+        'looks right before you submit it. Keep the .sav and syntax as a backup.',
+      buttons: ['OK']
+    })
+    return saved
   })
 
   ipcMain.handle(IPC.outputOpenSpv, async () => {
