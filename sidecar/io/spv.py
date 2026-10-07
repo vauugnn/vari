@@ -95,7 +95,8 @@ def _item(el: ET.Element, z: zipfile.ZipFile, out: list[dict[str, Any]]) -> None
     elif tag == "graph":
         from .spv_chart import chart_from_member  # imported lazily: pulls matplotlib
 
-        out.append(chart_from_member(z, _find_path(el, "path"), _find_path(el, "dataPath")))
+        res = chart_from_member(z, _find_path(el, "path"), _find_path(el, "dataPath"))
+        out.extend(res if isinstance(res, list) else [res])
     elif tag in ("model", "object", "image", "tree"):
         out.append({"type": "Warning", "text": f"[{tag} output is not supported]"})
 

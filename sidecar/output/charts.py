@@ -124,11 +124,12 @@ def _hist_bins(v: Any) -> Any:
     return np.linspace(lo, hi, k + 1)
 
 
-def bar_chart(labels: Sequence[str], counts: Sequence[float], title: str = "", xlabel: str = "") -> dict[str, Any]:
+def bar_chart(labels: Sequence[str], counts: Sequence[float], title: str = "", xlabel: str = "",
+              ylabel: str = "Frequency") -> dict[str, Any]:
     fig, ax = _plt().subplots(figsize=(4.6, 3.2))
     ax.bar([str(x) for x in labels], counts, color=_BAR_COLOR, edgecolor=_EDGE, linewidth=0.5)
     ax.set_xlabel(xlabel)
-    ax.set_ylabel("Frequency")
+    ax.set_ylabel(ylabel)
     fig.autofmt_xdate(rotation=30)
     return _finish(fig, title)
 

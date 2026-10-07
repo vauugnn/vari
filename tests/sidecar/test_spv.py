@@ -38,3 +38,25 @@ def test_frequency_table_structure_and_values():
     # Percent column sums to the Total row (within rounding).
     pct = [float(r[1]) for r in t["grid"][:-1]]
     assert abs(sum(pct) - 100.0) < 0.2
+
+
+@needs_spss
+def test_sample_bar_charts_rebuild_with_relabelled_categories():
+    path = next(f for f in SAMPLES if f.endswith("msouttut.spv"))
+    charts = [i for i in read_spv(path) if i["type"] == "Chart"]
+    assert len(charts) == 2
+    assert "Female" in charts[0]["svg"] and "Male" in charts[0]["svg"]
+    assert "spv" in charts[0]  # original members kept for byte-exact re-save
+
+
+def test_legacy_binary_roundtrip_of_numeric_source():
+    import struct
+
+    from sidecar.io.spv_legacy import parse_legacy
+
+    name = b"source0".ljust(64, b"\0")
+    var = b"X".ljust(288, b"\0") + struct.pack("<3d", 1.0, 2.0, -1.7976931348623157e308)
+    head = b"\x00\xb0" + struct.pack("<H", 1) + struct.pack("<I", 8 + 12 + 68 + len(var))
+    meta = struct.pack("<3I", 3, 1, 8 + 12 + 68) + name + struct.pack("<I", 0)
+    got = parse_legacy(head + meta + var)
+    assert got == {"source0": {"X": [1.0, 2.0, None]}}
