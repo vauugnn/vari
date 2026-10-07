@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-latest
+          - os: macos-15
             artifact: vari-macos
           - os: windows-latest
             artifact: vari-windows
@@ -52,12 +52,43 @@ jobs:
       - name: Build renderer + main
         run: npm run build
 
+      - name: Import signing certificate — macOS
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          # Import the Developer ID certificate into our own keychain instead of
+          # relying on electron-builder's temporary one (whose unlock step fails on
+          # newer macOS runner images), and show whether a usable identity exists.
+          if [ -z "$CSC_LINK" ]; then echo "No certificate secret; build will be unsigned"; exit 0; fi
+          KC="$RUNNER_TEMP/vari-signing.keychain-db"
+          KC_PASS="$(uuidgen)"
+          case "$CSC_LINK" in
+            http*) curl -fsSL "$CSC_LINK" -o "$RUNNER_TEMP/cert.p12" ;;
+            *) echo "$CSC_LINK" | base64 --decode > "$RUNNER_TEMP/cert.p12" ;;
+          esac
+          security create-keychain -p "$KC_PASS" "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p "$KC_PASS" "$KC"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KC" -P "$CSC_KEY_PASSWORD" -A -t cert -f pkcs12
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KC_PASS" "$KC" >/dev/null
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/cert.p12"
+          echo "Signing identities available:"
+          security find-identity -v -p codesigning "$KC"
+          security find-identity -v -p codesigning "$KC" | grep -q "Developer ID Application" \
+            || { echo "::error::No valid 'Developer ID Application' identity in CSC_LINK (expired, revoked or wrong certificate?)"; exit 1; }
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+
       - name: Package app — macOS (sign + notarize if secrets present)
         if: runner.os == 'macOS'
         shell: bash
         run: |
           if [ -n "$APPLE_ID" ] && [ -n "$CSC_LINK" ]; then
             echo "Signing + notarizing with Developer ID"
+            # The certificate is already in the keychain; let electron-builder discover it.
+            unset CSC_LINK CSC_KEY_PASSWORD
             npx electron-builder --mac --publish never --config.mac.notarize=true
           else
             echo "No Apple credentials — ad-hoc build"
