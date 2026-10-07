@@ -71,7 +71,9 @@ jobs:
           security unlock-keychain -p "$KC_PASS" "$KC"
           security import "$RUNNER_TEMP/cert.p12" -k "$KC" -P "$CSC_KEY_PASSWORD" -A -t cert -f pkcs12
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KC_PASS" "$KC" >/dev/null
-          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          EXISTING="$(security list-keychains -d user | tr -d '"')"
+          # shellcheck disable=SC2086  # runner keychain paths contain no spaces; splitting is intended
+          security list-keychains -d user -s "$KC" $EXISTING
           rm -f "$RUNNER_TEMP/cert.p12"
           echo "Signing identities available:"
           security find-identity -v -p codesigning "$KC"
