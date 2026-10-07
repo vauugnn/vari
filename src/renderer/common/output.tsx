@@ -2,27 +2,8 @@ import { useState } from 'react'
 import type { OutputObject } from '../../shared/types'
 import { PivotTableView, type PivotTableJson } from '../output/PivotTable'
 import { ChartEditor } from './ChartEditor'
+import { svgToPng } from './chartExport'
 import './output.css'
-
-// Rasterize an SVG string to a base64 PNG (so an edited chart still exports to .spv).
-async function svgToPng(svg: string): Promise<string | null> {
-  try {
-    const img = new Image()
-    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)
-    await img.decode()
-    const canvas = document.createElement('canvas')
-    canvas.width = img.naturalWidth * 2
-    canvas.height = img.naturalHeight * 2
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return null
-    ctx.fillStyle = '#fff'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-    return canvas.toDataURL('image/png').split(',')[1]
-  } catch {
-    return null
-  }
-}
 
 // A chart: double-click to open the Chart Editor, where any bar or text can be
 // selected and edited (as in SPSS).

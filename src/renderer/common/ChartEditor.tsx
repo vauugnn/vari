@@ -1,6 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-
-const SWATCHES = ['#4e79c4', '#5aa552', '#d9a441', '#d9433f', '#8c66b5', '#41b2c2', '#6d6e71', '#1192e8']
+import { COLOURBLIND_SAFE, STANDARD_SWATCHES, copyChartImage, darken, svgToPng } from './chartExport'
 
 type Sel =
   | { kind: 'bar'; el: SVGElement; fill: string; edge: string; width: number }
@@ -73,6 +72,8 @@ export function ChartEditor({ svg, onApply, onCancel }: {
   const redo = useRef<string[]>([])
   const [, bump] = useState(0)
   const [allBars, setAllBars] = useState(false)
+  const [palette, setPalette] = useState<'standard' | 'cvd'>('standard')
+  const [notice, setNotice] = useState('')
 
   useLayoutEffect(() => {
     if (host.current) host.current.innerHTML = svg
@@ -127,6 +128,42 @@ export function ChartEditor({ svg, onApply, onCancel }: {
     setSel(describe(sel.el))
   }
 
+  // Recolour every bar / wedge with the colour-blind-safe palette (one colour per original fill).
+  const applyColourblindSafe = (): void => {
+    remember()
+    const shapes = Array.from(host.current?.querySelectorAll<SVGElement>('g[id^="patch_"] path') ?? []).filter((p) => barOf(p) === p)
+    const order: string[] = []
+    for (const p of shapes) {
+      const f = styleOf(p, 'fill')
+      if (!order.includes(f)) order.push(f)
+    }
+    for (const p of shapes) {
+      const colour = COLOURBLIND_SAFE[order.indexOf(styleOf(p, 'fill')) % COLOURBLIND_SAFE.length]
+      setStyle(p, 'fill', colour)
+      setStyle(p, 'stroke', darken(colour))
+    }
+    setPalette('cvd')
+    setSel(null)
+    setNotice('Applied the colour-blind-safe palette.')
+  }
+
+  const currentSvg = (): string => host.current?.querySelector('svg')?.outerHTML ?? svg
+
+  const exportAs = async (format: 'png' | 'svg' | 'pdf'): Promise<void> => {
+    const markup = currentSvg()
+    const png = format === 'png' ? ((await svgToPng(markup, 3)) ?? undefined) : undefined
+    try {
+      const path = await window.spss.exportChart(format, markup, png)
+      setNotice(path ? `Saved ${path}` : '')
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : String(e))
+    }
+  }
+
+  const copyImage = async (): Promise<void> => {
+    setNotice((await copyChartImage(currentSvg())) ? 'Copied the chart as an image.' : 'Could not copy the chart.')
+  }
+
   const finish = (): void => {
     setSel(null)
     const out = host.current?.querySelector('svg')
@@ -150,7 +187,14 @@ export function ChartEditor({ svg, onApply, onCancel }: {
             undo.current.push(snapshot())
             restore(next)
           }}>Redo</button>
-          <span className="chart-editor-tip">Click any bar or text to edit it</span>
+          <span className="chart-editor-sep" />
+          <button title="Use a palette that stays distinguishable with colour blindness" onClick={applyColourblindSafe}>Colour-blind safe</button>
+          <span className="chart-editor-sep" />
+          <button onClick={() => void exportAs('png')}>PNG</button>
+          <button onClick={() => void exportAs('svg')}>SVG</button>
+          <button onClick={() => void exportAs('pdf')}>PDF</button>
+          <button onClick={() => void copyImage()}>Copy</button>
+          <span className="chart-editor-tip">{notice || 'Click any bar or text to edit it'}</span>
         </div>
         <div className="chart-editor-body">
           <div className="chart-editor-stage" ref={stage} onClick={pick}>
@@ -167,7 +211,7 @@ export function ChartEditor({ svg, onApply, onCancel }: {
                   <input type="color" value={sel.fill} onChange={(e) => paintBars('fill', e.target.value)} />
                 </label>
                 <div className="chart-editor-swatches">
-                  {SWATCHES.map((c) => (
+                  {(palette === 'cvd' ? COLOURBLIND_SAFE : STANDARD_SWATCHES).map((c) => (
                     <button key={c} className="chart-editor-swatch" style={{ background: c }} title={c}
                       onClick={() => paintBars('fill', c)} />
                   ))}

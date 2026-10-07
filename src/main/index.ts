@@ -345,6 +345,25 @@ function applyRestoredState(out: { syntax: string; output: OutputObject[] }): vo
   else setSyntax()
 }
 
+// Render a chart's SVG to a PDF page the size of the chart (SVG sizes are in points).
+async function chartToPdf(svg: string): Promise<Buffer> {
+  const m = /<svg[^>]*\swidth="([\d.]+)pt"[^>]*\sheight="([\d.]+)pt"/.exec(svg) ?? /<svg[^>]*\sheight="([\d.]+)pt"[^>]*\swidth="([\d.]+)pt"/.exec(svg)
+  const widthPt = m ? parseFloat(m[1]) : 460
+  const heightPt = m ? parseFloat(m[2]) : 320
+  const win = new BrowserWindow({ show: false, webPreferences: { sandbox: true } })
+  try {
+    const html = `<!doctype html><html><body style="margin:0">${svg}</body></html>`
+    await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html))
+    return await win.webContents.printToPDF({
+      pageSize: { width: widthPt / 72, height: heightPt / 72 },
+      margins: { marginType: 'none' },
+      printBackground: true
+    })
+  } finally {
+    win.destroy()
+  }
+}
+
 // Open a file the OS handed us (double-click / "Open With Vari"). Routes by
 // extension: .spv to the Viewer, text/CSV through the Import wizard, other data
 // files straight into the Data Editor.
@@ -565,6 +584,29 @@ function wireDatasetIpc(): void {
     }
   })
   ipcMain.handle(IPC.ds.saveAs, () => saveViaDialog())
+  ipcMain.handle(IPC.chartExport, async (_e, p: { format: 'png' | 'svg' | 'pdf'; svg: string; png?: string }) => {
+    const win = BrowserWindow.getFocusedWindow() ?? (windows.viewer as BrowserWindow)
+    // VARI_TEST_SAVE_DIR lets automated checks skip the native save dialog.
+    const testDir = process.env['VARI_TEST_SAVE_DIR']
+    const res = testDir
+      ? { canceled: false, filePath: join(testDir, `chart.${p.format}`) }
+      : await dialog.showSaveDialog(win, {
+          title: `Save chart as ${p.format.toUpperCase()}`,
+          defaultPath: `chart.${p.format}`,
+          filters: [{ name: p.format.toUpperCase(), extensions: [p.format] }]
+        })
+    if (res.canceled || !res.filePath) return null
+    if (p.format === 'svg') {
+      const svg = p.svg.includes('xmlns=') ? p.svg : p.svg.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"')
+      await writeFile(res.filePath, '<?xml version="1.0" encoding="UTF-8"?>\n' + svg, 'utf8')
+    } else if (p.format === 'png') {
+      if (!p.png) throw new Error('The chart could not be rendered to an image.')
+      await writeFile(res.filePath, Buffer.from(p.png, 'base64'))
+    } else {
+      await writeFile(res.filePath, await chartToPdf(p.svg))
+    }
+    return res.filePath
+  })
   ipcMain.on(IPC.docCollected, (_e, c: Collected) => collectWaiters.get(c.requestId)?.(c))
   ipcMain.handle(IPC.history.list, () => sidecar.request('history.list', {}))
   ipcMain.handle(IPC.history.create, async (_e, p: { name?: string }) => {

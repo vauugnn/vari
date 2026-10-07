@@ -102,6 +102,7 @@ export const IPC = {
   windowShow: 'window.show',
   datasetChanged: 'dataset.changed',
   // Version history. Main asks the Viewer and Syntax windows for their state before a snapshot.
+  chartExport: 'chart.export',
   docCollect: 'doc.collect',
   docCollected: 'doc.collected',
   outputReplace: 'output.replace',
@@ -231,4 +232,6 @@ export interface SpssApi {
   provideDocState: (provider: () => DocState) => void
   onOutputReplace: (cb: (items: OutputObject[]) => void) => () => void
   onSetSyntax: (cb: (text: string) => void) => () => void
+  /** Save a chart as PNG, SVG or PDF through a save dialog. Returns the path, or null if cancelled. */
+  exportChart: (format: 'png' | 'svg' | 'pdf', svg: string, png?: string) => Promise<string | null>
 }
