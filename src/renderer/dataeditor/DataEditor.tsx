@@ -56,6 +56,7 @@ import { PowerDialog, MvaDialog, MiDialog, MediationDialog, MetaDialog } from '.
 import { RunScriptDialog } from '../dialogs/RunScriptDialog'
 import { OpenDatabaseDialog } from '../dialogs/OpenDatabaseDialog'
 import { RenameDatasetDialog, OptionsDialog } from '../dialogs/OptionsDialogs'
+import { VersionHistoryDialog } from '../dialogs/VersionHistoryDialog'
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
 import { ExploreDialog, PartialCorrDialog } from '../dialogs/analysis/ExploreDialog'
 import { ImportWizard } from '../dialogs/ImportWizard'
@@ -161,6 +162,12 @@ export function DataEditor(): JSX.Element {
   useEffect(() => window.spss.onUpdateProgress((p) => setUpdatePct(p.percent >= 100 ? null : p.percent)), [])
 
   useEffect(() => window.spss.ds.onChanged(setSummary), [setSummary])
+  // Development only: lets automated checks open a dialog without driving the native menu.
+  useEffect(() => {
+    // The dev server is served over http; a packaged app loads from a file.
+    if (location.protocol === 'http:') (window as unknown as Record<string, unknown>).__openDialog = (id: string) => setDialogId(id)
+  }, [])
+
   useEffect(
     () =>
       window.spss.onOpenDialog((id) => {
@@ -513,6 +520,8 @@ export function DataEditor(): JSX.Element {
             return <BayesPairedDialog {...p} />
           case 'bayes-indep':
             return <BayesIndependentDialog {...p} />
+          case 'history':
+            return <VersionHistoryDialog onClose={p.onClose} />
           case 'find':
             return <FindDialog {...p} />
           case 'gotocase':

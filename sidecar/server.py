@@ -471,7 +471,31 @@ def m_history_restore(p: dict[str, Any]) -> dict[str, Any]:
     return {"summary": _dataset_summary(ds), "syntax": state["syntax"], "output": state["output"]}
 
 
+def m_history_recover(_p: Any) -> dict[str, Any]:
+    """After an unclean exit: the newest saved version of any document, if there is one."""
+    found = _store().newest()
+    if found is None:
+        return {"found": False}
+    doc, v = found
+    return {"found": True, "docId": doc, "version": v}
+
+
+def m_history_open_version(p: dict[str, Any]) -> dict[str, Any]:
+    """Open a version as a new dataset, leaving whatever is open untouched."""
+    state = _store().load(p["docId"], p["id"])
+    pl = state["payload"]
+    ds = Dataset(pl["df"].reset_index(drop=True), pl["variables"], name=REGISTRY.next_name(), source_path=pl.get("source_path"))
+    ds.weight_var = pl.get("weight_var")
+    ds.filter_var = pl.get("filter_var")
+    ds.split_vars = pl.get("split_vars") or []
+    REGISTRY.add(ds, activate=True)
+    _CONTEXT.update(syntax=state["syntax"], output=state["output"])
+    return {"summary": _dataset_summary(ds), "syntax": state["syntax"], "output": state["output"]}
+
+
 METHODS = {
+    "history.recover": m_history_recover,
+    "history.openVersion": m_history_open_version,
     "history.list": m_history_list,
     "history.create": m_history_create,
     "history.rename": m_history_rename,

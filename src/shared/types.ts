@@ -101,6 +101,19 @@ export const IPC = {
   appVersion: 'app.version',
   windowShow: 'window.show',
   datasetChanged: 'dataset.changed',
+  // Version history. Main asks the Viewer and Syntax windows for their state before a snapshot.
+  docCollect: 'doc.collect',
+  docCollected: 'doc.collected',
+  outputReplace: 'output.replace',
+  syntaxSet: 'syntax.set',
+  history: {
+    list: 'history.list',
+    create: 'history.create',
+    rename: 'history.rename',
+    delete: 'history.delete',
+    diff: 'history.diff',
+    restore: 'history.restore'
+  },
   ds: {
     new: 'ds.new',
     openDialog: 'ds.openDialog',
@@ -152,6 +165,45 @@ export interface DatasetApi {
 }
 
 /** Shape exposed to the renderer via contextBridge as `window.spss`. */
+export interface HistoryVersion {
+  id: string
+  time: number // seconds since the epoch
+  kind: 'auto' | 'save' | 'manual' | 'pre-op' | 'restore' | 'open'
+  name: string
+  rows: number
+  vars: number
+  outputItems: number
+  bytes: number
+}
+
+export interface HistoryDiff {
+  rows: { from: number; to: number }
+  variables: {
+    added: string[]
+    removed: string[]
+    changed: { variable: string; field: string; from: unknown; to: unknown }[]
+  }
+  cells: { changed: number; examples: { case: number; variable: string; from: unknown; to: unknown }[] }
+  syntaxDiff: string[]
+  outputItems: { from: number; to: number }
+  identical: boolean
+}
+
+export interface HistoryApi {
+  list: () => Promise<{ docId: string; versions: HistoryVersion[] }>
+  create: (name?: string) => Promise<HistoryVersion | null>
+  rename: (id: string, name: string) => Promise<HistoryVersion>
+  remove: (id: string) => Promise<void>
+  /** Differences from version `a` to version `b`, or to the current state when `b` is omitted. */
+  diff: (a: string, b?: string) => Promise<HistoryDiff>
+  restore: (id: string) => Promise<DatasetSummary>
+}
+
+export interface DocState {
+  syntax?: string
+  output?: OutputObject[]
+}
+
 export interface SpssApi {
   window: WindowName
   appVersion: string
@@ -174,4 +226,9 @@ export interface SpssApi {
   onAppendSyntax: (cb: (syntax: string) => void) => () => void
   onImportText: (cb: (path: string) => void) => () => void
   ds: DatasetApi
+  history: HistoryApi
+  /** The Viewer and Syntax windows register what they hold, so snapshots can include it. */
+  provideDocState: (provider: () => DocState) => void
+  onOutputReplace: (cb: (items: OutputObject[]) => void) => () => void
+  onSetSyntax: (cb: (text: string) => void) => () => void
 }

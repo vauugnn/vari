@@ -1,6 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron'
 import { writeFile } from 'fs/promises'
-import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'fs'
+import { appendFileSync, existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import updaterPkg from 'electron-updater'
 import { buildMenu, focusOrShow } from './menu'
@@ -8,7 +8,7 @@ import { buildMenu, focusOrShow } from './menu'
 const { autoUpdater } = updaterPkg
 import { Sidecar } from './sidecar'
 import { IPC } from '../shared/types'
-import type { DatasetSummary, OutputObject, SidecarStatus, WindowName } from '../shared/types'
+import type { DatasetSummary, DocState, HistoryVersion, OutputObject, SidecarStatus, WindowName } from '../shared/types'
 
 // electron-vite sets this in dev; undefined in a packaged build.
 const RENDERER_URL = process.env['ELECTRON_RENDERER_URL']
@@ -19,6 +19,8 @@ const windows: Record<WindowName, BrowserWindow | null> = {
   syntax: null
 }
 
+// Version history lives in the app's private data folder; the sidecar inherits this variable.
+process.env['VARI_HISTORY_DIR'] = join(app.getPath('userData'), 'history')
 const sidecar = new Sidecar()
 
 app.setName('Vari')
@@ -252,6 +254,97 @@ function broadcastDataset(summary: DatasetSummary): void {
   if (de && !de.isDestroyed()) de.webContents.send(IPC.datasetChanged, summary)
 }
 
+// ---- Version history -------------------------------------------------------
+// The sidecar owns the data, but the Viewer holds the output and the Syntax window the
+// syntax text, so before a snapshot we ask those windows for their state.
+type Collected = { requestId: string; window: string; state: DocState }
+const collectWaiters = new Map<string, (c: Collected) => void>()
+
+async function collectDocState(): Promise<{ syntax?: string; output?: OutputObject[] }> {
+  const ctx: { syntax?: string; output?: OutputObject[] } = {}
+  const asks: Promise<void>[] = []
+  for (const name of ['viewer', 'syntax'] as const) {
+    const win = windows[name]
+    if (!win || win.isDestroyed() || win.webContents.isLoading()) continue
+    asks.push(
+      new Promise<void>((resolve) => {
+        const id = `${name}-${Date.now()}-${Math.random().toString(36).slice(2)}`
+        const timer = setTimeout(() => {
+          collectWaiters.delete(id)
+          resolve()
+        }, 1500)
+        collectWaiters.set(id, (c) => {
+          clearTimeout(timer)
+          collectWaiters.delete(id)
+          if (c.state.syntax !== undefined) ctx.syntax = c.state.syntax
+          if (c.state.output) ctx.output = c.state.output
+          resolve()
+        })
+        win.webContents.send(IPC.docCollect, id)
+      })
+    )
+  }
+  await Promise.all(asks)
+  return ctx // keys are omitted for windows that could not answer; the sidecar keeps its last copy
+}
+
+// Save, with the current syntax/output so the "Saved" version is complete.
+async function saveRequest(path?: string): Promise<{ ok: boolean; path: string }> {
+  const ctx = await collectDocState()
+  return (await sidecar.request('dataset.save', { ...(path ? { path } : {}), ...ctx })) as { ok: boolean; path: string }
+}
+
+async function autosave(): Promise<void> {
+  try {
+    await sidecar.request('history.create', { kind: 'auto', ...(await collectDocState()) })
+  } catch {
+    // no dataset yet, or the sidecar is busy; try again next time
+  }
+}
+
+const AUTOSAVE_MS = 5 * 60 * 1000
+const markerPath = (): string => join(app.getPath('userData'), 'running.marker')
+
+// A marker file exists while Vari runs and is removed on a clean exit; finding it at launch
+// means the last session ended unexpectedly, so offer the newest autosave.
+async function offerRecovery(): Promise<void> {
+  try {
+    const found = (await sidecar.request('history.recover', {})) as { found: boolean; docId?: string; version?: HistoryVersion }
+    if (!found.found || !found.docId || !found.version) return
+    const v = found.version
+    const when = new Date(v.time * 1000).toLocaleString()
+    const res = await dialog.showMessageBox(windows.dataeditor as BrowserWindow, {
+      type: 'question',
+      message: 'Vari did not close properly last time.',
+      detail: `Recover your most recent work (${v.rows.toLocaleString()} cases, ${v.vars} variables, saved ${when})? It opens as a new dataset; nothing is overwritten.`,
+      buttons: ['Recover', 'Not now'],
+      defaultId: 0,
+      cancelId: 1
+    })
+    if (res.response !== 0) return
+    const out = (await sidecar.request('history.openVersion', { docId: found.docId, id: v.id })) as {
+      summary: DatasetSummary
+      syntax: string
+      output: OutputObject[]
+    }
+    broadcastDataset(out.summary)
+    applyRestoredState(out)
+  } catch (err) {
+    console.error('[recover]', err)
+  }
+}
+
+function applyRestoredState(out: { syntax: string; output: OutputObject[] }): void {
+  const viewer = ensureWindow('viewer')
+  const send = (): void => viewer.webContents.send(IPC.outputReplace, out.output)
+  if (viewer.webContents.isLoading()) viewer.webContents.once('did-finish-load', send)
+  else send()
+  const syntax = ensureWindow('syntax')
+  const setSyntax = (): void => syntax.webContents.send(IPC.syntaxSet, out.syntax)
+  if (syntax.webContents.isLoading()) syntax.webContents.once('did-finish-load', setSyntax)
+  else setSyntax()
+}
+
 // Open a file the OS handed us (double-click / "Open With Vari"). Routes by
 // extension: .spv to the Viewer, text/CSV through the Import wizard, other data
 // files straight into the Data Editor.
@@ -444,7 +537,7 @@ async function saveViaDialog(): Promise<{ ok: boolean; path: string } | null> {
     ]
   })
   if (res.canceled || !res.filePath) return null
-  const out = (await sidecar.request('dataset.save', { path: res.filePath })) as { ok: boolean; path: string }
+  const out = await saveRequest(res.filePath)
   if (out?.ok) rememberFile(res.filePath)
   return out
 }
@@ -466,12 +559,40 @@ function wireDatasetIpc(): void {
   })
   ipcMain.handle(IPC.ds.save, async () => {
     try {
-      return (await sidecar.request('dataset.save', {})) as { ok: boolean; path: string }
+      return await saveRequest()
     } catch (err) {
       return { error: String(err instanceof Error ? err.message : err) }
     }
   })
   ipcMain.handle(IPC.ds.saveAs, () => saveViaDialog())
+  ipcMain.on(IPC.docCollected, (_e, c: Collected) => collectWaiters.get(c.requestId)?.(c))
+  ipcMain.handle(IPC.history.list, () => sidecar.request('history.list', {}))
+  ipcMain.handle(IPC.history.create, async (_e, p: { name?: string }) => {
+    const out = (await sidecar.request('history.create', { kind: 'manual', name: p?.name, ...(await collectDocState()) })) as {
+      version: HistoryVersion | null
+    }
+    return out.version
+  })
+  ipcMain.handle(IPC.history.rename, async (_e, p: { id: string; name: string }) => {
+    const out = (await sidecar.request('history.rename', p)) as { version: HistoryVersion }
+    return out.version
+  })
+  ipcMain.handle(IPC.history.delete, async (_e, p: { id: string }) => {
+    await sidecar.request('history.delete', p)
+  })
+  ipcMain.handle(IPC.history.diff, async (_e, p: { a: string; b?: string }) =>
+    sidecar.request('history.diff', { a: p.a, b: p.b ?? 'current', ...(p.b ? {} : await collectDocState()) })
+  )
+  ipcMain.handle(IPC.history.restore, async (_e, p: { id: string }) => {
+    const out = (await sidecar.request('history.restore', { id: p.id, ...(await collectDocState()) })) as {
+      summary: DatasetSummary
+      syntax: string
+      output: OutputObject[]
+    }
+    broadcastDataset(out.summary)
+    applyRestoredState(out)
+    return out.summary
+  })
   ipcMain.handle(IPC.ds.getRows, (_e, p) => sidecar.request('dataset.getRows', p))
   ipcMain.handle(IPC.ds.setCell, (_e, p) => sidecar.request('dataset.setCell', p))
   ipcMain.handle(IPC.ds.setVariableMeta, (_e, p) => sidecar.request('dataset.setVariableMeta', p))
@@ -648,9 +769,7 @@ app.whenReady().then(() => {
       fileNew: () => void newDataset(),
       fileOpen: () => void openViaDialog(),
       fileSave: () => {
-        void sidecar
-          .request('dataset.save', {})
-          .catch(() => saveViaDialog())
+        void saveRequest().catch(() => saveViaDialog())
       },
       fileSaveAs: () => void saveViaDialog(),
       filePrint: () => void printViewer(),
@@ -715,9 +834,29 @@ app.whenReady().then(() => {
       })()
     }
   })
+  const hadUncleanExit = existsSync(markerPath())
+  try {
+    writeFileSync(markerPath(), String(Date.now()))
+  } catch {
+    // not fatal: recovery simply will not trigger
+  }
   sidecar.start()
 
-  if (process.env.SPSS_SELFTEST) void runSelfTest()
+  if (process.env.SPSS_SELFTEST) {
+    void runSelfTest()
+  } else {
+    // Wait for the sidecar, then offer recovery after an unclean exit and start autosaving.
+    const started = Date.now()
+    const timer = setInterval(() => {
+      if (sidecar.currentStatus.state === 'ready') {
+        clearInterval(timer)
+        if (hadUncleanExit) void offerRecovery()
+        setInterval(() => void autosave(), AUTOSAVE_MS)
+      } else if (Date.now() - started > 60000) {
+        clearInterval(timer)
+      }
+    }, 500)
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createAllWindows()
@@ -929,10 +1068,28 @@ async function until(cond: () => boolean, timeoutMs: number): Promise<void> {
 }
 
 // Kill the sidecar on every quit path, including force quit.
-app.on('before-quit', () => sidecar.stop())
+// On a clean quit, take a last autosave first (so the newest work is never lost), then clear
+// the "running" marker. A crash skips all of this, which is exactly how recovery detects it.
+let finalSaveStarted = false
+app.on('before-quit', (e) => {
+  if (finalSaveStarted || process.env.SPSS_SELFTEST) {
+    sidecar.stop()
+    return
+  }
+  e.preventDefault()
+  finalSaveStarted = true
+  void Promise.race([autosave(), new Promise((r) => setTimeout(r, 3000))]).finally(() => {
+    try {
+      unlinkSync(markerPath())
+    } catch {
+      // already gone
+    }
+    sidecar.stop()
+    app.quit()
+  })
+})
 app.on('will-quit', () => sidecar.stop())
 
 app.on('window-all-closed', () => {
-  sidecar.stop()
   app.quit()
 })

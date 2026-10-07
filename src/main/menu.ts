@@ -218,6 +218,7 @@ export function buildMenu(actions: MenuActions): Menu {
       { label: 'Close', role: 'close' },
       { label: 'Save', accelerator: 'CmdOrCtrl+S', click: actions.fileSave },
       { label: 'Save As…', accelerator: 'CmdOrCtrl+Shift+S', click: actions.fileSaveAs },
+      { label: 'Version History…', accelerator: 'CmdOrCtrl+Alt+H', click: () => actions.openDialog('history') },
       { label: 'Export', submenu: [{ label: 'SPSS Syntax (.sps)…', click: actions.exportSyntax }] },
       { type: 'separator' },
       { label: 'Rename Dataset…', click: () => actions.openDialog('rename-dataset') },

@@ -31,6 +31,18 @@ export function Viewer(): JSX.Element {
     return window.spss.onOutput((objects) => setItems((prev) => [...prev, ...objects]))
   }, [])
 
+  // Version history: hand over the output on request, and accept a restored one.
+  const itemsRef = useRef<OutputObject[]>([])
+  itemsRef.current = items
+  useEffect(() => {
+    window.spss.provideDocState(() => ({ output: itemsRef.current }))
+    return window.spss.onOutputReplace((restored) => {
+      setItems(restored)
+      setSelected(null)
+      setCollapsed(new Set())
+    })
+  }, [])
+
   const outline = outlineOf(items)
 
   const exportHtml = async (): Promise<void> => {

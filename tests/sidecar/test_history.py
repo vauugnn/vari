@@ -228,3 +228,17 @@ def test_opening_a_file_records_the_original(server_ds, tmp_path):
     _rpc("dataset.open", {"path": p})
     vs = _rpc("history.list")["versions"]
     assert vs[-1]["kind"] == "open" and vs[-1]["name"] == "Opened file"
+
+
+def test_recover_finds_the_newest_version_and_opens_it_as_a_new_dataset(server_ds):
+    server = server_ds
+    assert _rpc("history.recover") == {"found": False}
+    _rpc("history.create", {"kind": "auto", "syntax": "SYN", "output": [{"type": "Title", "text": "T"}]})
+    server.REGISTRY.active.df.loc[0, "x"] = 77.0
+    _rpc("history.create", {"kind": "auto", "syntax": "SYN2"})
+    rec = _rpc("history.recover")
+    assert rec["found"] and rec["version"]["rows"] == 4
+    before = server.REGISTRY.active.name
+    out = _rpc("history.openVersion", {"docId": rec["docId"], "id": rec["version"]["id"]})
+    assert out["syntax"] == "SYN2" and server.REGISTRY.active.df["x"].tolist()[0] == 77.0
+    assert server.REGISTRY.active.name != before and server.REGISTRY.get(before) is not None

@@ -3,6 +3,8 @@ import { IPC } from '../shared/types'
 import type {
   DatasetApi,
   DatasetSummary,
+  DocState,
+  HistoryApi,
   OutputObject,
   RowWindow,
   SidecarStatus,
@@ -49,6 +51,15 @@ const ds: DatasetApi = {
     ipcRenderer.on(IPC.datasetChanged, listener)
     return () => ipcRenderer.removeListener(IPC.datasetChanged, listener)
   }
+}
+
+const history: HistoryApi = {
+  list: () => ipcRenderer.invoke(IPC.history.list),
+  create: (name) => ipcRenderer.invoke(IPC.history.create, { name }),
+  rename: (id, name) => ipcRenderer.invoke(IPC.history.rename, { id, name }),
+  remove: (id) => ipcRenderer.invoke(IPC.history.delete, { id }),
+  diff: (a, b) => ipcRenderer.invoke(IPC.history.diff, { a, b }),
+  restore: (id) => ipcRenderer.invoke(IPC.history.restore, { id })
 }
 
 const api: SpssApi = {
@@ -108,7 +119,23 @@ const api: SpssApi = {
     ipcRenderer.on(IPC.importText, listener)
     return () => ipcRenderer.removeListener(IPC.importText, listener)
   },
-  ds
+  ds,
+  history,
+  provideDocState: (provider: () => DocState) => {
+    ipcRenderer.on(IPC.docCollect, (_e, requestId: string) => {
+      ipcRenderer.send(IPC.docCollected, { requestId, window: detectWindow(), state: provider() })
+    })
+  },
+  onOutputReplace: (cb) => {
+    const listener = (_e: unknown, items: OutputObject[]) => cb(items)
+    ipcRenderer.on(IPC.outputReplace, listener)
+    return () => ipcRenderer.removeListener(IPC.outputReplace, listener)
+  },
+  onSetSyntax: (cb) => {
+    const listener = (_e: unknown, text: string) => cb(text)
+    ipcRenderer.on(IPC.syntaxSet, listener)
+    return () => ipcRenderer.removeListener(IPC.syntaxSet, listener)
+  }
 }
 
 contextBridge.exposeInMainWorld('spss', api)

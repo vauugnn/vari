@@ -175,6 +175,22 @@ class HistoryStore:
             f.unlink()
         src.rmdir()
 
+    def newest(self) -> Optional[tuple[str, dict[str, Any]]]:
+        """The most recent version across every document (for crash recovery)."""
+        best: Optional[tuple[str, dict[str, Any]]] = None
+        if not self.root.exists():
+            return None
+        for d in self.root.iterdir():
+            if not d.is_dir():
+                continue
+            try:
+                idx = self._index(d.name)
+            except HistoryError:
+                continue
+            if idx and (best is None or idx[-1]["time"] > best[1]["time"]):
+                best = (d.name, idx[-1])
+        return best
+
     # ---- load ----------------------------------------------------------------
     def load(self, doc_id: str, vid: str) -> dict[str, Any]:
         f = self._dir(doc_id) / f"{vid}.vsnap"

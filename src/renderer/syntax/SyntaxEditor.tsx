@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { SidecarStatus } from '../../shared/types'
 import './syntax.css'
 
@@ -19,6 +19,14 @@ export function SyntaxEditor(): JSX.Element {
     return window.spss.onAppendSyntax((appended) => {
       setText((prev) => (prev.trim() ? prev.replace(/\n*$/, '') + '\n\n' + appended : appended))
     })
+  }, [])
+
+  // Version history: hand over the text on request, and accept a restored one.
+  const textRef = useRef(text)
+  textRef.current = text
+  useEffect(() => {
+    window.spss.provideDocState(() => ({ syntax: textRef.current }))
+    return window.spss.onSetSyntax(setText)
   }, [])
 
   const ready = status.state === 'ready'
