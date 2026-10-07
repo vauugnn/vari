@@ -57,6 +57,7 @@ import { RunScriptDialog } from '../dialogs/RunScriptDialog'
 import { OpenDatabaseDialog } from '../dialogs/OpenDatabaseDialog'
 import { RenameDatasetDialog, OptionsDialog } from '../dialogs/OptionsDialogs'
 import { VersionHistoryDialog } from '../dialogs/VersionHistoryDialog'
+import { TestChooserDialog } from '../dialogs/TestChooserDialog'
 import { SelectCasesDialog, WeightCasesDialog, SplitFileDialog, SortCasesDialog } from '../dialogs/analysis/DataOpsDialogs'
 import { ExploreDialog, PartialCorrDialog } from '../dialogs/analysis/ExploreDialog'
 import { ImportWizard } from '../dialogs/ImportWizard'
@@ -520,6 +521,8 @@ export function DataEditor(): JSX.Element {
             return <BayesPairedDialog {...p} />
           case 'bayes-indep':
             return <BayesIndependentDialog {...p} />
+          case 'test-chooser':
+            return <TestChooserDialog onClose={p.onClose} onOpen={(id) => setDialogId(id)} />
           case 'history':
             return <VersionHistoryDialog onClose={p.onClose} />
           case 'find':

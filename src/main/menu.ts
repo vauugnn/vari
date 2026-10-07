@@ -43,6 +43,8 @@ function analyzeSubmenu(open: (id: string) => void): MenuItemConstructorOptions 
   return {
     label: 'Analyze',
     submenu: [
+      dialogItem('Which test should I use?…', 'test-chooser', open),
+      { type: 'separator' },
       { label: 'Power Analysis', submenu: [dialogItem('Means…', 'power', open), dialogItem('Proportions…', 'power', open), dialogItem('Correlations…', 'power', open)] },
       { label: 'Meta Analysis', submenu: [dialogItem('Continuous Outcomes…', 'meta', open)] },
       { label: 'Reports', submenu: [dialogItem('Codebook', 'codebook', open), dialogItem('OLAP Cubes', 'olap', open), dialogItem('Case Summaries', 'summarize', open), proc('Report Summaries in Rows'), proc('Report Summaries in Columns')] },
