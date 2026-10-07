@@ -60,3 +60,71 @@ def test_legacy_binary_roundtrip_of_numeric_source():
     meta = struct.pack("<3I", 3, 1, 8 + 12 + 68) + name + struct.pack("<I", 0)
     got = parse_legacy(head + meta + var)
     assert got == {"source0": {"X": [1.0, 2.0, None]}}
+
+
+def test_writer_sections_match_real_spss_layout():
+    """Section sizes equal what SPSS writes; the fixed sections are byte-identical.
+    (Font sizes/colours vary between SPSS versions, so Areas is compared by size.)"""
+    import zipfile
+
+    from sidecar.io import spv_write as w
+    from sidecar.io.spv_light import parse_light
+
+    path = next((f for f in SAMPLES if f.endswith("viewertut.spv")), None)
+    if path is None:
+        pytest.skip("SPSS samples not installed")
+    b = zipfile.ZipFile(path).read("00000000013_lightTableData.bin")
+    m = parse_light(b).marks
+    assert len(b[m["areas"]:m["borders"]]) == len(w._areas())
+    def border_set(blob: bytes) -> list[bytes]:  # order is unspecified by the format
+        body = blob[4 + 4 + 4 : -4]
+        return sorted(body[i : i + 12] for i in range(0, len(body), 12))
+
+    real_b = b[m["borders"]:m["print"]]
+    assert len(real_b) == len(w._borders())
+    assert border_set(real_b) == border_set(w._borders())
+    assert b[m["print"]:m["tablesettings"]] == w._print_settings()
+    assert b[m["tablesettings"]:m["formats"]] == w._table_settings()
+
+
+@needs_spss
+def test_real_tables_survive_the_writer():
+    import zipfile
+
+    from sidecar.io.spv_light import parse_light
+    from sidecar.io.spv_table import to_pivot_json
+    from sidecar.io.spv_write import write_light
+
+    for f in SAMPLES:
+        z = zipfile.ZipFile(f)
+        for name in z.namelist():
+            if name.endswith("lightTableData.bin"):
+                t = parse_light(z.read(name))
+                again = parse_light(write_light(t, -1, "Frequencies"))
+                assert to_pivot_json(t)["flat"] == to_pivot_json(again)["flat"], name
+
+
+def test_vari_output_roundtrips_through_ibm_format(tmp_path):
+    import zipfile
+
+    from sidecar.io.spv import read_spv, write_spv
+    from sidecar.output.model import Dimension, PivotTable
+
+    t = PivotTable("Group Statistics", [Dimension("", ["Male", "Female"])],
+                   [Dimension("", ["N", "Mean"])])
+    t.set([0], [0], "10", "num")
+    t.set([0], [1], "3.25", "num")
+    t.set([1], [0], "12", "num")
+    t.set([1], [1], ".500", "num")  # SPSS-style leading-zero-less value stays text
+    items = [{"type": "Title", "text": "T-Test"}, t.to_json(),
+             {"type": "TextBlock", "text": "T-TEST GROUPS=g(0 1)."}]
+    p = str(tmp_path / "out.spv")
+    write_spv(items, p)
+    names = zipfile.ZipFile(p).namelist()
+    assert names[-1] == "META-INF/MANIFEST.MF"
+    back = read_spv(p)
+    tbl = next(i for i in back if i["type"] == "PivotTable")
+    assert tbl["title"] == "Group Statistics"
+    assert tbl["flat"]["grid"] == [["10", "3.25"], ["12", ".500"]]
+    assert [h["t"] for h in tbl["flat"]["colHeaders"][0]] == ["N", "Mean"]
+    assert [h[0]["t"] for h in tbl["flat"]["rowHeaders"]] == ["Male", "Female"]

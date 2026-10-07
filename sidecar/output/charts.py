@@ -7,6 +7,7 @@ Builder is permanently out of scope (HLD 1 non-goals).
 """
 from __future__ import annotations
 
+import base64
 import io
 from typing import Any, Optional, Sequence
 
@@ -74,10 +75,12 @@ def _finish(fig: Any, title: str, subtitle: str = "", footnote: str = "") -> dic
         fig.text(0.01, 0.005, footnote, ha="left", fontsize=8, color="#555")
     buf = io.StringIO()
     fig.savefig(buf, format="svg", bbox_inches="tight")
+    png = io.BytesIO()
+    fig.savefig(png, format="png", dpi=150, bbox_inches="tight")  # for .spv export
     _plt().close(fig)
     svg = buf.getvalue()
     svg = svg[svg.index("<svg") :]  # strip XML/DOCTYPE preamble
-    return {"type": "Chart", "svg": svg}
+    return {"type": "Chart", "svg": svg, "png": base64.b64encode(png.getvalue()).decode()}
 
 
 def histogram(values: Sequence[float], title: str = "", xlabel: str = "",

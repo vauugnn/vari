@@ -64,6 +64,7 @@ class LightTable:
     cells: dict[int, Val]
     show_variables: int = 0
     show_values: int = 0
+    marks: dict[str, int] = field(default_factory=dict)  # section start offsets (diagnostics)
 
 
 class _R:
@@ -327,6 +328,7 @@ def parse_light(data: bytes) -> LightTable:
     if version not in (1, 3):
         raise LightError(f"unsupported light member version {version}")
     r.take(5 + 4 + 16 + 8)  # bools, x3, widths, table-id
+    marks = {"header": 0, "titles": r.i}
     # Titles
     title = _value(r, version)
     if r.peek() == 1:
@@ -343,6 +345,7 @@ def parse_light(data: bytes) -> LightTable:
         corner = _value(r, version)
     if r.u8() == 0x31:
         caption = _value(r, version)
+    marks["footnotes"] = r.i
     # Footnotes
     notes: list[tuple[Val, Optional[Val]]] = []
     for _ in range(r.i32()):
@@ -350,6 +353,7 @@ def parse_light(data: bytes) -> LightTable:
         marker = _value(r, version) if r.u8() == 0x31 else None
         r.i32()  # show
         notes.append((text, marker))
+    marks["areas"] = r.i
     # Areas
     if r.peek() == 0:
         r.u8()
@@ -365,11 +369,15 @@ def parse_light(data: bytes) -> LightTable:
         r.string()
         if version == 3:
             r.take(16)
+    marks["borders"] = r.i
     # Borders, PrintSettings, TableSettings: length-prefixed blobs
     r.take(r.i32())
+    marks["print"] = r.i
     r.take(r.i32())
+    marks["tablesettings"] = r.i
     if version == 3:
         r.take(r.i32())
+    marks["formats"] = r.i
     show_vars = show_vals = 0
     # Formats
     for _ in range(r.i32()):
@@ -386,13 +394,16 @@ def parse_light(data: bytes) -> LightTable:
         x1 = blob[4 : 4 + l1]
         if len(x1) > 5:
             show_vars, show_vals = x1[4], x1[5]
+    marks["dims"] = r.i
     # Dimensions
     dims = [_dimension(r, version) for _ in range(r.i32())]
+    marks["axes"] = r.i
     # Axes
     nl, nr, nc = r.i32(), r.i32(), r.i32()
     layers = [r.i32() for _ in range(nl)]
     rows = [r.i32() for _ in range(nr)]
     cols = [r.i32() for _ in range(nc)]
+    marks["cells"] = r.i
     # Cells
     cells: dict[int, Val] = {}
     for _ in range(r.i32()):
@@ -401,4 +412,4 @@ def parse_light(data: bytes) -> LightTable:
             r.u8()
         cells[idx] = _value(r, version)
     return LightTable(version, title, subtype, user_title, corner, caption, notes, dims,
-                      layers, rows, cols, cells, show_vars, show_vals)
+                      layers, rows, cols, cells, show_vars, show_vals, marks)
