@@ -19,12 +19,64 @@ from .data.dataset import Dataset, DatasetRegistry
 from .data.format import Format
 from .data.missing import MissingSpec
 from .data.variable import VariableMeta
+from .history import HistoryError, HistoryStore, doc_id_for
 from .io.files import import_text, open_file, save_file
 from .procedures.registry import build_registry
 from .syntax.registry import Context, execute_syntax
 
 REGISTRY = DatasetRegistry()
 PROC_REGISTRY = build_registry()
+
+# ---- version history (see sidecar/history.py) ----
+_HISTORY: Optional[HistoryStore] = None
+# Syntax text and output live in the app's other windows; the app passes them along when it
+# snapshots, and we remember the latest so automatic snapshots (before destructive commands) include them.
+_CONTEXT: dict[str, Any] = {"syntax": "", "output": []}
+# Commands that rewrite or drop data. A safety snapshot is taken before they run.
+_DESTRUCTIVE = re.compile(
+    r"^\s*(SELECT\s+IF|SAMPLE|DELETE\s+VARIABLES|RECODE|FLIP|MATCH\s+FILES|ADD\s+FILES|AGGREGATE|"
+    r"CASESTOVARS|VARSTOCASES|SORT\s+CASES)\b",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+def _store() -> HistoryStore:
+    global _HISTORY
+    if _HISTORY is None:
+        import os
+        from pathlib import Path
+
+        root = os.environ.get("VARI_HISTORY_DIR") or str(Path.home() / ".vari" / "history")
+        _HISTORY = HistoryStore(root)
+    return _HISTORY
+
+
+def _doc_id(ds: Dataset) -> str:
+    if ds.source_path:
+        return doc_id_for(ds.source_path)
+    if not getattr(ds, "history_id", None):
+        ds.history_id = doc_id_for(None)  # type: ignore[attr-defined]
+    return ds.history_id  # type: ignore[attr-defined]
+
+
+def _remember_context(p: Any) -> None:
+    if isinstance(p, dict):
+        if isinstance(p.get("syntax"), str):
+            _CONTEXT["syntax"] = p["syntax"]
+        if isinstance(p.get("output"), list):
+            _CONTEXT["output"] = p["output"]
+
+
+def _auto_snapshot(kind: str, name: Optional[str] = None, force: bool = False) -> Optional[dict[str, Any]]:
+    """Best effort: history must never get in the way of the user's work."""
+    ds = REGISTRY.active
+    if ds is None:
+        return None
+    try:
+        return _store().create(_doc_id(ds), ds, _CONTEXT["syntax"], _CONTEXT["output"], kind=kind, name=name, force=force)
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write(f"[sidecar] history snapshot failed: {exc}\n")
+        return None
 
 
 # ---- variable metadata (de)serialization ------------------------------
@@ -139,6 +191,8 @@ def m_ping(_p: Any) -> dict[str, Any]:
 def m_syntax_execute(p: Any) -> list[dict[str, Any]]:
     text = str(p.get("text", "")) if isinstance(p, dict) else str(p or "")
     before = REGISTRY.active
+    if before is not None and _DESTRUCTIVE.search(text):
+        _auto_snapshot("pre-op")
     pre = _snapshot_active()  # captured in case the command mutates in place
     ctx = Context(REGISTRY)
     outputs = execute_syntax(text, PROC_REGISTRY, ctx)
@@ -168,6 +222,8 @@ def m_dataset_open(p: dict[str, Any]) -> dict[str, Any]:
     path = p["path"]
     ds = open_file(path, name=REGISTRY.next_name())
     REGISTRY.add(ds, activate=True)
+    _CONTEXT.update(syntax="", output=[])
+    _auto_snapshot("open", "Opened file")  # the original is always one click away
     return _dataset_summary(ds)
 
 
@@ -191,7 +247,14 @@ def m_dataset_save(p: dict[str, Any]) -> dict[str, Any]:
     if not path:
         raise RuntimeError("No path to save to.")
     save_file(ds, path)
+    old_id = _doc_id(ds)
     ds.source_path = path
+    _remember_context(p)
+    try:
+        _store().adopt(old_id, _doc_id(ds))  # an unsaved document's history follows it to its file
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write(f"[sidecar] history adopt failed: {exc}\n")
+    _auto_snapshot("save", "Saved")
     return {"ok": True, "path": path}
 
 
@@ -354,7 +417,67 @@ def m_variables_list(_p: Any) -> list[dict[str, Any]]:
     return [_meta_to_json(v) for v in ds.variables]
 
 
+def m_history_list(_p: Any) -> dict[str, Any]:
+    ds = _active()
+    doc = _doc_id(ds)
+    return {"docId": doc, "versions": _store().list(doc)}
+
+
+def m_history_create(p: Any) -> dict[str, Any]:
+    _remember_context(p)
+    p = p if isinstance(p, dict) else {}
+    kind = p.get("kind", "auto")
+    v = _auto_snapshot(kind, p.get("name") or None, force=kind not in ("auto", "pre-op"))
+    return {"version": v}
+
+
+def m_history_rename(p: dict[str, Any]) -> dict[str, Any]:
+    return {"version": _store().rename(_doc_id(_active()), p["id"], str(p.get("name", "")))}
+
+
+def m_history_delete(p: dict[str, Any]) -> dict[str, Any]:
+    _store().delete(_doc_id(_active()), p["id"])
+    return {"ok": True}
+
+
+def _current_state(p: Any) -> dict[str, Any]:
+    _remember_context(p)
+    ds = _active()
+    return {"payload": {"df": ds.df, "variables": ds.variables}, "syntax": _CONTEXT["syntax"], "output": _CONTEXT["output"]}
+
+
+def m_history_diff(p: dict[str, Any]) -> dict[str, Any]:
+    ds = _active()
+    b = p.get("b")
+    current = _current_state(p) if b in (None, "current") else None
+    return _store().diff(_doc_id(ds), p["a"], None if b in (None, "current") else b, current=current)
+
+
+def m_history_restore(p: dict[str, Any]) -> dict[str, Any]:
+    """Go back to a version. The current state is saved first, so a restore can be undone."""
+    ds = _active()
+    _remember_context(p)
+    doc = _doc_id(ds)
+    state = _store().load(doc, p["id"])  # fail before touching anything if it cannot be read
+    _auto_snapshot("restore", "Before restoring an earlier version", force=True)
+    _push_undo()
+    pl = state["payload"]
+    ds.df = pl["df"].reset_index(drop=True)
+    ds.variables = pl["variables"]
+    ds.weight_var = pl.get("weight_var")
+    ds.filter_var = pl.get("filter_var")
+    ds.split_vars = pl.get("split_vars") or []
+    _CONTEXT.update(syntax=state["syntax"], output=state["output"])
+    return {"summary": _dataset_summary(ds), "syntax": state["syntax"], "output": state["output"]}
+
+
 METHODS = {
+    "history.list": m_history_list,
+    "history.create": m_history_create,
+    "history.rename": m_history_rename,
+    "history.delete": m_history_delete,
+    "history.diff": m_history_diff,
+    "history.restore": m_history_restore,
     "ping": m_ping,
     "syntax.execute": m_syntax_execute,
     "dataset.new": m_dataset_new,
