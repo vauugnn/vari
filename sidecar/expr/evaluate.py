@@ -25,6 +25,11 @@ class EvalContext:
         return [v.name for v in self.ds.variables]
 
     def get_var(self, name: str) -> np.ndarray:
+        up = name.upper()
+        if up == "$CASENUM":  # system variables
+            return np.arange(1, self.n + 1, dtype="float64")
+        if up == "$SYSMIS":
+            return np.full(self.n, np.nan)
         idx = self.ds._index_of(name)
         meta = self.ds.variables[idx]
         s = self.ds.df[name]
@@ -136,6 +141,15 @@ def _call(fname: str, args: list[tuple], ctx: EvalContext) -> np.ndarray:
         return _distribution(fname, [evaluate(a, ctx) for a in args])
 
     vals = [evaluate(a, ctx) for a in args]
+    if base == "UNIFORM":  # UNIFORM(max): uniform on [0, max)
+        return np.random.uniform(0.0, vals[0], ctx.n)
+    if base == "RV":  # RV.UNIFORM(a, b), RV.NORMAL(mean, sd)
+        dist = fname.partition(".")[2]
+        if dist == "UNIFORM":
+            return np.random.uniform(vals[0], vals[1], ctx.n)
+        if dist == "NORMAL":
+            return np.random.normal(vals[0], vals[1], ctx.n)
+        raise ValueError(f"Unsupported random variable: {fname}")
     if base in _UNARY:
         return _UNARY[base](vals[0])
     if base == "MOD":

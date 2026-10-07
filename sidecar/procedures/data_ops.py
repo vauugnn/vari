@@ -1,4 +1,4 @@
-"""Data-menu commands: SORT CASES, SELECT IF, FILTER, WEIGHT, SPLIT FILE.
+"""Data-menu commands: SORT CASES, SELECT IF, FILTER, USE, SAMPLE, WEIGHT, SPLIT FILE.
 
 SELECT IF permanently deletes non-matching cases. FILTER BY marks a filter
 variable (cases with 0 or missing are excluded, non-destructively). WEIGHT BY
@@ -95,13 +95,55 @@ class SplitFile(Procedure):
 
 
 class UseCommand(Procedure):
-    """USE ALL — clears the filter (temporary-case selection off)."""
+    """USE ALL clears the case selection; USE a TO b (or THRU, FIRST, LAST) keeps a
+    range of case numbers by marking them with a generated filter variable."""
+
+    def execute(self, rest: str, ctx: Context) -> list[dict[str, Any]]:
+        from .transforms import _set_column
+
+        ds = _active(ctx)
+        text = rest.strip().rstrip(".")
+        if re.fullmatch(r"ALL", text, re.IGNORECASE):
+            ds.filter_var = None
+            ctx.mark_changed()
+            return []
+        m = re.fullmatch(r"(FIRST|\d+)\s+(?:TO|THRU)\s+(LAST|\d+)", text, re.IGNORECASE)
+        if not m:
+            return [{"type": "Error", "text": "USE: expected ALL or first TO last."}]
+        lo = 1 if m.group(1).upper() == "FIRST" else int(m.group(1))
+        hi = ds.n_rows if m.group(2).upper() == "LAST" else int(m.group(2))
+        case = np.arange(1, ds.n_rows + 1)
+        _set_column(ds, "filter_$", ((case >= lo) & (case <= hi)).astype("float64"))
+        ds.filter_var = "filter_$"
+        ctx.mark_changed()
+        return []
+
+
+class Sample(Procedure):
+    """SAMPLE p.  or  SAMPLE n FROM m.  Keeps a random sample and drops the rest
+    (permanent, like SPSS). `p` keeps about that fraction of cases; `n FROM m` keeps
+    exactly n of the first m cases."""
 
     def execute(self, rest: str, ctx: Context) -> list[dict[str, Any]]:
         ds = _active(ctx)
-        if re.search(r"\bALL\b", rest, re.IGNORECASE):
-            ds.filter_var = None
-            ctx.mark_changed()
+        text = rest.strip().rstrip(".")
+        m = re.fullmatch(r"(\d+)\s+FROM\s+(\d+)", text, re.IGNORECASE)
+        if m:
+            n, total = int(m.group(1)), min(int(m.group(2)), ds.n_rows)
+            if n > total:
+                return [{"type": "Error", "text": "SAMPLE: cannot take more cases than the population."}]
+            keep = np.zeros(ds.n_rows, dtype=bool)
+            keep[np.random.choice(total, size=n, replace=False)] = True
+        else:
+            try:
+                p = float(text)
+            except ValueError:
+                return [{"type": "Error", "text": "SAMPLE: expected a proportion or n FROM m."}]
+            if not 0 < p < 1:
+                return [{"type": "Error", "text": "SAMPLE: the proportion must be between 0 and 1."}]
+            keep = np.random.uniform(0.0, 1.0, ds.n_rows) < p
+        ds.df = ds.df[keep].reset_index(drop=True)
+        ctx.mark_changed()
         return []
 
 

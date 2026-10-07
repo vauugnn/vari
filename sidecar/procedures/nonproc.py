@@ -43,16 +43,36 @@ class Display(Procedure):
 
 
 class DatasetName(Procedure):
-    """DATASET NAME newname — rename the active dataset."""
+    """DATASET NAME / COPY / ACTIVATE / CLOSE (the dataset-window commands)."""
 
     def execute(self, rest: str, ctx: Context) -> list[dict[str, Any]]:
+        m = re.match(r"\s*(NAME|COPY|ACTIVATE|CLOSE)?\s*([A-Za-z@#$][\w@#$.]*)?", rest, re.IGNORECASE)
+        sub = (m.group(1) or "NAME").upper() if m else "NAME"
+        name = m.group(2) if m else None
+        reg = ctx.ds_registry
         ds = ctx.active
+        if sub == "ACTIVATE":
+            if not name or reg.get(name) is None:
+                return [{"type": "Error", "text": f"DATASET ACTIVATE: no dataset named {name}."}]
+            reg.activate(name)
+            ctx.mark_changed()
+            return []
+        if sub == "CLOSE":
+            if name and reg.get(name) is not None:
+                reg.close(name)
+                ctx.mark_changed()
+            return []
         if ds is None:
             return [{"type": "Error", "text": "No active dataset."}]
-        m = re.match(r"\s*(?:NAME\s+)?([A-Za-z@#$][\w@#$.]*)", rest, re.IGNORECASE)
-        if not m:
-            return [{"type": "Error", "text": "DATASET NAME requires a name."}]
-        ds.name = m.group(1)
+        if not name:
+            return [{"type": "Error", "text": f"DATASET {sub} requires a name."}]
+        if sub == "COPY":
+            clone = ds.snapshot()
+            clone.name = name
+            clone.source_path = None
+            reg.add(clone, activate=False)
+            return []
+        ds.name = name
         ctx.mark_changed()
         return []
 

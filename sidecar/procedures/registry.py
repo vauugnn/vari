@@ -11,7 +11,7 @@ from .discriminant import Discriminant
 from .misc_procs import Kappa, Pplot, RatioStats
 from .reports import Codebook, Summarize
 from .roc import Roc
-from .data_ops import Filter, SelectIf, SortCases, SplitFile, UseCommand, Weight
+from .data_ops import Filter, Sample, SelectIf, SortCases, SplitFile, UseCommand, Weight
 from .data_ops2 import AddCmd, Aggregate, Flip, MatchFiles
 from .descriptives import Descriptives
 from .examine import Examine
@@ -78,6 +78,7 @@ def build_registry() -> Registry:
     reg.register("WEIGHT")(Weight)
     reg.register("SPLIT")(SplitFile)
     reg.register("USE")(UseCommand)
+    reg.register("SAMPLE")(Sample)
     reg.register("EXAMINE")(Examine)
     reg.register("PARTIAL")(PartialCorr)
     reg.register("RANK")(Rank)

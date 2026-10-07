@@ -55,6 +55,9 @@ def tokenize(text: str) -> list[Token]:
                 tokens.append(Token("to", "TO"))
             else:
                 tokens.append(Token("name", val))
+        elif kind == "op" and val in ("&", "|", "~"):  # SPSS symbol forms of AND, OR, NOT
+            word = {"&": "AND", "|": "OR", "~": "NOT"}[val]
+            tokens.append(Token(word.lower(), word))
         elif kind == "op":
             tokens.append(Token("op", "~=" if val == "<>" else val))
         else:
