@@ -36,6 +36,7 @@ def _plt() -> Any:
         plt.rcParams.update({
             "font.size": 9.5,
             "font.family": ["Arial", "Helvetica", "DejaVu Sans", "sans-serif"],
+            "svg.fonttype": "none",  # keep text as <text> so the Chart Editor can edit it
             "axes.edgecolor": "#8a8a8a",
             "axes.linewidth": 0.8,
             "xtick.direction": "out",

@@ -148,7 +148,7 @@ export function Viewer(): JSX.Element {
                       {collapsed.has(i) ? '▸' : '▾'}
                     </button>
                   )}
-                  <OutputItem obj={obj} />
+                  <OutputItem obj={obj} onChange={(o) => setItems((prev) => prev.map((x, j) => (j === i ? o : x)))} />
                 </div>
               )
             )
