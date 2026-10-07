@@ -604,10 +604,19 @@ function wireIpc(): void {
       filters: [{ name: 'Vari Output (*.spv)', extensions: ['spv'] }]
     })
     if (res.canceled || res.filePaths.length === 0) return null
-    const out = (await sidecar.request('output.openSpv', { path: res.filePaths[0] })) as { items: OutputObject[] }
-    sendToViewer(out.items)
-    showWindow('viewer')
-    return out.items
+    try {
+      const out = (await sidecar.request('output.openSpv', { path: res.filePaths[0] })) as { items: OutputObject[] }
+      sendToViewer(out.items)
+      showWindow('viewer')
+      return out.items
+    } catch (err) {
+      const items: OutputObject[] = [
+        { type: 'Error', text: `Could not open ${res.filePaths[0]}: ${String(err instanceof Error ? err.message : err)}` }
+      ]
+      sendToViewer(items)
+      showWindow('viewer')
+      return items
+    }
   })
 
   ipcMain.on(IPC.windowShow, (_evt, name: WindowName) => showWindow(name))

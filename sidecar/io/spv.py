@@ -12,6 +12,7 @@ import base64
 import html as _html
 import json
 import re
+import struct
 import zipfile
 from typing import Any
 from xml.etree import ElementTree as ET
@@ -31,6 +32,15 @@ def write_spv(items: list[dict[str, Any]], path: str) -> None:
 
 
 def read_spv(path: str) -> list[dict[str, Any]]:
+    """Read an output file. Damaged files raise ValueError with a plain message."""
+    try:
+        return _read(path)
+    except (zipfile.BadZipFile, ET.ParseError, struct.error, KeyError, IndexError, UnicodeError,
+            RecursionError, EOFError, LookupError) as e:
+        raise ValueError(f"This output file is damaged or not a supported format ({type(e).__name__}).") from e
+
+
+def _read(path: str) -> list[dict[str, Any]]:
     with zipfile.ZipFile(path, "r") as z:
         names = z.namelist()
         if _PAYLOAD in names:
@@ -58,8 +68,14 @@ def _structure_members(names: list[str]) -> list[str]:
 def _read_ibm(z: zipfile.ZipFile) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     for member in _structure_members(z.namelist()):
-        root = ET.fromstring(z.read(member))
-        _walk(root, z, out)
+        try:
+            root = ET.fromstring(z.read(member))
+            _walk(root, z, out)
+        except (ET.ParseError, zipfile.BadZipFile, KeyError, UnicodeError, LookupError) as e:
+            # One damaged section must not make the whole file unreadable.
+            out.append({"type": "Warning", "text": f"[Part of the file ({member}) is damaged and was skipped: {type(e).__name__}]"})
+    if not out:
+        raise ValueError("This output file contains nothing Vari can read.")
     return out
 
 
@@ -91,14 +107,17 @@ def _item(el: ET.Element, z: zipfile.ZipFile, out: list[dict[str, Any]]) -> None
             data = z.read(member)
             tbl = to_pivot_json(parse_light(data))
             tbl["spv"] = {"kind": "light", "data": base64.b64encode(data).decode()}
-        except (LightError, IndexError, ValueError) as e:  # old-format or damaged table
+        except (LightError, IndexError, ValueError, struct.error, KeyError, UnicodeError, RecursionError, LookupError) as e:  # damaged table
             out.append({"type": "Warning", "text": f"[Table could not be read: {e}]"})
             return
         out.append(tbl)
     elif tag == "graph":
         from .spv_chart import chart_from_member  # imported lazily: pulls matplotlib
 
-        res = chart_from_member(z, _find_path(el, "path"), _find_path(el, "dataPath"))
+        try:
+            res = chart_from_member(z, _find_path(el, "path"), _find_path(el, "dataPath"))
+        except Exception as e:  # noqa: BLE001 - a bad chart must not sink the file
+            res = {"type": "Warning", "text": f"[Chart could not be read: {type(e).__name__}]"}
         out.extend(res if isinstance(res, list) else [res])
     elif tag in ("object", "image"):
         member = el.get("uri") or _find_path(el, "dataPath")

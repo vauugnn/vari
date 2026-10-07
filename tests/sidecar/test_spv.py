@@ -128,3 +128,48 @@ def test_vari_output_roundtrips_through_ibm_format(tmp_path):
     assert tbl["flat"]["grid"] == [["10", "3.25"], ["12", ".500"]]
     assert [h["t"] for h in tbl["flat"]["colHeaders"][0]] == ["N", "Mean"]
     assert [h[0]["t"] for h in tbl["flat"]["rowHeaders"]] == ["Male", "Female"]
+
+
+def test_damaged_files_fail_cleanly_never_crash(tmp_path):
+    """Corrupt a Vari-written .spv hundreds of ways: every outcome is a result or ValueError."""
+    import io
+    import random
+    import zipfile
+
+    from sidecar.io.spv import read_spv, write_spv
+    from sidecar.output.model import Dimension, PivotTable
+
+    t = PivotTable("Group Statistics", [Dimension("", ["Male", "Female"])], [Dimension("", ["N", "Mean"])])
+    for i in range(2):
+        for j in range(2):
+            t.set([i], [j], str(10 + i + j), "num")
+    good = str(tmp_path / "good.spv")
+    write_spv([{"type": "Title", "text": "T-Test"}, t.to_json(), {"type": "TextBlock", "text": "x"}], good)
+    orig = zipfile.ZipFile(good)
+    rng = random.Random(1)
+    bad = str(tmp_path / "bad.spv")
+    for _ in range(300):
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as z:
+            for n in orig.namelist():
+                data = bytearray(orig.read(n))
+                if data and rng.random() < 0.6 and n != "META-INF/MANIFEST.MF":
+                    kind = rng.choice(["flip", "trunc", "zero"])
+                    if kind == "flip":
+                        for _ in range(rng.randint(1, 6)):
+                            data[rng.randrange(len(data))] = rng.randrange(256)
+                    elif kind == "trunc":
+                        data = data[: rng.randrange(len(data))]
+                    else:
+                        i = rng.randrange(len(data))
+                        data[i : i + 8] = b"\x00" * 8
+                z.writestr(n, bytes(data))
+        open(bad, "wb").write(buf.getvalue())
+        try:
+            read_spv(bad)
+        except ValueError:
+            pass
+    for blob in (b"", b"garbage", open(good, "rb").read()[:300]):
+        open(bad, "wb").write(blob)
+        with pytest.raises(ValueError):
+            read_spv(bad)
