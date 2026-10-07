@@ -233,3 +233,23 @@ def test_grouped_frequency_table_keeps_its_groups_in_an_ibm_file(tmp_path):
     back = next(i for i in read_spv(p) if i["type"] == "PivotTable")
     assert back["flat"]["rowHeaders"] == tbl["flat"]["rowHeaders"]
     assert back["flat"]["grid"] == tbl["flat"]["grid"]
+
+
+def test_significance_values_have_no_leading_zero_in_every_table():
+    """SPSS prints .001 not 0.001 under any Sig. header — enforced in the table model."""
+    from sidecar.output.model import Dimension, PivotTable
+
+    t = PivotTable("T", [Dimension("", ["A", "Sig. (2-tailed)"])], [Dimension("", ["Value", "Sig."])])
+    for i in range(2):
+        for j in range(2):
+            t.set([i], [j], "0.012")
+    cells = {(tuple(c["r"]), tuple(c["c"])): c["v"] for c in t.to_json()["cells"]}
+    assert cells[((0,), (0,))] == "0.012"            # plain statistic keeps its zero
+    assert cells[((0,), (1,))] == ".012"             # under a Sig. column
+    assert cells[((1,), (0,))] == ".012"             # in a Sig. row
+    r = PivotTable("R", [Dimension("", ["x"])], [Dimension("", ["F"])])
+    r.set_columns(["Levene Sig.", "Design"])
+    r.set([0], [0], "0.300")
+    r.set([0], [1], "0.300")
+    got = {tuple(c["c"]): c["v"] for c in r.to_json()["cells"]}
+    assert got[(0,)] == ".300" and got[(1,)] == "0.300"   # "Design" is not "Sig"

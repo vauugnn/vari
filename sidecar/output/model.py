@@ -6,10 +6,21 @@ Format so SPSS numeric parity lives in the sidecar, not the UI.
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from ..data.format import Format
+
+
+# SPSS prints significance values without a leading zero (".001", not "0.001"). Enforced
+# here for every cell under (or beside) a "Sig." header so no procedure can forget it.
+_SIG_LABEL = re.compile(r"\bSig\b|Significance", re.IGNORECASE)
+_LEADING_ZERO = re.compile(r"^(-?)0(\.\d+)$")
+
+
+def _is_sig(label: str) -> bool:
+    return bool(_SIG_LABEL.search(label))
 
 
 @dataclass
@@ -73,9 +84,22 @@ class PivotTable:
                 cells.append({"t": name, "rs": n, "cs": 1})
             cells.append({"t": lab, "rs": 1, "cs": 1 if i in inside else 2})
             row_headers.append(cells)
-        grid = [[self.cells.get(((i,), (j,)), ("", "text"))[0] for j in range(ncols)] for i in range(len(labels))]
+        grid = [[self._sig_fix((i,), (j,), self.cells.get(((i,), (j,)), ("", "text"))[0]) for j in range(ncols)]
+                for i in range(len(labels))]
         kinds = [[self.cells.get(((i,), (j,)), ("", "text"))[1] for j in range(ncols)] for i in range(len(labels))]
         return {"rowHeaderCols": 2, "colHeaders": col_headers, "rowHeaders": row_headers, "grid": grid, "kinds": kinds}
+
+    def _sig_fix(self, rkey: tuple, ckey: tuple, value: str) -> str:
+        """Strip the leading zero from a significance value (see _SIG_LABEL)."""
+        m = _LEADING_ZERO.match(value)
+        if not m:
+            return value
+        labels = [d.categories[i] for d, i in zip(self.row_dims, rkey) if i < len(d.categories)]
+        if self.col_leaves is not None:
+            labels += [self.col_leaves[ckey[0]]] if ckey and ckey[0] < len(self.col_leaves) else []
+        else:
+            labels += [d.categories[i] for d, i in zip(self.col_dims, ckey) if i < len(d.categories)]
+        return m.group(1) + m.group(2) if any(_is_sig(x) for x in labels) else value
 
     def to_json(self) -> dict[str, Any]:
         out: dict[str, Any] = {
@@ -86,7 +110,7 @@ class PivotTable:
             "rowDims": [{"label": d.label, "categories": d.categories} for d in self.row_dims],
             "colDims": [{"label": d.label, "categories": d.categories} for d in self.col_dims],
             "cells": [
-                {"r": list(r), "c": list(c), "v": v, "kind": k}
+                {"r": list(r), "c": list(c), "v": self._sig_fix(r, c, v), "kind": k}
                 for (r, c), (v, k) in self.cells.items()
             ],
         }
