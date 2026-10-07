@@ -70,8 +70,8 @@ def _remember_context(p: Any) -> None:
 def _auto_snapshot(kind: str, name: Optional[str] = None, force: bool = False) -> Optional[dict[str, Any]]:
     """Best effort: history must never get in the way of the user's work."""
     ds = REGISTRY.active
-    if ds is None:
-        return None
+    if ds is None or (kind in ("auto", "pre-op") and ds.n_vars == 0):
+        return None  # nothing worth keeping in a blank document
     try:
         return _store().create(_doc_id(ds), ds, _CONTEXT["syntax"], _CONTEXT["output"], kind=kind, name=name, force=force)
     except Exception as exc:  # noqa: BLE001

@@ -258,3 +258,12 @@ def test_undo_goes_far_back_and_respects_the_memory_budget(server_ds, monkeypatc
         _rpc("dataset.setCell", {"row": 0, "col": 0, "value": str(200 + i)})
     assert len(server._UNDO) == 1                         # newest step is always kept
     assert _rpc("dataset.undo")["ok"]
+
+
+def test_blank_documents_are_not_autosaved(server_ds):
+    import pandas as pd
+
+    server = server_ds
+    server.REGISTRY.add(Dataset(pd.DataFrame(), [], name="Blank"))
+    assert _rpc("history.create", {"kind": "auto"})["version"] is None
+    assert _rpc("history.create", {"kind": "manual", "name": "Explicit"})["version"] is not None  # on request, yes
