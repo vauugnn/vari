@@ -39,14 +39,14 @@ export function AnalysisFrame({
           )}
         </div>
         <div className="af-footer">
-          <button onClick={onOk} disabled={okDisabled}>
-            OK
-          </button>
+          <button onClick={onReset}>Reset</button>
           <button onClick={onPaste} disabled={okDisabled}>
             Paste
           </button>
-          <button onClick={onReset}>Reset</button>
           <button onClick={onCancel}>Cancel</button>
+          <button onClick={onOk} disabled={okDisabled}>
+            OK
+          </button>
         </div>
       </div>
     </div>

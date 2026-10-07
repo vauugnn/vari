@@ -91,17 +91,18 @@ button:disabled {
   box-shadow: none;
 }
 
-/* Primary action: the first button of a dialog footer (OK / Run). */
-.modal-footer button:first-child,
-.af-footer button:first-child {
+/* Primary action: OK is the right-most button of a dialog footer (Mac SPSS order:
+   Reset, Paste, Cancel, OK). */
+.modal-footer button:last-child,
+.af-footer button:last-child {
   background: linear-gradient(#3b7ddd, var(--accent));
   border-color: var(--accent-hover);
   color: #fff;
   font-weight: 600;
 }
 
-.modal-footer button:first-child:hover:not(:disabled),
-.af-footer button:first-child:hover:not(:disabled) {
+.modal-footer button:last-child:hover:not(:disabled),
+.af-footer button:last-child:hover:not(:disabled) {
   background: linear-gradient(#3573cc, var(--accent-hover));
   border-color: #1f4f98;
 }

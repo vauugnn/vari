@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Align, DatasetSummary, Measure, Role, ValueLabel, MissingJson, VariableMetaJson } from '../../shared/types'
 import { useStore } from '../state/store'
-import { MeasureIcon } from '../common/icons'
+import { AlignIcon, MeasureIcon, RoleIcon } from '../common/icons'
 import { ContextMenu, type MenuItem } from './ContextMenu'
 import { Modal } from '../dialogs/Modal'
 import { VariableTypeDialog } from '../dialogs/VariableTypeDialog'
@@ -263,7 +263,8 @@ export function VariableViewGrid({ summary }: { summary: DatasetSummary }): JSX.
                 <NumCell value={v.columns} onCommit={(val) => commit(i, { columns: val })} />
               </td>
               <td>
-                <SelectCell value={v.align} options={ALIGNS} onCommit={(val) => commit(i, { align: val as Align })} />
+                <IconSelect icon={<AlignIcon align={v.align} />} value={v.align} options={ALIGNS}
+                  onCommit={(val) => commit(i, { align: val as Align })} />
               </td>
               <td>
                 <MeasureCell
@@ -274,7 +275,8 @@ export function VariableViewGrid({ summary }: { summary: DatasetSummary }): JSX.
                 />
               </td>
               <td>
-                <SelectCell value={v.role} options={ROLES} onCommit={(val) => commit(i, { role: val as Role })} />
+                <IconSelect icon={<RoleIcon role={v.role} />} value={v.role} options={ROLES}
+                  onCommit={(val) => commit(i, { role: val as Role })} />
               </td>
             </tr>
           ))}
@@ -426,22 +428,24 @@ function MeasureCell({
   )
 }
 
-function SelectCell({
-  value,
-  options,
-  onCommit
-}: {
+// A dropdown with a leading icon, like SPSS's Align and Role columns.
+function IconSelect({ icon, value, options, onCommit }: {
+  icon: JSX.Element
   value: string
-  options: string[]
+  options: readonly string[]
   onCommit: (v: string) => void
 }): JSX.Element {
   return (
-    <select value={value} onChange={(e) => onCommit(e.target.value)}>
-      {options.map((o) => (
-        <option key={o} value={o}>
-          {o.charAt(0).toUpperCase() + o.slice(1)}
-        </option>
-      ))}
-    </select>
+    <div className="measure-cell">
+      {icon}
+      <select value={value} onChange={(e) => onCommit(e.target.value)}>
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o.charAt(0).toUpperCase() + o.slice(1)}
+          </option>
+        ))}
+      </select>
+    </div>
   )
 }
+

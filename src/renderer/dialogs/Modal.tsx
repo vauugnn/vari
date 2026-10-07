@@ -22,10 +22,10 @@ export function Modal({
         <div className="modal-title">{title}</div>
         <div className="modal-body">{children}</div>
         <div className="modal-footer">
+          <button onClick={onCancel}>Cancel</button>
           <button onClick={onOk} disabled={okDisabled}>
             {okLabel ?? 'OK'}
           </button>
-          <button onClick={onCancel}>Cancel</button>
         </div>
       </div>
     </div>

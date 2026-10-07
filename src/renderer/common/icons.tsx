@@ -372,3 +372,76 @@ export const GearIcon = (): JSX.Element => (
     </g>
   </Ico>
 )
+
+
+// ---- Variable View: Align and Role icons (original artwork, SPSS-style symbols) ----
+export function AlignIcon({ align, size = 14 }: { align: string; size?: number }): JSX.Element {
+  // Five text lines, flush left / centred / flush right.
+  const widths = [14, 10, 14, 8, 12]
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" className="measure-icon" aria-hidden>
+      {widths.map((w, i) => {
+        const x = align === 'left' ? 1 : align === 'center' ? 1 + (14 - w) / 2 : 15 - w
+        return <rect key={i} x={x} y={2 + i * 2.7} width={w} height={1.6} fill="#5b6472" />
+      })}
+    </svg>
+  )
+}
+
+export function RoleIcon({ role, size = 14 }: { role: string; size?: number }): JSX.Element {
+  let body: JSX.Element
+  switch (role) {
+    case 'target':
+      body = (
+        <g fill="none" stroke="#d9433f" strokeWidth="1.6">
+          <circle cx="8" cy="8" r="6" />
+          <circle cx="8" cy="8" r="2.2" fill="#d9433f" />
+        </g>
+      )
+      break
+    case 'both':
+      body = (
+        <g>
+          <line x1="3" y1="13" x2="13" y2="3" stroke="#2f6fd0" strokeWidth="2" />
+          <polygon points="13,2 7,3 12,8" fill="#2f6fd0" />
+          <polygon points="3,14 4,9 9,13" fill="#2f6fd0" />
+        </g>
+      )
+      break
+    case 'none':
+      body = (
+        <g fill="none" stroke="#8b93a1" strokeWidth="1.6">
+          <circle cx="8" cy="8" r="6" />
+          <line x1="4" y1="12" x2="12" y2="4" />
+        </g>
+      )
+      break
+    case 'partition':
+      body = (
+        <g stroke="#6d6e71" strokeWidth="1.2">
+          <circle cx="8" cy="8" r="6" fill="#e8ecf2" />
+          <path d="M8 8 L8 2 A6 6 0 0 1 14 8 Z" fill="#8c66b5" />
+        </g>
+      )
+      break
+    case 'split':
+      body = (
+        <g stroke="#5b6472" strokeWidth="1.4" fill="none">
+          <path d="M8 2 L8 7 M8 7 L3 13 M8 7 L13 13" />
+        </g>
+      )
+      break
+    default:
+      body = ( // input: blue arrow pointing in (down-right)
+        <g>
+          <line x1="3" y1="3" x2="10.5" y2="10.5" stroke="#2f6fd0" strokeWidth="2.2" />
+          <polygon points="14,14 6.5,12 12,6.5" fill="#2f6fd0" />
+        </g>
+      )
+  }
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" className="measure-icon" aria-hidden>
+      {body}
+    </svg>
+  )
+}

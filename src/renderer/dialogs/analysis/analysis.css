@@ -39,7 +39,7 @@
 .af-footer {
   display: flex;
   gap: 8px;
-  justify-content: center;
+  justify-content: flex-end;
   padding: 10px 14px;
   border-top: 1px solid var(--line);
   background: var(--surface-2);
